@@ -1,0 +1,76 @@
+import { z } from "zod";
+
+export const produtoSchema = z.object({
+  nome: z.string().min(1, "Nome e obrigatorio"),
+  nomeNormalizado: z.string().optional(),
+  sku: z.string().optional(),
+  codigoBarras: z.string().optional(),
+  codigoBarrasNormalizado: z.string().optional(),
+  codigoInterno: z.string().optional(),
+  marca: z.string().optional(),
+  categoriaId: z.string().optional(),
+  tipoCategoria: z.string().optional(),
+  quantidadeAtual: z.number().min(0).default(0),
+  estoqueMinimo: z.number().min(0).default(0),
+  estoqueMaximo: z.number().min(0).default(0),
+  localArmazenamento: z.string().optional(),
+  unidadeMedida: z.string().default("un"),
+  unidadeCompra: z.string().default("un"),
+  unidadeUso: z.string().default("un"),
+  conversao: z.number().min(1).default(1),
+  custoCompra: z.number().min(0).default(0),
+  custoUnitario: z.number().min(0).default(0),
+  custoAnterior: z.number().optional(),
+  precoVenda: z.number().min(0).default(0),
+  custoPromocional: z.number().optional(),
+  promocaoAtiva: z.boolean().default(false),
+  promocaoInicio: z.string().optional(),
+  promocaoFim: z.string().optional(),
+  statusProduto: z.enum(["ativo", "pausado", "sem_ficha", "parado"]).default("ativo"),
+  validadeOriginal: z.number().min(0).default(0),
+  validadeAposAberto: z.number().min(0).default(0),
+  validadeAposProducao: z.number().min(0).default(0),
+  loteInterno: z.string().optional(),
+  fornecedorPrincipal: z.string().optional(),
+  frequenciaPedido: z.string().optional(),
+  diasPedido: z.number().min(0).default(0),
+  diasEntrega: z.number().min(0).default(0),
+  quantidadePadraoPedido: z.number().min(0).default(0),
+  tipoEtiqueta: z.string().optional(),
+  etiquetaResponsavel: z.string().optional(),
+  etiquetaObservacao: z.string().optional(),
+  imagemUrl: z.string().optional(),
+  imagemUploadUrl: z.string().optional(),
+  imagemCosmosUrl: z.string().optional(),
+  imagemPrincipal: z.string().optional(),
+  fichaTecnicaVinculos: z.array(z.string()).optional(),
+  fichaTecnicaObservacoes: z.string().optional(),
+  fichaTecnicaIngredientes: z
+    .array(
+      z.object({
+        insumoId: z.string(),
+        insumoNome: z.string(),
+        quantidade: z.number(),
+        unidade: z.string(),
+      }),
+    )
+    .optional(),
+  origemCadastro: z.enum(["manual", "xml", "barcode", "api"]).default("manual"),
+  responsavel: z.string().optional(),
+  createdBy: z.string().optional(),
+});
+
+export const movimentoSchema = z.object({
+  insumoId: z.string().min(1, "Insumo e obrigatorio"),
+  insumoNome: z.string().min(1),
+  tipo: z.enum(["entrada", "saida", "ajuste", "correcao", "xml", "producao"]),
+  quantidade: z.number().min(0.01, "Quantidade deve ser maior que zero"),
+  custoUnitario: z.number().optional(),
+  custoTotal: z.number().optional(),
+  observacao: z.string().optional(),
+  responsavel: z.string().min(1),
+  fornecedorId: z.string().optional(),
+});
+
+export type ProdutoFormData = z.infer<typeof produtoSchema>;
+export type MovimentoFormData = z.infer<typeof movimentoSchema>;
