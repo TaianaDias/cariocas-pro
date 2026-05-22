@@ -17,9 +17,11 @@ export type UserProfile = {
   nome: string;
   email: string;
   tipoConta: string;
-  plano: "free" | "essencial" | "pro";
-  plan: "free" | "essencial" | "pro";
-  role: "admin" | "user";
+  plano: "free" | "essencial" | "pro" | "plus" | "full";
+  plan: "free" | "essencial" | "pro" | "plus" | "full";
+  role: "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
+  empresaId?: string;
+  lojaId?: string;
   createdAt?: unknown;
   criadoEm?: unknown;
   ultimoAcesso?: unknown;

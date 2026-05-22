@@ -4,7 +4,10 @@ export interface Usuario {
   nome: string;
   email: string;
   fotoUrl?: string;
-  plano?: "free" | "essencial" | "pro";
+  plano?: "free" | "essencial" | "pro" | "plus" | "full";
+  role?: "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
+  empresaId?: string;
+  lojaId?: string;
   criadoEm: Date;
   ultimoAcesso: Date;
 }
@@ -360,4 +363,155 @@ export interface ConfiguracaoEstabelecimento {
   notificarVencimento: boolean;
   notificarWhatsApp: boolean;
   numeroWhatsAppNotificacao: string;
+}
+
+export type PlanoSaas = "free" | "essencial" | "pro" | "plus" | "full";
+export type PapelUsuario = "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
+export type UnidadeMedidaPrecificacao = "KG" | "G" | "UN" | "ML" | "L" | "CAIXA" | "PACOTE";
+export type MetodoCusto = "medio_automatico" | "ultimo_custo_compra" | "manual_travado";
+export type CanalVenda = "balcao" | "delivery_proprio" | "ifood" | "99food" | "parceiros";
+export type StatusFinanceiroReceita = "saudavel" | "atencao" | "critico";
+
+export interface ReceitaIngrediente {
+  id?: string;
+  receitaId: string;
+  insumoId: string;
+  insumoNome: string;
+  quantidade: number;
+  unidade: UnidadeMedidaPrecificacao;
+  custoUnitarioConvertido: number;
+  custoTotal: number;
+  tipo: "insumo" | "receita_base";
+  empresaId: string;
+  lojaId?: string;
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+}
+
+export interface PrecificacaoCanal {
+  canal: CanalVenda;
+  precoVenda: number;
+  taxaPercentual: number;
+  taxaFixa: number;
+  embalagem: number;
+  margemDesejada: number;
+  precoMinimo: number;
+  precoSugerido: number;
+  lucroReal: number;
+  margemReal: number;
+  cmvReal: number;
+}
+
+export interface ReceitaPrecificacao {
+  id?: string;
+  nome: string;
+  descricao: string;
+  modoPreparo: string;
+  categoria: string;
+  imagemUrl?: string;
+  precoVenda: number;
+  fracionado: boolean;
+  ingrediente: boolean;
+  ativa: boolean;
+  observacoesInternas?: string;
+  ingredientes: ReceitaIngrediente[];
+  globalEmpresa?: boolean;
+  canais: PrecificacaoCanal[];
+  custoIngredientes: number;
+  custoFixoRateado: number;
+  custosVariaveis: number;
+  custoTotalReal: number;
+  lucro: number;
+  margem: number;
+  cmv: number;
+  precoMinimo: number;
+  precoSugerido: number;
+  precoPremium: number;
+  margemDesejada: number;
+  status: StatusFinanceiroReceita;
+  congelarPreco?: boolean;
+  congelarCusto?: boolean;
+  congelarCmv?: boolean;
+  empresaId: string;
+  lojaId?: string;
+  createdBy: string;
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+}
+
+export interface CustosFixosPrecificacao {
+  id?: string;
+  aluguel: number;
+  energia: number;
+  agua: number;
+  internet: number;
+  salarios: number;
+  contador: number;
+  sistema: number;
+  marketing: number;
+  manutencao: number;
+  encargos: number;
+  outros: number;
+  pedidosMensais: number;
+  custoFixoPorPedido: number;
+  empresaId: string;
+  lojaId?: string;
+  atualizadoEm?: unknown;
+}
+
+export interface CustosVariaveisPrecificacao {
+  embalagem: number;
+  taxaCartaoPercentual: number;
+  taxaIfoodPercentual: number;
+  taxa99FoodPercentual: number;
+  taxaDelivery: number;
+  comissaoPercentual: number;
+  cashback: number;
+  cupom: number;
+  embalagemDelivery: number;
+}
+
+export interface MetaFinanceiraPrecificacao {
+  id?: string;
+  cmvMaximo: number;
+  margemMinima: number;
+  lucroMinimo: number;
+  margemDesejada: number;
+  empresaId: string;
+  lojaId?: string;
+}
+
+export interface HistoricoCustoInsumo {
+  id?: string;
+  insumoId: string;
+  insumoNome: string;
+  custoAnterior: number;
+  custoNovo: number;
+  percentual: number;
+  motivo: "compra" | "entrada" | "xml" | "ajuste" | "desperdicio" | "manual";
+  compraId?: string;
+  usuario: string;
+  receitasImpactadas: string[];
+  empresaId: string;
+  lojaId?: string;
+  data?: unknown;
+}
+
+export interface SimulacaoPreco {
+  id?: string;
+  receitaId?: string;
+  nome: string;
+  custo: number;
+  margem: number;
+  taxa: number;
+  embalagem: number;
+  desconto: number;
+  promocao: number;
+  precoVenda: number;
+  lucro: number;
+  cmv: number;
+  risco: StatusFinanceiroReceita;
+  empresaId: string;
+  lojaId?: string;
+  criadoEm?: unknown;
 }

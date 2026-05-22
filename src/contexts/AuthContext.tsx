@@ -65,12 +65,14 @@ function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
     document.cookie = "user.uid=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.email=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.plan=; path=/; max-age=0; sameSite=lax";
+    document.cookie = "user.role=; path=/; max-age=0; sameSite=lax";
     return;
   }
 
   document.cookie = `user.uid=${currentUser.uid}; path=/; sameSite=lax`;
   document.cookie = `user.email=${currentUser.email ?? ""}; path=/; sameSite=lax`;
   document.cookie = `user.plan=${profile?.plano ?? profile?.plan ?? "free"}; path=/; sameSite=lax`;
+  document.cookie = `user.role=${profile?.role ?? "user"}; path=/; sameSite=lax`;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {

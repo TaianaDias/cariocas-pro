@@ -7,6 +7,7 @@ import "../styles/components.css";
 import "../styles/utilities.css";
 import "../styles/dashboard.css";
 import "../styles/estoque.css";
+import "../styles/precificacao.css";
 import "../styles/carioquinha.css";
 import "../styles/auth.css";
 

@@ -50,6 +50,7 @@ export function AppShell({ children }: AppShellProps) {
         <a href="/dashboard">Dashboard</a>
         <a href="/estoque">Estoque</a>
         <a href="/compras">Compras</a>
+        <a href="/precificacao">Precificacao</a>
         <a href="/relatorios">Relatorios</a>
       </nav>
     </div>
