@@ -80,12 +80,12 @@ export async function getKpisFinanceiro(dataInicio: Date, dataFim: Date): Promis
 
   const historicoQuery = query(
     collection(db, "historico"),
-    where("tipo", "==", "saida"),
     where("criadoEm", ">=", dataInicio),
     where("criadoEm", "<=", dataFim),
   );
   const historicoSnap = await getDocs(historicoQuery);
-  const ticketMedio = historicoSnap.size > 0 ? faturamentoEstimado / historicoSnap.size : 0;
+  const saidasPeriodo = historicoSnap.docs.filter((item) => item.data().tipo === "saida").length;
+  const ticketMedio = saidasPeriodo > 0 ? faturamentoEstimado / saidasPeriodo : 0;
 
   return {
     cmvMedio: roundPercent(cmvMedio),
