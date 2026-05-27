@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Pagina: Desperdicio</div>;
+import { DesperdicioPageClient } from "../../components/operacional/OperationalPages";
+
+export default function DesperdicioPage() {
+  return <DesperdicioPageClient />;
 }

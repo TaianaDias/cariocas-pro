@@ -1,3 +1,5 @@
-export default function Page() {
-  return <div>Pagina: Compras</div>;
+import { ComprasPageClient } from "../../components/operacional/OperationalPages";
+
+export default function ComprasPage() {
+  return <ComprasPageClient />;
 }
