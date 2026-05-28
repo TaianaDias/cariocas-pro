@@ -21,6 +21,8 @@ import {
   registerWithEmail,
   type UserProfile,
 } from "../services/auth.service";
+import { atualizarPlano } from "../services/usuarios.service";
+import type { Plano } from "../lib/plan";
 
 type AuthContextValue = {
   error: string | null;
@@ -28,6 +30,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (email: string, password: string, nome: string, tipoConta?: string) => Promise<void>;
+  updatePlan: (plano: Plano) => Promise<void>;
   user: User | null;
   userProfile: UserProfile | null;
 };
@@ -173,6 +176,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const updatePlan = useCallback(
+    async (plano: Plano) => {
+      if (!user) {
+        throw new Error("Entre na conta para escolher um plano.");
+      }
+
+      await atualizarPlano(user.uid, plano);
+      const nextProfile: UserProfile = {
+        ...(userProfile ?? {
+          email: user.email || "",
+          nome: user.displayName || "Usuario",
+          role: "user",
+          tipoConta: "Hamburgueria / Restaurante",
+          uid: user.uid,
+        }),
+        plan: plano,
+        plano,
+      };
+
+      setUserProfile(nextProfile);
+      setAuthCookies(user, nextProfile);
+    },
+    [user, userProfile],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       error,
@@ -180,10 +208,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       login,
       logout,
       register,
+      updatePlan,
       user,
       userProfile,
     }),
-    [error, loading, login, logout, register, user, userProfile],
+    [error, loading, login, logout, register, updatePlan, user, userProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

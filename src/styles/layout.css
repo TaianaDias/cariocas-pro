@@ -79,6 +79,10 @@
   background: rgba(212, 32, 32, 0.08);
 }
 
+.sidebar__link--locked {
+  opacity: 0.72;
+}
+
 .sidebar__icon {
   display: grid;
   width: 24px;
@@ -105,6 +109,12 @@
   border-color: rgba(212, 32, 32, 0.42);
   background: rgba(212, 32, 32, 0.14);
   color: #ffffff;
+}
+
+.sidebar__link--locked .sidebar__icon {
+  border-color: rgba(229, 231, 235, 0.08);
+  background: rgba(229, 231, 235, 0.07);
+  color: rgba(229, 231, 235, 0.54);
 }
 
 .app-main {
@@ -382,6 +392,10 @@
     background: rgba(255, 255, 255, 0.055);
     color: #ffffff;
     outline: none;
+  }
+
+  .mobile-dock a.is-locked {
+    opacity: 0.68;
   }
 
   .ai-carioquinha {

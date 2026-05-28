@@ -1,3 +1,6 @@
+import { canOpenPath, getRequiredPlanForPath, planCatalog } from "../../lib/plan";
+import { useAuth } from "../../hooks/useAuth";
+
 const navigationItems = [
   { label: "Dashboard", href: "/dashboard", icon: "D" },
   { label: "Estoque", href: "/estoque", icon: "E" },
@@ -15,6 +18,9 @@ const navigationItems = [
 ];
 
 export function Sidebar() {
+  const { userProfile } = useAuth();
+  const planoAtual = userProfile?.plano || userProfile?.plan || "free";
+
   return (
     <aside className="sidebar" aria-label="Navegacao principal">
       <a className="sidebar__brand" href="/dashboard" aria-label="Carioca's Pro">
@@ -23,15 +29,26 @@ export function Sidebar() {
       </a>
 
       <nav className="sidebar__nav" aria-label="Menu principal">
-        {navigationItems.map((item) => (
-          <a className={`sidebar__link ${item.premium ? "sidebar__link--premium" : ""}`.trim()} href={item.href} key={item.href}>
+        {navigationItems.map((item) => {
+          const liberado = canOpenPath(planoAtual, item.href);
+          const requiredPlan = getRequiredPlanForPath(item.href);
+
+          return (
+          <a
+            className={`sidebar__link ${item.premium ? "sidebar__link--premium" : ""} ${!liberado ? "sidebar__link--locked" : ""}`.trim()}
+            href={liberado ? item.href : "/dashboard"}
+            key={item.href}
+            title={liberado ? item.label : `Disponivel no plano ${planCatalog[requiredPlan].name}`}
+          >
             <span className="sidebar__icon" aria-hidden="true">
-              {item.icon}
+              {liberado ? item.icon : "L"}
             </span>
             <span className="sidebar__label">{item.label}</span>
             {item.badge ? <span className="sidebar__badge">{item.badge}</span> : null}
+            {!liberado ? <span className="sidebar__badge">{planCatalog[requiredPlan].name}</span> : null}
           </a>
-        ))}
+          );
+        })}
       </nav>
     </aside>
   );

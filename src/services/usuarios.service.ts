@@ -47,7 +47,11 @@ export const atualizarUsuario = atualizarPerfil;
 
 export async function atualizarPlano(uid: string, plano: Usuario["plano"]): Promise<void> {
   try {
-    return atualizarDocumento<Usuario>(COLECAO, uid, { plano });
+    return atualizarDocumento<Usuario>(COLECAO, uid, {
+      plan: plano,
+      plano,
+      updatedAt: new Date(),
+    } as Partial<Usuario>);
   } catch (error) {
     console.error("Erro ao atualizar plano", error);
     throw error;

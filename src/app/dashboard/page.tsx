@@ -2,6 +2,7 @@
 
 import { ActionButton } from "../../components/dashboard/ActionButton";
 import { KpiCard } from "../../components/dashboard/KpiCard";
+import { PlanosDashboard } from "../../components/dashboard/PlanosDashboard";
 import { SmartCard } from "../../components/dashboard/SmartCard";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Section } from "../../components/ui/Section";
@@ -26,6 +27,8 @@ export default function DashboardPage() {
   return (
     <div className="dashboard-page">
       <Title eyebrow="Operacao em tempo real">Dashboard Premium 2026</Title>
+
+      <PlanosDashboard />
 
       <Section title="Indicadores">
         <div className="dashboard-kpi-grid">
