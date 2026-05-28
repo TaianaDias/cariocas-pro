@@ -6,7 +6,9 @@ import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
+import { useAuth } from "../../hooks/useAuth";
 import { criarPedido, listarPedidos } from "../../services/compras.service";
+import { getConfiguracao } from "../../services/configuracoes.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
 import { listarInsumos } from "../../services/estoque.service";
 import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
@@ -195,9 +197,9 @@ function getSuggestedPurchaseQuantity(insumo: Insumo) {
   const minimo = Number(insumo.estoqueMinimo) || 0;
   const padrao = Number(insumo.quantidadePadraoPedido) || 0;
 
-  if (padrao > 0) return padrao;
   if (maximo > atual) return Math.ceil(maximo - atual);
   if (minimo > atual) return Math.ceil(minimo - atual);
+  if (padrao > 0) return padrao;
   return 1;
 }
 
@@ -212,22 +214,33 @@ function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function buildPurchaseMessage(itens: PedidoCompra["itens"], valorTotal: number) {
+function getProfilePhone(profile: unknown) {
+  if (!profile || typeof profile !== "object") return "";
+  const data = profile as Record<string, unknown>;
+  return String(data.whatsapp || data.telefone || data.celular || data.numeroWhatsApp || "");
+}
+
+function buildPurchaseMessage(itens: PedidoCompra["itens"], valorTotal: number, origemCompra: "fornecedor" | "mercado") {
   const linhas = itens.length
     ? itens.map((item) => `- ${item.insumoNome}: ${item.quantidade} ${item.unidade}`).join("\n")
     : "- Pedido a combinar";
 
+  if (origemCompra === "mercado") {
+    return `Lista de compras para mercado:\n\n${linhas}\n\nTotal estimado: ${money(valorTotal)}\n\nLista automatica - Carioca's Pro.`;
+  }
+
   return `Ola! Gostaria de fazer um pedido:\n\n${linhas}\n\nTotal estimado: ${money(valorTotal)}\n\nPedido automatico - Carioca's Pro.`;
 }
 
-function buildWhatsAppLink(phone: string, itens: PedidoCompra["itens"], valorTotal: number) {
+function buildWhatsAppLink(phone: string, itens: PedidoCompra["itens"], valorTotal: number, origemCompra: "fornecedor" | "mercado") {
   const numero = onlyDigits(phone);
   if (!numero) return "";
   const numeroComPais = numero.startsWith("55") ? numero : `55${numero}`;
-  return `https://wa.me/${numeroComPais}?text=${encodeURIComponent(buildPurchaseMessage(itens, valorTotal))}`;
+  return `https://wa.me/${numeroComPais}?text=${encodeURIComponent(buildPurchaseMessage(itens, valorTotal, origemCompra))}`;
 }
 
 export function ComprasPageClient() {
+  const { user, userProfile } = useAuth();
   const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidos);
   const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumos);
   const { data: fornecedores, error: fornecedoresError, loading: fornecedoresLoading } = useAsyncData<Fornecedor>(listarFornecedores);
@@ -237,7 +250,9 @@ export function ComprasPageClient() {
   const [savingMercado, setSavingMercado] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [mercadoError, setMercadoError] = useState<string | null>(null);
+  const [adminWhatsapp, setAdminWhatsapp] = useState("");
   const [form, setForm] = useState({
+    adminWhatsapp: "",
     fornecedorId: "",
     fornecedorNome: "",
     fornecedorTelefone: "",
@@ -262,7 +277,36 @@ export function ComprasPageClient() {
   const contatoDestino =
     form.origemCompra === "fornecedor"
       ? selectedFornecedor?.telefone || form.fornecedorTelefone
-      : selectedMercado?.telefone || form.mercadoTelefone;
+      : form.adminWhatsapp || adminWhatsapp;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAdminWhatsapp() {
+      const profilePhone = getProfilePhone(userProfile);
+      let phone = profilePhone;
+
+      if (user?.uid) {
+        const configUsuario = await getConfiguracao(user.uid);
+        phone = configUsuario.numeroWhatsAppNotificacao || configUsuario.whatsapp || configUsuario.telefone || phone;
+      }
+
+      if (!phone) {
+        const configEstabelecimento = await getConfiguracao("estabelecimento");
+        phone = configEstabelecimento.numeroWhatsAppNotificacao || configEstabelecimento.whatsapp || configEstabelecimento.telefone || "";
+      }
+
+      if (!active) return;
+      setAdminWhatsapp(phone);
+      setForm((current) => (current.adminWhatsapp ? current : { ...current, adminWhatsapp: phone }));
+    }
+
+    loadAdminWhatsapp();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.uid, userProfile]);
 
   function setQuantidadeInsumo(insumo: Insumo, quantidade: number) {
     if (!insumo.id) return;
@@ -372,7 +416,7 @@ export function ComprasPageClient() {
     try {
       const itens = montarItensPedido();
       const valorTotal = valorTotalPedido(itens);
-      const linkDisparo = buildWhatsAppLink(contatoDestino, itens, valorTotal);
+      const linkDisparo = buildWhatsAppLink(contatoDestino, itens, valorTotal, form.origemCompra);
       const nomeDestino =
         form.origemCompra === "fornecedor"
           ? selectedFornecedor?.nome || form.fornecedorNome || "Fornecedor nao informado"
@@ -393,6 +437,7 @@ export function ComprasPageClient() {
         valorTotal,
       }, "admin");
       setForm({
+        adminWhatsapp,
         fornecedorId: "",
         fornecedorNome: "",
         fornecedorTelefone: "",
@@ -416,7 +461,7 @@ export function ComprasPageClient() {
 
   const previewItens = montarItensPedido();
   const previewTotal = valorTotalPedido(previewItens);
-  const previewLink = buildWhatsAppLink(contatoDestino, previewItens, previewTotal);
+  const previewLink = buildWhatsAppLink(contatoDestino, previewItens, previewTotal, form.origemCompra);
 
   return (
     <PageShell
@@ -446,7 +491,10 @@ export function ComprasPageClient() {
               <div className="operational-restock__item" key={insumo.id || insumo.nome}>
                 <div>
                   <strong>{insumo.nome}</strong>
-                  <span>Atual: {Number(insumo.quantidadeAtual) || 0} {insumo.unidadeMedida || insumo.unidadeCompra || "un"} | Minimo: {Number(insumo.estoqueMinimo) || 0}</span>
+                  <span>
+                    Atual: {Number(insumo.quantidadeAtual) || 0} {insumo.unidadeMedida || insumo.unidadeCompra || "un"} | Minimo: {Number(insumo.estoqueMinimo) || 0} | Maximo: {Number(insumo.estoqueMaximo) || 0}
+                  </span>
+                  <span>Sugestao de compra: {getSuggestedPurchaseQuantity(insumo)} {insumo.unidadeCompra || insumo.unidadeMedida || "un"}</span>
                 </div>
                 <button type="button" onClick={() => selecionarInsumo(insumo, true)}>Adicionar</button>
               </div>
@@ -528,6 +576,7 @@ export function ComprasPageClient() {
                 <Field label="Telefone/WhatsApp" value={novoMercado.telefone} onChange={(value) => setNovoMercado((current) => ({ ...current, telefone: value }))} />
                 <Field label="Endereco" value={novoMercado.endereco} onChange={(value) => setNovoMercado((current) => ({ ...current, endereco: value }))} />
               </div>
+              <Field label="WhatsApp do admin/dono para receber a lista" value={form.adminWhatsapp} onChange={(value) => setForm((current) => ({ ...current, adminWhatsapp: value }))} />
               <div className="operational-submit">
                 {mercadoError ? <span>{mercadoError}</span> : null}
                 <Button onClick={salvarMercado} disabled={savingMercado}>{savingMercado ? "Cadastrando..." : "Cadastrar mercado"}</Button>
@@ -555,7 +604,7 @@ export function ComprasPageClient() {
                     <div>
                       <strong>{insumo.nome}</strong>
                       <span>
-                        Estoque: {Number(insumo.quantidadeAtual) || 0} | Minimo: {Number(insumo.estoqueMinimo) || 0}
+                        Estoque: {Number(insumo.quantidadeAtual) || 0} | Minimo: {Number(insumo.estoqueMinimo) || 0} | Maximo: {Number(insumo.estoqueMaximo) || 0}
                         {isInsumoAbaixoMinimo(insumo) ? " | Repor agora" : ""}
                       </span>
                     </div>
@@ -580,10 +629,14 @@ export function ComprasPageClient() {
           </div>
           {previewLink ? (
             <a className="operational-link-button" href={previewLink} target="_blank" rel="noopener noreferrer">
-              Disparar pedido no WhatsApp
+              {form.origemCompra === "mercado" ? "Enviar lista para admin/dono" : "Disparar pedido no WhatsApp"}
             </a>
           ) : (
-            <span className="operational-link-hint">Informe um fornecedor ou mercado com telefone para liberar o disparo automatico.</span>
+            <span className="operational-link-hint">
+              {form.origemCompra === "mercado"
+                ? "Informe o WhatsApp do admin/dono para enviar a lista de mercado."
+                : "Informe um fornecedor com telefone para liberar o disparo automatico."}
+            </span>
           )}
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
