@@ -8,10 +8,11 @@ import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { criarPedido, listarPedidos } from "../../services/compras.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
+import { listarInsumos } from "../../services/estoque.service";
 import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
 import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
-import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, OrdemProducao, PedidoCompra } from "../../types";
+import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, OrdemProducao, PedidoCompra } from "../../types";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -162,30 +163,135 @@ function SubmitRow({ loading, onSubmit }: { loading: boolean; onSubmit: () => vo
   );
 }
 
+function getInsumoUnitCost(insumo: Insumo) {
+  return Number(insumo.custoCompra || insumo.custoUnitario || 0);
+}
+
+function getSuggestedPurchaseQuantity(insumo: Insumo) {
+  const atual = Number(insumo.quantidadeAtual) || 0;
+  const maximo = Number(insumo.estoqueMaximo) || 0;
+  const minimo = Number(insumo.estoqueMinimo) || 0;
+  const padrao = Number(insumo.quantidadePadraoPedido) || 0;
+
+  if (padrao > 0) return padrao;
+  if (maximo > atual) return Math.ceil(maximo - atual);
+  if (minimo > atual) return Math.ceil(minimo - atual);
+  return 1;
+}
+
+function isInsumoAbaixoMinimo(insumo: Insumo) {
+  const minimo = Number(insumo.estoqueMinimo) || 0;
+  const atual = Number(insumo.quantidadeAtual) || 0;
+
+  return minimo > 0 && atual <= minimo;
+}
+
 export function ComprasPageClient() {
   const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidos);
+  const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumos);
   const [formAberto, setFormAberto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ fornecedorNome: "", numero: "", valorTotal: 0 });
+  const [form, setForm] = useState({ fornecedorNome: "", numero: "", quantidades: {} as Record<string, number>, selectedIds: [] as string[], valorManual: 0 });
   const total = pedidos.reduce((acc, pedido) => acc + (pedido.valorTotal || 0), 0);
   const pendentes = pedidos.filter((pedido) => pedido.status !== "recebido").length;
+  const insumosAbaixoMinimo = insumos.filter(isInsumoAbaixoMinimo);
+  const selectedInsumos = form.selectedIds
+    .map((id) => insumos.find((insumo) => insumo.id === id))
+    .filter((insumo): insumo is Insumo => Boolean(insumo?.id));
+  const selectedTotal = selectedInsumos.reduce((acc, insumo) => {
+    const id = insumo.id || "";
+    const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
+    return acc + quantidade * getInsumoUnitCost(insumo);
+  }, 0);
+
+  function setQuantidadeInsumo(insumo: Insumo, quantidade: number) {
+    if (!insumo.id) return;
+    setForm((current) => ({
+      ...current,
+      quantidades: {
+        ...current.quantidades,
+        [insumo.id as string]: Math.max(Number(quantidade) || 0, 0),
+      },
+    }));
+  }
+
+  function selecionarInsumo(insumo: Insumo, abrirFormulario = false) {
+    if (!insumo.id) return;
+    setForm((current) => ({
+      ...current,
+      quantidades: {
+        ...current.quantidades,
+        [insumo.id as string]: current.quantidades[insumo.id as string] || getSuggestedPurchaseQuantity(insumo),
+      },
+      selectedIds: current.selectedIds.includes(insumo.id as string) ? current.selectedIds : [...current.selectedIds, insumo.id as string],
+    }));
+    if (abrirFormulario) setFormAberto(true);
+  }
+
+  function toggleInsumo(insumo: Insumo) {
+    if (!insumo.id) return;
+    setForm((current) => {
+      const exists = current.selectedIds.includes(insumo.id as string);
+      return {
+        ...current,
+        quantidades: exists
+          ? current.quantidades
+          : { ...current.quantidades, [insumo.id as string]: getSuggestedPurchaseQuantity(insumo) },
+        selectedIds: exists
+          ? current.selectedIds.filter((id) => id !== insumo.id)
+          : [...current.selectedIds, insumo.id as string],
+      };
+    });
+  }
+
+  function selecionarAbaixoMinimo() {
+    setForm((current) => {
+      const ids = new Set(current.selectedIds);
+      const quantidades = { ...current.quantidades };
+
+      for (const insumo of insumosAbaixoMinimo) {
+        if (!insumo.id) continue;
+        ids.add(insumo.id);
+        quantidades[insumo.id] = quantidades[insumo.id] || getSuggestedPurchaseQuantity(insumo);
+      }
+
+      return { ...current, quantidades, selectedIds: Array.from(ids) };
+    });
+    setFormAberto(true);
+  }
 
   async function salvar() {
     setSaving(true);
     setFormError(null);
     try {
+      const itens = selectedInsumos.map((insumo) => {
+        const id = insumo.id || "";
+        const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
+        const valorUnitario = getInsumoUnitCost(insumo);
+
+        return {
+          insumoId: id,
+          insumoNome: insumo.nome,
+          quantidade,
+          unidade: insumo.unidadeCompra || insumo.unidadeMedida || "un",
+          valorUnitario,
+          valorTotal: quantidade * valorUnitario,
+        };
+      });
+      const valorTotal = itens.reduce((acc, item) => acc + item.valorTotal, 0) + (Number(form.valorManual) || 0);
+
       await criarPedido({
         dataPedido: new Date(),
         fornecedorId: "",
         fornecedorNome: form.fornecedorNome || "Fornecedor nao informado",
-        itens: [],
+        itens,
         numero: form.numero || `PED-${Date.now()}`,
         observacoes: "",
         status: "pendente",
-        valorTotal: Number(form.valorTotal) || 0,
+        valorTotal,
       }, "admin");
-      setForm({ fornecedorNome: "", numero: "", valorTotal: 0 });
+      setForm({ fornecedorNome: "", numero: "", quantidades: {}, selectedIds: [], valorManual: 0 });
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -206,14 +312,84 @@ export function ComprasPageClient() {
         <Kpi label="Pedidos" value={String(pedidos.length)} />
         <Kpi label="Pendentes" value={String(pendentes)} />
         <Kpi label="Valor total" value={money(total)} />
+        <Kpi label="Reposicao" value={String(insumosAbaixoMinimo.length)} />
       </section>
+
+      {insumosAbaixoMinimo.length ? (
+        <Card className="operational-restock">
+          <header>
+            <div>
+              <strong>Lista de compras sugerida</strong>
+              <span>Insumos que chegaram ao estoque minimo aparecem aqui automaticamente.</span>
+            </div>
+            <Button onClick={selecionarAbaixoMinimo}>Comprar todos</Button>
+          </header>
+          <div className="operational-restock__grid">
+            {insumosAbaixoMinimo.map((insumo) => (
+              <div className="operational-restock__item" key={insumo.id || insumo.nome}>
+                <div>
+                  <strong>{insumo.nome}</strong>
+                  <span>Atual: {Number(insumo.quantidadeAtual) || 0} {insumo.unidadeMedida || insumo.unidadeCompra || "un"} | Minimo: {Number(insumo.estoqueMinimo) || 0}</span>
+                </div>
+                <button type="button" onClick={() => selecionarInsumo(insumo, true)}>Adicionar</button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
+      {insumosError ? <EmptyState title="Erro ao carregar insumos" description={insumosError} /> : null}
 
       {formAberto ? (
         <ActionPanel title="Novo pedido de compra" error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
             <Field label="Numero" value={form.numero} onChange={(value) => setForm((current) => ({ ...current, numero: value }))} />
             <Field label="Fornecedor" value={form.fornecedorNome} onChange={(value) => setForm((current) => ({ ...current, fornecedorNome: value }))} />
-            <Field label="Valor total" type="number" value={form.valorTotal} onChange={(value) => setForm((current) => ({ ...current, valorTotal: Number(value) }))} />
+            <Field label="Valor manual/extra" type="number" value={form.valorManual} onChange={(value) => setForm((current) => ({ ...current, valorManual: Number(value) }))} />
+          </div>
+          <div className="operational-buy-box">
+            <header>
+              <div>
+                <strong>Selecionar insumos do estoque</strong>
+                <span>Marque os itens que voce quer comprar. Os itens no minimo ja aparecem como sugestao.</span>
+              </div>
+              <Badge tone="neutral">{insumosLoading ? "carregando" : `${selectedInsumos.length} selecionados`}</Badge>
+            </header>
+            <div className="operational-buy-list">
+              {insumos.map((insumo) => {
+                const id = insumo.id || "";
+                const checked = form.selectedIds.includes(id);
+                const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
+                const unitCost = getInsumoUnitCost(insumo);
+
+                return (
+                  <label className="operational-buy-item" key={id || insumo.nome}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleInsumo(insumo)} />
+                    <div>
+                      <strong>{insumo.nome}</strong>
+                      <span>
+                        Estoque: {Number(insumo.quantidadeAtual) || 0} | Minimo: {Number(insumo.estoqueMinimo) || 0}
+                        {isInsumoAbaixoMinimo(insumo) ? " | Repor agora" : ""}
+                      </span>
+                    </div>
+                    <input
+                      aria-label={`Quantidade de ${insumo.nome}`}
+                      disabled={!checked}
+                      min="0"
+                      type="number"
+                      value={quantidade}
+                      onChange={(event) => setQuantidadeInsumo(insumo, Number(event.target.value))}
+                    />
+                    <b>{money(quantidade * unitCost)}</b>
+                  </label>
+                );
+              })}
+              {!insumosLoading && insumos.length === 0 ? <span className="operational-buy-empty">Nenhum insumo cadastrado no estoque.</span> : null}
+            </div>
+            <footer>
+              <span>Total estimado</span>
+              <strong>{money(selectedTotal + (Number(form.valorManual) || 0))}</strong>
+            </footer>
           </div>
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
@@ -234,6 +410,7 @@ export function ComprasPageClient() {
               <div>
                 <Badge tone={pedido.status === "recebido" ? "success" : "warning"}>{pedido.status || "pendente"}</Badge>
                 <b>{money(pedido.valorTotal)}</b>
+                <small>{pedido.itens?.length || 0} itens</small>
                 <small>{dateLabel(pedido.dataPedido)}</small>
               </div>
             </Card>
