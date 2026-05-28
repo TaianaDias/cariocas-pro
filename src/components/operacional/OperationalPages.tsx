@@ -7,7 +7,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { useAuth } from "../../hooks/useAuth";
-import { criarPedido, listarPedidos } from "../../services/compras.service";
+import { atualizarPedido, criarPedido, deletarPedido, listarPedidos } from "../../services/compras.service";
 import { getConfiguracao } from "../../services/configuracoes.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
 import { listarInsumos } from "../../services/estoque.service";
@@ -246,6 +246,7 @@ export function ComprasPageClient() {
   const { data: fornecedores, error: fornecedoresError, loading: fornecedoresLoading } = useAsyncData<Fornecedor>(listarFornecedores);
   const { data: mercados, error: mercadosError, loading: mercadosLoading, refetch: refetchMercados } = useAsyncData<Mercado>(listarMercados);
   const [formAberto, setFormAberto] = useState(false);
+  const [pedidoEditando, setPedidoEditando] = useState<PedidoCompra | null>(null);
   const [saving, setSaving] = useState(false);
   const [savingMercado, setSavingMercado] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -364,6 +365,69 @@ export function ComprasPageClient() {
     setFormAberto(true);
   }
 
+  function limparFormulario() {
+    setForm({
+      adminWhatsapp,
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedorTelefone: "",
+      mercadoId: "",
+      mercadoNome: "",
+      mercadoTelefone: "",
+      numero: "",
+      origemCompra: "fornecedor",
+      quantidades: {},
+      selectedIds: [],
+      valorManual: 0,
+    });
+    setPedidoEditando(null);
+  }
+
+  function abrirNovoPedido() {
+    limparFormulario();
+    setFormAberto(true);
+  }
+
+  function editarPedidoMercado(pedido: PedidoCompra) {
+    const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+    const quantidades = Object.fromEntries(itens.map((item) => [item.insumoId, item.quantidade]));
+    const totalItens = itens.reduce((acc, item) => acc + (Number(item.valorTotal) || 0), 0);
+
+    setPedidoEditando(pedido);
+    setForm({
+      adminWhatsapp,
+      fornecedorId: "",
+      fornecedorNome: "",
+      fornecedorTelefone: "",
+      mercadoId: pedido.mercadoId || "",
+      mercadoNome: pedido.mercadoNome || pedido.fornecedorNome || "",
+      mercadoTelefone: "",
+      numero: pedido.numero || "",
+      origemCompra: "mercado",
+      quantidades,
+      selectedIds: itens.map((item) => item.insumoId).filter(Boolean),
+      valorManual: Math.max((Number(pedido.valorTotal) || 0) - totalItens, 0),
+    });
+    setFormAberto(true);
+  }
+
+  async function excluirPedidoMercado(pedido: PedidoCompra) {
+    if (!pedido.id) return;
+    const confirmou = window.confirm(`Excluir a lista de mercado ${pedido.numero || ""}?`);
+    if (!confirmou) return;
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      await deletarPedido(pedido.id);
+      refetch();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function montarItensPedido() {
     return selectedInsumos.map((insumo) => {
       const id = insumo.id || "";
@@ -422,7 +486,7 @@ export function ComprasPageClient() {
           ? selectedFornecedor?.nome || form.fornecedorNome || "Fornecedor nao informado"
           : selectedMercado?.nome || form.mercadoNome || "Mercado nao informado";
 
-      await criarPedido({
+      const dadosPedido = {
         dataPedido: new Date(),
         fornecedorId: form.origemCompra === "fornecedor" ? form.fornecedorId : "",
         fornecedorNome: nomeDestino,
@@ -435,21 +499,14 @@ export function ComprasPageClient() {
         origemCompra: form.origemCompra,
         status: "pendente",
         valorTotal,
-      }, "admin");
-      setForm({
-        adminWhatsapp,
-        fornecedorId: "",
-        fornecedorNome: "",
-        fornecedorTelefone: "",
-        mercadoId: "",
-        mercadoNome: "",
-        mercadoTelefone: "",
-        numero: "",
-        origemCompra: "fornecedor",
-        quantidades: {},
-        selectedIds: [],
-        valorManual: 0,
-      });
+      };
+
+      if (pedidoEditando?.id) {
+        await atualizarPedido(pedidoEditando.id, dadosPedido);
+      } else {
+        await criarPedido(dadosPedido, "admin");
+      }
+      limparFormulario();
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -465,7 +522,7 @@ export function ComprasPageClient() {
 
   return (
     <PageShell
-      actions={<Button onClick={() => setFormAberto(true)}>Novo Pedido</Button>}
+      actions={<Button onClick={abrirNovoPedido}>Novo Pedido</Button>}
       eyebrow="Compras"
       subtitle="Acompanhe pedidos, fornecedores e entradas previstas."
       title="Compras"
@@ -508,7 +565,7 @@ export function ComprasPageClient() {
       {mercadosError ? <EmptyState title="Erro ao carregar mercados" description={mercadosError} /> : null}
 
       {formAberto ? (
-        <ActionPanel title="Novo pedido de compra" error={formError} onClose={() => setFormAberto(false)}>
+        <ActionPanel title={pedidoEditando ? "Editar lista de mercado" : "Novo pedido de compra"} error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-segmented" role="group" aria-label="Origem da compra">
             <button
               type="button"
@@ -644,7 +701,7 @@ export function ComprasPageClient() {
 
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar compras" description={error} /> : null}
       {!loading && !error && pedidos.length === 0 ? (
-        <EmptyState title="Nenhum pedido registrado" description="Os proximos pedidos de compra aparecerao aqui." action={<Button onClick={() => setFormAberto(true)}>Novo Pedido</Button>} />
+        <EmptyState title="Nenhum pedido registrado" description="Os proximos pedidos de compra aparecerao aqui." action={<Button onClick={abrirNovoPedido}>Novo Pedido</Button>} />
       ) : null}
       {!loading && pedidos.length ? (
         <section className="operational-list">
@@ -660,6 +717,12 @@ export function ComprasPageClient() {
                 <small>{pedido.origemCompra === "mercado" ? "Mercado" : "Fornecedor"}</small>
                 <small>{pedido.itens?.length || 0} itens</small>
                 {pedido.linkDisparo ? <a href={pedido.linkDisparo} target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
+                {pedido.origemCompra === "mercado" ? (
+                  <div className="operational-row__actions">
+                    <button type="button" onClick={() => editarPedidoMercado(pedido)}>Editar</button>
+                    <button type="button" onClick={() => excluirPedidoMercado(pedido)}>Excluir</button>
+                  </div>
+                ) : null}
                 <small>{dateLabel(pedido.dataPedido)}</small>
               </div>
             </Card>

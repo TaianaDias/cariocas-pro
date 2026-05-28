@@ -356,6 +356,29 @@
   text-underline-offset: 3px;
 }
 
+.operational-row__actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2) !important;
+}
+
+.operational-row__actions button {
+  min-height: 32px;
+  border: 1px solid rgba(229, 231, 235, 0.1);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.045);
+  color: #ffffff;
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  padding: 7px 10px;
+}
+
+.operational-row__actions button:last-child {
+  border-color: rgba(212, 32, 32, 0.34);
+  background: rgba(212, 32, 32, 0.12);
+}
+
 .operational-row--loading {
   overflow: hidden;
 }
@@ -448,6 +471,10 @@
   .operational-row > div:last-child {
     justify-items: start;
     text-align: left;
+  }
+
+  .operational-row__actions {
+    justify-content: flex-start;
   }
 
   .operational-row--loading div:last-child {
