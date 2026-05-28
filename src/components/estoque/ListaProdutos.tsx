@@ -30,6 +30,10 @@ function getIniciais(nome: string) {
     .join("");
 }
 
+function getImagemProduto(insumo: Insumo) {
+  return insumo.imagemUrl || insumo.imagemPrincipal || insumo.imagemUploadUrl || insumo.imagemCosmosUrl || "";
+}
+
 export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps) {
   return (
     <section className="estoque-panel lista-produtos">
@@ -57,11 +61,12 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
         {insumos.map((insumo) => {
           const status = getStatus(insumo);
           const percentual = getPercentualEstoque(insumo);
+          const imagem = getImagemProduto(insumo);
 
           return (
           <article className="produto-card" key={insumo.id ?? insumo.sku} onClick={() => insumo.id && onSelect(insumo.id)}>
             <div className="produto-card__top">
-              <span className="produto-avatar">{insumo.imagemUrl ? "" : getIniciais(insumo.nome)}</span>
+              <span className="produto-avatar">{imagem ? <img alt={insumo.nome} src={imagem} /> : getIniciais(insumo.nome)}</span>
               <div>
                 <span>{insumo.categoriaId || "Sem categoria"}</span>
                 <h3>{insumo.nome}</h3>

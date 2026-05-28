@@ -87,6 +87,7 @@ export default function EstoquePage() {
     async (dados: {
       custoTotal?: number;
       fornecedorId?: string;
+      imagemUrl?: string;
       insumoId: string;
       insumoNome: string;
       observacao?: string;

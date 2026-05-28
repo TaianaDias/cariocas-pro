@@ -600,6 +600,13 @@
   background: rgba(212, 32, 32, 0.12);
   color: #ffffff !important;
   font-size: var(--font-size-xs);
+  overflow: hidden;
+}
+
+.produto-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .produto-card small {

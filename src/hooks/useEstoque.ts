@@ -18,6 +18,7 @@ export interface EstoqueKpis {
 type MovimentoInput = {
   custoTotal?: number;
   fornecedorId?: string;
+  imagemUrl?: string;
   insumoId: string;
   insumoNome: string;
   observacao?: string;
@@ -219,10 +220,12 @@ export function useEstoque() {
       }
 
       const batch = writeBatch(db);
+      const imagemAtual = insumoAtual.imagemUrl || insumoAtual.imagemPrincipal || insumoAtual.imagemUploadUrl || insumoAtual.imagemCosmosUrl || "";
       batch.update(doc(db, "insumos", dados.insumoId), {
         atualizadoEm: serverTimestamp(),
         custoAnterior: insumoAtual.custoCompra,
         custoCompra: novoCusto,
+        ...(!imagemAtual && dados.imagemUrl ? { imagemPrincipal: dados.imagemUrl, imagemUrl: dados.imagemUrl } : {}),
         quantidadeAtual: novaQuantidade,
       });
       batch.set(doc(collection(db, "historico")), {

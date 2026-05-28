@@ -29,12 +29,16 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
     try {
       const local = await buscarPorCodigo(codigo);
       if (local) {
+        const imagemLocal = local.imagemUrl || local.imagemPrincipal || local.imagemUploadUrl || local.imagemCosmosUrl || "";
+        const externo = imagemLocal ? null : await buscarExterno(codigo);
+        const imagem = imagemLocal || externo?.imagemUrl || "";
+
         onChange({
           categoriaId: produto.categoriaId || local.categoriaId || "",
           codigoBarras: local.codigoBarras || codigo,
           codigoInterno: produto.codigoInterno || local.codigoInterno || "",
-          imagemPrincipal: produto.imagemPrincipal || local.imagemPrincipal || local.imagemUrl || "",
-          imagemUrl: produto.imagemUrl || local.imagemUrl || local.imagemPrincipal || "",
+          imagemPrincipal: produto.imagemPrincipal || imagem,
+          imagemUrl: produto.imagemUrl || imagem,
           marca: produto.marca || local.marca || "",
           nome: produto.nome || local.nome || "",
           sku: produto.sku || local.sku || "",

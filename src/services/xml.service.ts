@@ -31,6 +31,20 @@ function normalizarCodigo(value: string) {
   return value.trim() || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function normalizarCodigoProduto(produto: Element) {
+  const candidatos = [
+    tagText(produto, "cEAN"),
+    tagText(produto, "cEANTrib"),
+    tagText(produto, "cProd"),
+  ];
+  const codigo = candidatos.find((item) => {
+    const normalizado = item.trim().toUpperCase();
+    return normalizado && normalizado !== "SEM GTIN" && normalizado !== "SEMGTIN";
+  });
+
+  return normalizarCodigo(codigo || "");
+}
+
 export function parseNfeXml(xmlText: string): XmlNfeParseResult {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlText, "application/xml");
@@ -54,7 +68,7 @@ export function parseNfeXml(xmlText: string): XmlNfeParseResult {
       const valorUnitario = xmlNumber(tagText(produto, "vUnCom") || tagText(produto, "vUnTrib")) || (quantidade > 0 ? valorTotal / quantidade : 0);
 
       return {
-        codigo: normalizarCodigo(tagText(produto, "cProd") || tagText(produto, "cEAN")),
+        codigo: normalizarCodigoProduto(produto),
         ncm: tagText(produto, "NCM"),
         nome: tagText(produto, "xProd"),
         quantidade,
@@ -138,12 +152,16 @@ export async function processarLoteXml(
         const novoCusto = novaQuantidade > 0
           ? Math.round(((quantidadeAtual * custoAtual + item.valorTotal) / novaQuantidade) * 100) / 100
           : item.valorUnitario;
+        const imagemAtual = produto.imagemUrl || produto.imagemPrincipal || produto.imagemUploadUrl || produto.imagemCosmosUrl || "";
+        const produtoExterno = imagemAtual ? null : await buscarExterno(item.codigo);
+        const imagemUrl = produtoExterno?.imagemUrl || "";
 
         await atualizarDocumento<Insumo>("insumos", produtoExistenteId, {
           custoAnterior: custoAtual,
           custoCompra: novoCusto,
           custoUnitario: novoCusto,
           fornecedorPrincipal: contexto?.fornecedorNome || produto.fornecedorPrincipal,
+          ...(imagemUrl ? { imagemPrincipal: imagemUrl, imagemUrl } : {}),
           quantidadeAtual: novaQuantidade,
         });
 

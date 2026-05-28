@@ -12,6 +12,7 @@ import { TextInput } from "../ui/TextInput";
 type MovimentoRapido = {
   custoTotal?: number;
   fornecedorId?: string;
+  imagemUrl?: string;
   insumoId: string;
   insumoNome: string;
   observacao?: string;
@@ -69,7 +70,13 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     const local = await buscarPorCodigo(codigo);
     if (local) {
       setProduto(local);
-      setImagemExterna(local.imagemUrl || local.imagemPrincipal || "");
+      const imagemLocal = local.imagemUrl || local.imagemPrincipal || local.imagemUploadUrl || local.imagemCosmosUrl || "";
+      if (imagemLocal) {
+        setImagemExterna(imagemLocal);
+      } else {
+        const externo = await buscarExterno(codigo);
+        setImagemExterna(externo?.imagemUrl || "");
+      }
       setMarcaExterna("");
       setProdutoNome(local.nome);
       setFeedback("Produto localizado no estoque.");
@@ -112,6 +119,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     onRegistrar({
       custoTotal: tipo === "entrada" ? custoTotal : undefined,
       fornecedorId: produto.fornecedorPrincipal,
+      imagemUrl: imagemExterna,
       insumoId: produto.id,
       insumoNome: produto.nome,
       observacao: `Movimento rapido em ${unidade}`,

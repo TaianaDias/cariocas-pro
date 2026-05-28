@@ -21,6 +21,10 @@ function getStatus(insumo: Insumo) {
   return "success";
 }
 
+function getImagemProduto(insumo: Insumo) {
+  return insumo.imagemUrl || insumo.imagemPrincipal || insumo.imagemUploadUrl || insumo.imagemCosmosUrl || "";
+}
+
 export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, onSaida }: ListaProdutosCardsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -45,7 +49,7 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
                 width: 56,
               }}
             >
-              {insumo.imagemUrl ? <img alt={insumo.nome} src={insumo.imagemUrl} style={{ height: "100%", objectFit: "cover", width: "100%" }} /> : insumo.nome?.charAt(0)}
+              {getImagemProduto(insumo) ? <img alt={insumo.nome} src={getImagemProduto(insumo)} style={{ height: "100%", objectFit: "cover", width: "100%" }} /> : insumo.nome?.charAt(0)}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <strong>{insumo.nome}</strong>
