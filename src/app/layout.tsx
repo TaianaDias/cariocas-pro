@@ -12,6 +12,7 @@ import "../styles/precificacao.css";
 import "../styles/operacional.css";
 import "../styles/carioquinha.css";
 import "../styles/auth.css";
+import "../styles/auditoria.css";
 
 import { AppShell } from "../components/layout/AppShell";
 import { AuthProvider } from "../contexts/AuthContext";

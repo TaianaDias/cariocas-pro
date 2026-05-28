@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const publicRoutes = ["/", "/login", "/cadastro", "/planos"];
+const publicRoutes = ["/", "/login", "/cadastro", "/planos", "/auditoria"];
 
 const planOrder: Record<string, number> = {
   free: 0,
@@ -77,6 +77,7 @@ export const config = {
     "/",
     "/login",
     "/cadastro",
+    "/auditoria/:path*",
     "/dashboard/:path*",
     "/estoque/:path*",
     "/compras/:path*",
