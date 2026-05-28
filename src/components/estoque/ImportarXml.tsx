@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 
-import { processarLoteXml } from "../../services/xml.service";
+import { useAuth } from "../../hooks/useAuth";
+import { importarArquivoXml, parseNfeXml } from "../../services/xml.service";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import type { XmlItem } from "../../types";
 
 type ImportarXmlProps = {
   onFechar?: () => void;
@@ -13,22 +15,54 @@ type ImportarXmlProps = {
 };
 
 export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlProps) {
+  const { user, userProfile } = useAuth();
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [itensPreview, setItensPreview] = useState<XmlItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  async function handleSelecionarArquivo(file: File | null) {
+    setArquivo(file);
+    setResultado(null);
+    setErro(null);
+    setItensPreview([]);
+
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parseado = parseNfeXml(text);
+      setItensPreview(parseado.itens);
+      setResultado(`${parseado.itens.length} itens encontrados de ${parseado.fornecedorNome}.`);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Nao foi possivel ler o XML.");
+    }
+  }
 
   async function handleProcessar() {
     if (!arquivo || loading) return;
     setLoading(true);
+    setErro(null);
 
     try {
-      const processado = await processarLoteXml([], "", arquivo.name);
-      const mensagem = `${processado.criados} criados, ${processado.vinculados} vinculados, ${processado.erros.length} erros`;
+      if (!user) {
+        throw new Error("Entre na conta para importar a nota fiscal.");
+      }
+
+      const text = await arquivo.text();
+      const processado = await importarArquivoXml(text, {
+        arquivoNome: arquivo.name,
+        empresaId: userProfile?.empresaId || user.uid,
+        lojaId: userProfile?.lojaId || "matriz",
+        uid: user.uid,
+      });
+      const mensagem = `${processado.totalItens} itens lidos, ${processado.criados} criados, ${processado.vinculados} atualizados, ${processado.erros.length} erros`;
       setResultado(mensagem);
       onImportar?.({ arquivoNome: arquivo.name, resultado: processado });
-      onFinalizar?.();
-    } catch {
-      setResultado("Nao foi possivel processar o XML.");
+      setTimeout(() => onFinalizar?.(), 900);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Nao foi possivel processar o XML.");
     } finally {
       setLoading(false);
     }
@@ -52,7 +86,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       <label className="xml-dropzone">
         <strong>Selecione o XML da nota fiscal</strong>
         <span>O processamento cria ou vincula insumos e prepara entradas no historico.</span>
-        <input type="file" accept=".xml" onChange={(event) => setArquivo(event.target.files?.[0] ?? null)} />
+        <input type="file" accept=".xml,text/xml,application/xml" onChange={(event) => handleSelecionarArquivo(event.target.files?.[0] ?? null)} />
       </label>
 
       <div className="xml-summary">
@@ -60,6 +94,23 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         <article><span>Status</span><strong>{resultado ? "Finalizado" : "Aguardando"}</strong></article>
         <article><span>Resultado</span><strong>{resultado || "-"}</strong></article>
       </div>
+
+      {erro ? <p className="estoque-feedback">{erro}</p> : null}
+
+      {itensPreview.length ? (
+        <div className="xml-preview">
+          <strong>Itens encontrados</strong>
+          <div>
+            {itensPreview.slice(0, 8).map((item) => (
+              <article key={`${item.codigo}-${item.nome}`}>
+                <span>{item.nome}</span>
+                <small>{item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)}</small>
+              </article>
+            ))}
+          </div>
+          {itensPreview.length > 8 ? <small>+ {itensPreview.length - 8} itens na nota</small> : null}
+        </div>
+      ) : null}
     </Card>
   );
 }

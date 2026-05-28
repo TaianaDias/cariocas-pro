@@ -1,7 +1,79 @@
 import type { Insumo, XmlImport, XmlItem } from "../types";
-import { consultar, criarDocumento, obterDocumento } from "./db";
+import { atualizarDocumento, consultar, criarDocumento, obterDocumento } from "./db";
 
 const COLECAO = "importacoes_xml";
+
+type XmlProcessItem = XmlItem & { acao: "criar" | "vincular" };
+
+type ImportarArquivoXmlOptions = {
+  arquivoNome: string;
+  empresaId?: string;
+  lojaId?: string;
+  uid: string;
+};
+
+type XmlNfeParseResult = {
+  fornecedorCnpj: string;
+  fornecedorNome: string;
+  itens: XmlItem[];
+};
+
+function tagText(parent: Element | Document, tagName: string) {
+  return parent.getElementsByTagName(tagName)[0]?.textContent?.trim() || "";
+}
+
+function xmlNumber(value: string) {
+  return Number(value.replace(",", ".")) || 0;
+}
+
+function normalizarCodigo(value: string) {
+  return value.trim() || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function parseNfeXml(xmlText: string): XmlNfeParseResult {
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+  const parserError = xml.getElementsByTagName("parsererror")[0];
+
+  if (parserError) {
+    throw new Error("XML invalido. Confira se o arquivo selecionado e uma NF-e em XML.");
+  }
+
+  const emitente = xml.getElementsByTagName("emit")[0];
+  const fornecedorNome = emitente ? tagText(emitente, "xNome") : "";
+  const fornecedorCnpj = emitente ? tagText(emitente, "CNPJ") || tagText(emitente, "CPF") : "";
+  const detalhes = Array.from(xml.getElementsByTagName("det"));
+
+  const itens = detalhes
+    .map((detalhe) => detalhe.getElementsByTagName("prod")[0])
+    .filter(Boolean)
+    .map((produto) => {
+      const quantidade = xmlNumber(tagText(produto, "qCom") || tagText(produto, "qTrib"));
+      const valorTotal = xmlNumber(tagText(produto, "vProd"));
+      const valorUnitario = xmlNumber(tagText(produto, "vUnCom") || tagText(produto, "vUnTrib")) || (quantidade > 0 ? valorTotal / quantidade : 0);
+
+      return {
+        codigo: normalizarCodigo(tagText(produto, "cProd") || tagText(produto, "cEAN")),
+        ncm: tagText(produto, "NCM"),
+        nome: tagText(produto, "xProd"),
+        quantidade,
+        unidade: tagText(produto, "uCom") || tagText(produto, "uTrib") || "un",
+        valorTotal,
+        valorUnitario,
+      };
+    })
+    .filter((item) => item.nome && item.quantidade > 0);
+
+  if (!itens.length) {
+    throw new Error("Nenhum item de produto foi encontrado no XML da nota.");
+  }
+
+  return {
+    fornecedorCnpj,
+    fornecedorNome: fornecedorNome || "Fornecedor XML",
+    itens,
+  };
+}
 
 export async function criarImportacao(dados: Omit<XmlImport, "id" | "criadoEm">, uid: string): Promise<string> {
   try {
@@ -37,9 +109,10 @@ export async function getImportacao(id: string): Promise<XmlImport | null> {
 export const buscarXmlImport = getImportacao;
 
 export async function processarLoteXml(
-  itens: (XmlItem & { acao: "criar" | "vincular" })[],
+  itens: XmlProcessItem[],
   uid: string,
   importacaoId: string,
+  contexto?: { empresaId?: string; fornecedorCnpj?: string; fornecedorNome?: string; lojaId?: string },
 ): Promise<{ criados: number; vinculados: number; erros: string[] }> {
   const erros: string[] = [];
   let criados = 0;
@@ -47,15 +120,60 @@ export async function processarLoteXml(
 
   for (const item of itens) {
     try {
-      if (item.acao === "criar") {
-        const novoInsumo: Omit<Insumo, "id" | "criadoEm" | "atualizadoEm"> = {
+      const existentes = item.produtoExistenteId
+        ? []
+        : await consultar<Insumo>("insumos", [{ campo: "codigoBarras", operador: "==" as const, valor: item.codigo }], undefined, 1);
+      const produtoExistenteId = item.produtoExistenteId || existentes[0]?.id;
+
+      if (item.acao === "vincular" || produtoExistenteId) {
+        const produto = produtoExistenteId ? await obterDocumento<Insumo>("insumos", produtoExistenteId) : null;
+        if (!produto || !produtoExistenteId) {
+          throw new Error("Produto existente nao encontrado para vinculo.");
+        }
+
+        const quantidadeAtual = Number(produto.quantidadeAtual) || 0;
+        const custoAtual = Number(produto.custoCompra) || 0;
+        const novaQuantidade = quantidadeAtual + item.quantidade;
+        const novoCusto = novaQuantidade > 0
+          ? Math.round(((quantidadeAtual * custoAtual + item.valorTotal) / novaQuantidade) * 100) / 100
+          : item.valorUnitario;
+
+        await atualizarDocumento<Insumo>("insumos", produtoExistenteId, {
+          custoAnterior: custoAtual,
+          custoCompra: novoCusto,
+          custoUnitario: novoCusto,
+          fornecedorPrincipal: contexto?.fornecedorNome || produto.fornecedorPrincipal,
+          quantidadeAtual: novaQuantidade,
+        });
+
+        await criarDocumento("historico", {
+          custoTotal: item.valorTotal,
+          custoUnitario: item.valorUnitario,
+          fornecedorId: contexto?.fornecedorCnpj || "",
+          insumoId: produtoExistenteId,
+          insumoNome: produto.nome,
+          observacao: `Entrada por XML - ${importacaoId}`,
+          quantidade: item.quantidade,
+          responsavel: uid,
+          tipo: "xml",
+          unidade: item.unidade,
+          xmlId: importacaoId,
+        });
+
+        vinculados++;
+      } else if (item.acao === "criar") {
+        const novoInsumo = {
           nome: item.nome,
           sku: `XML-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          marca: "",
+          marca: contexto?.fornecedorNome || "",
           categoriaId: "",
           codigoBarras: item.codigo,
+          codigoBarrasNormalizado: item.codigo.replace(/\D/g, ""),
+          cmv: 0,
+          custoUnitario: item.valorUnitario,
           status: "ativo",
-          quantidadeAtual: 0,
+          statusProduto: "ativo",
+          quantidadeAtual: item.quantidade,
           estoqueMinimo: 0,
           estoqueMaximo: 0,
           localArmazenamento: "",
@@ -78,14 +196,28 @@ export async function processarLoteXml(
           tipoEtiqueta: "",
           precosVenda: [],
           margemEstimada: 0,
-          cmv: 0,
+          nomeNormalizado: item.nome.toLowerCase(),
+          origemCadastro: "xml",
           createdBy: uid,
+          empresaId: contexto?.empresaId,
+          lojaId: contexto?.lojaId,
         };
 
-        await criarDocumento("insumos", novoInsumo);
+        const insumoId = await criarDocumento("insumos", novoInsumo);
+        await criarDocumento("historico", {
+          custoTotal: item.valorTotal,
+          custoUnitario: item.valorUnitario,
+          fornecedorId: contexto?.fornecedorCnpj || "",
+          insumoId,
+          insumoNome: item.nome,
+          observacao: `Criado por XML - ${importacaoId}`,
+          quantidade: item.quantidade,
+          responsavel: uid,
+          tipo: "xml",
+          unidade: item.unidade,
+          xmlId: importacaoId,
+        });
         criados++;
-      } else if (item.acao === "vincular" && item.produtoExistenteId) {
-        vinculados++;
       }
     } catch (error) {
       erros.push(`Erro ao processar ${item.nome}: ${error}`);
@@ -93,4 +225,45 @@ export async function processarLoteXml(
   }
 
   return { criados, vinculados, erros };
+}
+
+export async function importarArquivoXml(xmlText: string, options: ImportarArquivoXmlOptions) {
+  const parseado = parseNfeXml(xmlText);
+  const itensProcessamento = parseado.itens.map((item) => ({ ...item, acao: "criar" as const }));
+
+  const importacaoId = await criarImportacao(
+    {
+      arquivoNome: options.arquivoNome,
+      createdBy: options.uid,
+      fornecedorCnpj: parseado.fornecedorCnpj,
+      fornecedorNome: parseado.fornecedorNome,
+      itens: parseado.itens,
+      itensCriados: 0,
+      itensVinculados: 0,
+      totalItens: parseado.itens.length,
+    },
+    options.uid,
+  );
+
+  const resultado = await processarLoteXml(itensProcessamento, options.uid, importacaoId, {
+    empresaId: options.empresaId,
+    fornecedorCnpj: parseado.fornecedorCnpj,
+    fornecedorNome: parseado.fornecedorNome,
+    lojaId: options.lojaId,
+  });
+
+  await atualizarDocumento<XmlImport>(COLECAO, importacaoId, {
+    itensCriados: resultado.criados,
+    itensVinculados: resultado.vinculados,
+  });
+
+  return {
+    ...resultado,
+    arquivoNome: options.arquivoNome,
+    fornecedorCnpj: parseado.fornecedorCnpj,
+    fornecedorNome: parseado.fornecedorNome,
+    importacaoId,
+    itens: parseado.itens,
+    totalItens: parseado.itens.length,
+  };
 }
