@@ -339,6 +339,9 @@ export interface ProducaoPorcao {
   insumoNome: string;
   quantidadeBaixada: number;
   unidade: string;
+  formatoPorcao?: string;
+  quantidadePorPorcao?: number;
+  unidadePorcao?: string;
   porcoesGeradas: number;
   porcoesDisponiveis: number;
   area: string;

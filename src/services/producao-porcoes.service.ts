@@ -8,12 +8,16 @@ const COLECAO_INSUMOS = "insumos";
 
 type SaidaParaProducaoInput = {
   area?: string;
+  formatoPorcao?: string;
+  insumoId?: string;
   insumoNome: string;
   observacao?: string;
   porcoes: number;
+  quantidadePorPorcao?: number;
   quantidade: number;
   responsavel: string;
   unidade: string;
+  unidadePorcao?: string;
 };
 
 function normalizar(texto: string) {
@@ -54,7 +58,7 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
     if (input.quantidade <= 0) throw new Error("A quantidade precisa ser maior que zero.");
     if (input.porcoes <= 0) throw new Error("A quantidade de porcoes precisa ser maior que zero.");
 
-    const insumo = await buscarInsumoPorNome(input.insumoNome);
+    const insumo = input.insumoId ? await obterDocumento<Insumo>(COLECAO_INSUMOS, input.insumoId) : await buscarInsumoPorNome(input.insumoNome);
     if (!insumo?.id) {
       throw new Error(`Nao encontrei o insumo "${input.insumoNome}" no estoque.`);
     }
@@ -80,6 +84,9 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
       insumoNome: insumo.nome,
       quantidadeBaixada: quantidadeBaixa,
       unidade: insumo.unidadeMedida,
+      formatoPorcao: input.formatoPorcao || "porcao",
+      quantidadePorPorcao: input.quantidadePorPorcao || (input.porcoes > 0 ? quantidadeBaixa / input.porcoes : 0),
+      unidadePorcao: input.unidadePorcao || insumo.unidadeMedida,
       porcoesGeradas: input.porcoes,
       porcoesDisponiveis: input.porcoes,
       area: input.area || "producao",

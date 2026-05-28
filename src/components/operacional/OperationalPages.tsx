@@ -14,8 +14,9 @@ import { listarInsumos } from "../../services/estoque.service";
 import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
 import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarMercado, listarMercados } from "../../services/mercados.service";
+import { listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
-import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra } from "../../types";
+import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra, ProducaoPorcao } from "../../types";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -962,13 +963,32 @@ export function FuncionariosPageClient() {
 export function ProducaoPageClient() {
   const { data: fichas, error: fichasError, loading: fichasLoading, refetch: refetchFichas } = useAsyncData<FichaTecnica>(listarFichasTecnicas);
   const { data: ordens, error: ordensError, loading: ordensLoading } = useAsyncData<OrdemProducao>(listarOrdensProducao);
+  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumos);
+  const { data: porcoes, error: porcoesError, loading: porcoesLoading, refetch: refetchPorcoes } = useAsyncData<ProducaoPorcao>(listarPorcoesDisponiveis);
   const [formAberto, setFormAberto] = useState(false);
+  const [porcaoAberta, setPorcaoAberta] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingPorcao, setSavingPorcao] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ custoTotal: 0, nome: "", rendimento: 1, unidade: "un" });
+  const [porcaoForm, setPorcaoForm] = useState({
+    area: "producao",
+    formatoPorcao: "pacote",
+    insumoId: "",
+    porcoes: 1,
+    quantidade: 1,
+    quantidadePorPorcao: 1,
+  });
   const custoFichas = fichas.reduce((acc, item) => acc + (item.custoTotal || 0), 0);
-  const loading = fichasLoading || ordensLoading;
-  const error = fichasError || ordensError;
+  const loading = fichasLoading || ordensLoading || insumosLoading || porcoesLoading;
+  const error = fichasError || ordensError || insumosError || porcoesError;
+  const insumoSelecionado = insumos.find((item) => item.id === porcaoForm.insumoId);
+  const porcoesPorInsumo = porcoes.reduce<Record<string, number>>((acc, item) => {
+    acc[item.insumoId] = (acc[item.insumoId] || 0) + (Number(item.porcoesDisponiveis) || 0);
+    return acc;
+  }, {});
+  const itensDisponiveisProducao = insumos.filter((item) => (Number(item.quantidadeAtual) || 0) > 0);
+  const totalPorcoes = porcoes.reduce((acc, item) => acc + (Number(item.porcoesDisponiveis) || 0), 0);
 
   async function salvar() {
     setSaving(true);
@@ -995,13 +1015,97 @@ export function ProducaoPageClient() {
     }
   }
 
+  async function salvarPorcao() {
+    if (!insumoSelecionado?.id) {
+      setFormError("Selecione um item do estoque.");
+      return;
+    }
+
+    setSavingPorcao(true);
+    setFormError(null);
+    try {
+      await registrarSaidaParaProducao({
+        area: porcaoForm.area,
+        formatoPorcao: porcaoForm.formatoPorcao,
+        insumoId: insumoSelecionado.id,
+        insumoNome: insumoSelecionado.nome,
+        observacao: `Porcionado em formato ${porcaoForm.formatoPorcao}`,
+        porcoes: Number(porcaoForm.porcoes) || 1,
+        quantidade: Number(porcaoForm.quantidade) || 1,
+        quantidadePorPorcao: Number(porcaoForm.quantidadePorPorcao) || 0,
+        responsavel: "admin",
+        unidade: insumoSelecionado.unidadeMedida || "un",
+        unidadePorcao: insumoSelecionado.unidadeMedida || "un",
+      });
+      setPorcaoForm({ area: "producao", formatoPorcao: "pacote", insumoId: "", porcoes: 1, quantidade: 1, quantidadePorPorcao: 1 });
+      setPorcaoAberta(false);
+      refetchPorcoes();
+      refetchInsumos();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel gerar porcoes.");
+    } finally {
+      setSavingPorcao(false);
+    }
+  }
+
   return (
-    <PageShell actions={<Button onClick={() => setFormAberto(true)}>Nova Ficha</Button>} eyebrow="Producao" subtitle="Fichas tecnicas, ordens de producao e porcoes." title="Producao">
+    <PageShell
+      actions={
+        <>
+          <Button onClick={() => setPorcaoAberta(true)}>Porcionar Estoque</Button>
+          <Button onClick={() => setFormAberto(true)}>Nova Ficha</Button>
+        </>
+      }
+      eyebrow="Producao"
+      subtitle="Transforme itens do estoque em porcoes operacionais e acompanhe saldos por formato."
+      title="Producao"
+    >
       <section className="operational-kpis">
         <Kpi label="Fichas tecnicas" value={String(fichas.length)} />
-        <Kpi label="Ordens" value={String(ordens.length)} />
+        <Kpi label="Itens disponiveis" value={String(itensDisponiveisProducao.length)} />
+        <Kpi label="Porcoes prontas" value={String(totalPorcoes)} />
         <Kpi label="Custo fichas" value={money(custoFichas)} />
       </section>
+
+      {porcaoAberta ? (
+        <ActionPanel title="Porcionar item do estoque" error={formError} onClose={() => setPorcaoAberta(false)}>
+          <div className="operational-form-grid">
+            <SelectField label="Item em estoque" value={porcaoForm.insumoId} onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoId: value }))}>
+              <option value="">Selecione o item</option>
+              {itensDisponiveisProducao.map((insumo) => (
+                <option key={insumo.id || insumo.nome} value={insumo.id || ""}>
+                  {insumo.nome} - {insumo.quantidadeAtual} {insumo.unidadeMedida}
+                </option>
+              ))}
+            </SelectField>
+            <Field label="Quantidade a baixar" type="number" value={porcaoForm.quantidade} onChange={(value) => setPorcaoForm((current) => ({ ...current, quantidade: Number(value) }))} />
+            <Field label="Quantidade de porcoes" type="number" value={porcaoForm.porcoes} onChange={(value) => setPorcaoForm((current) => ({ ...current, porcoes: Number(value) }))} />
+            <SelectField label="Formato" value={porcaoForm.formatoPorcao} onChange={(value) => setPorcaoForm((current) => ({ ...current, formatoPorcao: value }))}>
+              <option value="pacote">Pacote</option>
+              <option value="bisnaga">Bisnaga</option>
+              <option value="pote">Pote</option>
+              <option value="saco">Saco</option>
+              <option value="unidade">Unidade</option>
+            </SelectField>
+            <Field label="Qtd por porcao" type="number" value={porcaoForm.quantidadePorPorcao} onChange={(value) => setPorcaoForm((current) => ({ ...current, quantidadePorPorcao: Number(value) }))} />
+            <Field label="Area" value={porcaoForm.area} onChange={(value) => setPorcaoForm((current) => ({ ...current, area: value }))} />
+          </div>
+          {insumoSelecionado ? (
+            <Card className="operational-row">
+              <div>
+                <strong>{insumoSelecionado.nome}</strong>
+                <span>Estoque atual: {insumoSelecionado.quantidadeAtual} {insumoSelecionado.unidadeMedida} | Porcionado: {porcoesPorInsumo[insumoSelecionado.id || ""] || 0} porcoes</span>
+              </div>
+              <div>
+                <Badge tone="warning">{porcaoForm.formatoPorcao}</Badge>
+                <small>Depois da baixa: {Math.max(0, (Number(insumoSelecionado.quantidadeAtual) || 0) - (Number(porcaoForm.quantidade) || 0))} {insumoSelecionado.unidadeMedida}</small>
+              </div>
+            </Card>
+          ) : null}
+          <SubmitRow loading={savingPorcao} onSubmit={salvarPorcao} />
+        </ActionPanel>
+      ) : null}
+
       {formAberto ? (
         <ActionPanel title="Nova ficha tecnica" error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
@@ -1015,7 +1119,43 @@ export function ProducaoPageClient() {
       ) : null}
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar producao" description={error} /> : null}
       {!loading && !error && fichas.length === 0 && ordens.length === 0 ? (
-        <EmptyState title="Nenhuma producao cadastrada" description="Crie fichas tecnicas e ordens para controlar preparos e baixas de estoque." action={<Button onClick={() => setFormAberto(true)}>Nova Ficha</Button>} />
+        <EmptyState title="Nenhuma producao cadastrada" description="Escolha um item do estoque para transformar em porcao ou crie fichas tecnicas." action={<Button onClick={() => setPorcaoAberta(true)}>Porcionar Estoque</Button>} />
+      ) : null}
+      {!loading && !error && itensDisponiveisProducao.length ? (
+        <section className="operational-list">
+          {itensDisponiveisProducao.slice(0, 8).map((insumo) => (
+            <Card className="operational-row" key={insumo.id || insumo.nome}>
+              <div>
+                <strong>{insumo.nome}</strong>
+                <span>Estoque: {insumo.quantidadeAtual} {insumo.unidadeMedida} | Porcionado: {porcoesPorInsumo[insumo.id || ""] || 0} porcoes</span>
+              </div>
+              <div>
+                <Badge tone={(porcoesPorInsumo[insumo.id || ""] || 0) > 0 ? "success" : "neutral"}>{insumo.unidadeCompra || insumo.unidadeMedida || "un"}</Badge>
+                <button type="button" onClick={() => {
+                  setPorcaoForm((current) => ({ ...current, insumoId: insumo.id || "", quantidade: 1 }));
+                  setPorcaoAberta(true);
+                }}>Porcionar</button>
+              </div>
+            </Card>
+          ))}
+        </section>
+      ) : null}
+      {!loading && !error && porcoes.length ? (
+        <section className="operational-list">
+          {porcoes.map((porcao) => (
+            <Card className="operational-row" key={porcao.id || `${porcao.insumoId}-${porcao.criadoEm}`}>
+              <div>
+                <strong>{porcao.insumoNome}</strong>
+                <span>{porcao.porcoesDisponiveis}/{porcao.porcoesGeradas} {porcao.formatoPorcao || "porcoes"} disponiveis em {porcao.area}</span>
+              </div>
+              <div>
+                <Badge tone="success">{porcao.formatoPorcao || "porcao"}</Badge>
+                <small>Baixado: {porcao.quantidadeBaixada} {porcao.unidade}</small>
+                <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porcao.unidade} por porcao` : money(porcao.custoPorPorcao)}</small>
+              </div>
+            </Card>
+          ))}
+        </section>
       ) : null}
       {!loading && (fichas.length || ordens.length) ? (
         <section className="operational-list">
