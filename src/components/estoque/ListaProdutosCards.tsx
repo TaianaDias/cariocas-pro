@@ -11,6 +11,7 @@ type ListaProdutosCardsProps = {
   insumos: Insumo[];
   onEditar: (id: string) => void;
   onEntrada: (id: string) => void;
+  onExcluir: (id: string, nome: string) => void;
   onSaida: (id: string) => void;
 };
 
@@ -20,7 +21,7 @@ function getStatus(insumo: Insumo) {
   return "success";
 }
 
-export function ListaProdutosCards({ insumos, onEditar, onEntrada, onSaida }: ListaProdutosCardsProps) {
+export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, onSaida }: ListaProdutosCardsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
@@ -83,6 +84,7 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onSaida }: Li
             <CardAction label="Editar" onClick={() => insumo.id && onEditar(insumo.id)} />
             <CardAction label="Entrada" onClick={() => insumo.id && onEntrada(insumo.id)} />
             <CardAction label="Saida" onClick={() => insumo.id && onSaida(insumo.id)} />
+            <CardAction danger label="Excluir" onClick={() => insumo.id && onExcluir(insumo.id, insumo.nome)} />
             <CardAction label={expandedId === insumo.id ? "Menos" : "Mais"} onClick={() => setExpandedId(expandedId === insumo.id ? null : insumo.id || null)} />
           </div>
 
@@ -93,9 +95,13 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onSaida }: Li
   );
 }
 
-function CardAction({ label, onClick }: { label: string; onClick: () => void }) {
+function CardAction({ danger = false, label, onClick }: { danger?: boolean; label: string; onClick: () => void }) {
   return (
-    <button className="action-btn" onClick={onClick} style={{ background: "transparent", border: 0, color: "var(--text-soft)", cursor: "pointer", flex: 1, padding: 10 }}>
+    <button
+      className={`action-btn ${danger ? "action-btn--danger" : ""}`.trim()}
+      onClick={onClick}
+      style={{ background: "transparent", border: 0, color: danger ? "var(--crimson)" : "var(--text-soft)", cursor: "pointer", flex: 1, padding: 10 }}
+    >
       {label}
     </button>
   );

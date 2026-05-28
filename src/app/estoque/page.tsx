@@ -17,7 +17,7 @@ import { useCategoriasInsumos } from "../../hooks/useCategoriasInsumos";
 import { useEstoque } from "../../hooks/useEstoque";
 
 export default function EstoquePage() {
-  const { criarInsumoComEntrada, error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
+  const { criarInsumoComEntrada, deletarInsumo, error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
   const { categoriasList, criarCategoria, ocultarCategoria } = useCategoriasInsumos();
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
@@ -57,6 +57,21 @@ export default function EstoquePage() {
     setProdutoEditandoId(id);
     setDrawerAberto(true);
   }, []);
+
+  const handleExcluirInsumo = useCallback(
+    async (id: string, nome: string) => {
+      const confirmou = window.confirm(`Excluir "${nome}" do estoque? Esta acao nao pode ser desfeita.`);
+      if (!confirmou) return;
+
+      await deletarInsumo(id, nome, "admin");
+      if (produtoEditandoId === id) {
+        setProdutoEditandoId(null);
+        setDrawerAberto(false);
+      }
+      refetch();
+    },
+    [deletarInsumo, produtoEditandoId, refetch],
+  );
 
   const handleFecharDrawer = useCallback(() => {
     setDrawerAberto(false);
@@ -171,6 +186,7 @@ export default function EstoquePage() {
         <ListaProdutosCards
           insumos={insumosFiltrados}
           onEditar={handleEditarInsumo}
+          onExcluir={handleExcluirInsumo}
           onEntrada={(id) => {
             setProdutoEditandoId(id);
             setMostrarEntradaRapida(true);
@@ -181,7 +197,7 @@ export default function EstoquePage() {
           }}
         />
       ) : (
-        <ListaProdutosTabela insumos={insumosFiltrados} onEditar={handleEditarInsumo} />
+        <ListaProdutosTabela insumos={insumosFiltrados} onEditar={handleEditarInsumo} onExcluir={handleExcluirInsumo} />
       )}
 
       <ProdutoDrawer aberto={drawerAberto} produtoId={produtoEditandoId} onFechar={handleFecharDrawer} onSalvo={handleSalvo} />

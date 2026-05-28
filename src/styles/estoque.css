@@ -635,6 +635,12 @@
   font-size: var(--font-size-xs);
 }
 
+.produto-table-actions__danger {
+  border-color: rgba(212, 32, 32, 0.34) !important;
+  background: rgba(212, 32, 32, 0.12) !important;
+  color: #ffffff !important;
+}
+
 .estoque-feedback {
   margin: 0;
   border: 1px solid rgba(229, 231, 235, 0.08);
@@ -783,6 +789,11 @@
 
 .produto-card .action-btn:hover {
   background: var(--coal-800) !important;
+  color: #ffffff !important;
+}
+
+.produto-card .action-btn--danger:hover {
+  background: rgba(212, 32, 32, 0.16) !important;
   color: #ffffff !important;
 }
 

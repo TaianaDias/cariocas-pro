@@ -6,9 +6,10 @@ import { StatusBadge } from "./StatusBadge";
 type ListaProdutosTabelaProps = {
   insumos: Insumo[];
   onEditar: (id: string) => void;
+  onExcluir: (id: string, nome: string) => void;
 };
 
-export function ListaProdutosTabela({ insumos, onEditar }: ListaProdutosTabelaProps) {
+export function ListaProdutosTabela({ insumos, onEditar, onExcluir }: ListaProdutosTabelaProps) {
   return (
     <div className="produto-table-wrap">
       <table className="produto-table">
@@ -36,7 +37,12 @@ export function ListaProdutosTabela({ insumos, onEditar }: ListaProdutosTabelaPr
                 <td>{insumo.estoqueMinimo}</td>
                 <td>R$ {(insumo.custoCompra || 0).toFixed(2)}</td>
                 <td><StatusBadge status={status} /></td>
-                <td><button type="button" onClick={() => insumo.id && onEditar(insumo.id)}>Editar</button></td>
+                <td>
+                  <div className="produto-table-actions">
+                    <button type="button" onClick={() => insumo.id && onEditar(insumo.id)}>Editar</button>
+                    <button type="button" className="produto-table-actions__danger" onClick={() => insumo.id && onExcluir(insumo.id, insumo.nome)}>Excluir</button>
+                  </div>
+                </td>
               </tr>
             );
           })}
