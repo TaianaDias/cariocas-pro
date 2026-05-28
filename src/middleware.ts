@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const publicRoutes = ["/", "/login", "/cadastro"];
+const publicRoutes = ["/", "/login", "/cadastro", "/planos"];
 
 const planOrder: Record<string, number> = {
   free: 0,

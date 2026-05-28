@@ -6,6 +6,7 @@ import "../styles/layout.css";
 import "../styles/components.css";
 import "../styles/utilities.css";
 import "../styles/dashboard.css";
+import "../styles/planos.css";
 import "../styles/estoque.css";
 import "../styles/precificacao.css";
 import "../styles/operacional.css";

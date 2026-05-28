@@ -16,7 +16,7 @@ type AppShellProps = {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const { loading, user, userProfile } = useAuth();
-  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/cadastro";
+  const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/cadastro" || pathname === "/planos";
 
   if (isPublicRoute) {
     return <>{children}</>;
