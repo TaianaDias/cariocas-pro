@@ -74,6 +74,11 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
         <TextInput label="Nome" value={produto.nome || ""} onChange={(event) => onChange({ nome: event.target.value })} />
         <TextInput label="SKU" value={produto.sku || ""} onChange={(event) => onChange({ sku: event.target.value })} />
         <TextInput label="Marca" value={produto.marca || ""} onChange={(event) => onChange({ marca: event.target.value })} />
+        <TextInput
+          label="Imagem do produto"
+          value={produto.imagemUrl || produto.imagemPrincipal || ""}
+          onChange={(event) => onChange({ imagemPrincipal: event.target.value, imagemUrl: event.target.value })}
+        />
         <div className="barcode-recognition">
           <TextInput
             label="Codigo de barras"

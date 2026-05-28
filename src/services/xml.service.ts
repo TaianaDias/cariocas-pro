@@ -9,6 +9,7 @@ type XmlProcessItem = XmlItem & { acao: "criar" | "vincular" };
 type ImportarArquivoXmlOptions = {
   arquivoNome: string;
   empresaId?: string;
+  itens?: XmlItem[];
   lojaId?: string;
   uid: string;
 };
@@ -280,7 +281,8 @@ export async function processarLoteXml(
 
 export async function importarArquivoXml(xmlText: string, options: ImportarArquivoXmlOptions) {
   const parseado = parseNfeXml(xmlText);
-  const itensProcessamento = parseado.itens.map((item) => ({ ...item, acao: "criar" as const }));
+  const itens = options.itens?.length ? options.itens : parseado.itens;
+  const itensProcessamento = itens.map((item) => ({ ...item, acao: "criar" as const }));
 
   const importacaoId = await criarImportacao(
     {
@@ -288,10 +290,10 @@ export async function importarArquivoXml(xmlText: string, options: ImportarArqui
       createdBy: options.uid,
       fornecedorCnpj: parseado.fornecedorCnpj,
       fornecedorNome: parseado.fornecedorNome,
-      itens: parseado.itens,
+      itens,
       itensCriados: 0,
       itensVinculados: 0,
-      totalItens: parseado.itens.length,
+      totalItens: itens.length,
     },
     options.uid,
   );
@@ -314,7 +316,7 @@ export async function importarArquivoXml(xmlText: string, options: ImportarArqui
     fornecedorCnpj: parseado.fornecedorCnpj,
     fornecedorNome: parseado.fornecedorNome,
     importacaoId,
-    itens: parseado.itens,
-    totalItens: parseado.itens.length,
+    itens,
+    totalItens: itens.length,
   };
 }

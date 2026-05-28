@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { importarArquivoXml, parseNfeXml } from "../../services/xml.service";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { TextInput } from "../ui/TextInput";
 import type { XmlItem } from "../../types";
 
 type ImportarXmlProps = {
@@ -54,6 +55,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       const processado = await importarArquivoXml(text, {
         arquivoNome: arquivo.name,
         empresaId: userProfile?.empresaId || user.uid,
+        itens: itensPreview,
         lojaId: userProfile?.lojaId || "matriz",
         uid: user.uid,
       });
@@ -66,6 +68,22 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
     } finally {
       setLoading(false);
     }
+  }
+
+  function atualizarCodigoPreview(index: number, codigo: string) {
+    const codigoBarrasNormalizado = codigo.replace(/\D/g, "");
+    setItensPreview((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              codigo: codigoBarrasNormalizado || codigo || item.codigo,
+              codigoBarras: codigo,
+              codigoBarrasNormalizado,
+            }
+          : item,
+      ),
+    );
   }
 
   return (
@@ -101,12 +119,17 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         <div className="xml-preview">
           <strong>Itens encontrados</strong>
           <div>
-            {itensPreview.slice(0, 8).map((item) => (
+            {itensPreview.slice(0, 8).map((item, index) => (
               <article key={`${item.codigo}-${item.nome}`}>
                 <span>{item.nome}</span>
                 <small>
                   {item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)} · Cod. barras: {item.codigoBarras || "nao informado"}
                 </small>
+                <TextInput
+                  label="Codigo de barras para cadastro"
+                  value={item.codigoBarras || ""}
+                  onChange={(event) => atualizarCodigoPreview(index, event.target.value)}
+                />
               </article>
             ))}
           </div>
