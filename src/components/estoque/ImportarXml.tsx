@@ -104,7 +104,9 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
             {itensPreview.slice(0, 8).map((item) => (
               <article key={`${item.codigo}-${item.nome}`}>
                 <span>{item.nome}</span>
-                <small>{item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)}</small>
+                <small>
+                  {item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)} · Cod. barras: {item.codigoBarras || "nao informado"}
+                </small>
               </article>
             ))}
           </div>

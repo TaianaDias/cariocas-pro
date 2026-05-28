@@ -153,6 +153,9 @@ export interface Historico {
 // ===== XML =====
 export interface XmlItem {
   codigo: string;
+  codigoBarras?: string;
+  codigoBarrasNormalizado?: string;
+  codigoProduto?: string;
   nome: string;
   ncm: string;
   quantidade: number;

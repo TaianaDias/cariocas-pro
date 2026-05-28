@@ -31,18 +31,32 @@ function normalizarCodigo(value: string) {
   return value.trim() || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function normalizarCodigoProduto(produto: Element) {
-  const candidatos = [
-    tagText(produto, "cEAN"),
-    tagText(produto, "cEANTrib"),
-    tagText(produto, "cProd"),
-  ];
-  const codigo = candidatos.find((item) => {
-    const normalizado = item.trim().toUpperCase();
-    return normalizado && normalizado !== "SEM GTIN" && normalizado !== "SEMGTIN";
-  });
+function normalizarCodigoBarras(value: string) {
+  const normalizado = value.replace(/\D/g, "");
+  if (!normalizado || normalizado.length < 8) return "";
+  return normalizado;
+}
 
-  return normalizarCodigo(codigo || "");
+function hasCodigoValido(value: string) {
+  const normalizado = value.trim().toUpperCase();
+  return Boolean(normalizado && normalizado !== "SEM GTIN" && normalizado !== "SEMGTIN");
+}
+
+function tagCodigoValido(produto: Element, tagName: string) {
+  const value = tagText(produto, tagName);
+  return hasCodigoValido(value) ? value : "";
+}
+
+function extrairCodigosProduto(produto: Element) {
+  const codigoBarras = normalizarCodigoBarras(tagCodigoValido(produto, "cEAN") || tagCodigoValido(produto, "cEANTrib"));
+  const codigoProduto = tagCodigoValido(produto, "cProd");
+
+  return {
+    codigo: codigoBarras || normalizarCodigo(codigoProduto),
+    codigoBarras,
+    codigoBarrasNormalizado: codigoBarras,
+    codigoProduto,
+  };
 }
 
 export function parseNfeXml(xmlText: string): XmlNfeParseResult {
@@ -63,12 +77,13 @@ export function parseNfeXml(xmlText: string): XmlNfeParseResult {
     .map((detalhe) => detalhe.getElementsByTagName("prod")[0])
     .filter(Boolean)
     .map((produto) => {
+      const codigos = extrairCodigosProduto(produto);
       const quantidade = xmlNumber(tagText(produto, "qCom") || tagText(produto, "qTrib"));
       const valorTotal = xmlNumber(tagText(produto, "vProd"));
       const valorUnitario = xmlNumber(tagText(produto, "vUnCom") || tagText(produto, "vUnTrib")) || (quantidade > 0 ? valorTotal / quantidade : 0);
 
       return {
-        codigo: normalizarCodigoProduto(produto),
+        ...codigos,
         ncm: tagText(produto, "NCM"),
         nome: tagText(produto, "xProd"),
         quantidade,
@@ -135,9 +150,19 @@ export async function processarLoteXml(
 
   for (const item of itens) {
     try {
-      const existentes = item.produtoExistenteId
+      const codigoBusca = item.codigoBarrasNormalizado || normalizarCodigoBarras(item.codigoBarras || item.codigo);
+      const buscas = item.produtoExistenteId
         ? []
-        : await consultar<Insumo>("insumos", [{ campo: "codigoBarras", operador: "==" as const, valor: item.codigo }], undefined, 1);
+        : [
+            ...(codigoBusca ? [{ campo: "codigoBarrasNormalizado", operador: "==" as const, valor: codigoBusca }] : []),
+            ...(hasCodigoValido(item.codigoBarras || "") ? [{ campo: "codigoBarras", operador: "==" as const, valor: item.codigoBarras }] : []),
+            ...(hasCodigoValido(item.codigo || "") ? [{ campo: "codigoBarras", operador: "==" as const, valor: item.codigo }] : []),
+          ];
+      let existentes: Insumo[] = [];
+      for (const filtro of buscas) {
+        existentes = await consultar<Insumo>("insumos", [filtro], undefined, 1);
+        if (existentes.length) break;
+      }
       const produtoExistenteId = item.produtoExistenteId || existentes[0]?.id;
 
       if (item.acao === "vincular" || produtoExistenteId) {
@@ -181,15 +206,18 @@ export async function processarLoteXml(
 
         vinculados++;
       } else if (item.acao === "criar") {
-        const produtoExterno = await buscarExterno(item.codigo);
+        const codigoBarras = item.codigoBarras || item.codigoBarrasNormalizado || "";
+        const codigoBarrasNormalizado = item.codigoBarrasNormalizado || normalizarCodigoBarras(codigoBarras);
+        const produtoExterno = await buscarExterno(codigoBarrasNormalizado || item.codigo);
         const imagemUrl = produtoExterno?.imagemUrl || "";
         const novoInsumo = {
           nome: item.nome,
           sku: `XML-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           marca: contexto?.fornecedorNome || "",
           categoriaId: "",
-          codigoBarras: item.codigo,
-          codigoBarrasNormalizado: item.codigo.replace(/\D/g, ""),
+          codigoBarras: codigoBarras || item.codigo,
+          codigoBarrasNormalizado,
+          codigoInterno: item.codigoProduto || "",
           cmv: 0,
           custoUnitario: item.valorUnitario,
           status: "ativo",
