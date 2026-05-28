@@ -18,10 +18,19 @@ type ImportarXmlProps = {
 export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlProps) {
   const { user, userProfile } = useAuth();
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [chaveNfe, setChaveNfe] = useState("");
   const [itensPreview, setItensPreview] = useState<XmlItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingChave, setLoadingChave] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  function aplicarXmlNoPreview(xmlText: string, origem: string) {
+    const parseado = parseNfeXml(xmlText);
+    setItensPreview(parseado.itens);
+    setResultado(`${parseado.itens.length} itens encontrados de ${parseado.fornecedorNome}.`);
+    setArquivo(new File([xmlText], origem, { type: "text/xml" }));
+  }
 
   async function handleSelecionarArquivo(file: File | null) {
     setArquivo(file);
@@ -33,11 +42,48 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
 
     try {
       const text = await file.text();
-      const parseado = parseNfeXml(text);
-      setItensPreview(parseado.itens);
-      setResultado(`${parseado.itens.length} itens encontrados de ${parseado.fornecedorNome}.`);
+      aplicarXmlNoPreview(text, file.name);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Nao foi possivel ler o XML.");
+    }
+  }
+
+  async function handleLerCodigoNota() {
+    if (!chaveNfe.trim() || loadingChave) return;
+
+    setLoadingChave(true);
+    setResultado(null);
+    setErro(null);
+    setItensPreview([]);
+
+    try {
+      const entrada = chaveNfe.trim();
+      if (entrada.includes("<")) {
+        aplicarXmlNoPreview(entrada, "nota-colada.xml");
+        return;
+      }
+
+      const chave = entrada.replace(/\D/g, "");
+      if (chave.length !== 44) {
+        throw new Error("Escaneie ou digite a chave de acesso da NF-e com 44 digitos.");
+      }
+
+      const response = await fetch("/api/nfe/consulta", {
+        body: JSON.stringify({ chave }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nao foi possivel consultar a NF-e pela chave.");
+      }
+
+      aplicarXmlNoPreview(data.xml, `nfe-${chave}.xml`);
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Nao foi possivel ler a nota fiscal pelo codigo.");
+    } finally {
+      setLoadingChave(false);
     }
   }
 
@@ -106,6 +152,28 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         <span>O processamento cria ou vincula insumos e prepara entradas no historico.</span>
         <input type="file" accept=".xml,text/xml,application/xml" onChange={(event) => handleSelecionarArquivo(event.target.files?.[0] ?? null)} />
       </label>
+
+      <div className="nfe-code-reader">
+        <div>
+          <strong>Ler por codigo de barras da NF-e</strong>
+          <span>Escaneie a chave de acesso de 44 digitos da nota ou cole o XML completo para montar o preview.</span>
+        </div>
+        <TextInput
+          label="Chave de acesso ou XML da NF-e"
+          placeholder="Escaneie a chave da NF-e ou cole o XML"
+          value={chaveNfe}
+          onChange={(event) => setChaveNfe(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleLerCodigoNota();
+            }
+          }}
+        />
+        <Button variant="secondary" onClick={handleLerCodigoNota} disabled={!chaveNfe.trim() || loadingChave}>
+          {loadingChave ? "Lendo..." : "Ler nota"}
+        </Button>
+      </div>
 
       <div className="xml-summary">
         <article><span>Arquivo</span><strong>{arquivo?.name || "-"}</strong></article>

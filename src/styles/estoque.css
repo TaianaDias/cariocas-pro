@@ -244,6 +244,32 @@
   font-size: var(--font-size-sm);
 }
 
+.nfe-code-reader {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(280px, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+  border: 1px solid rgba(229, 231, 235, 0.08);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--space-4);
+}
+
+.nfe-code-reader strong,
+.nfe-code-reader span {
+  display: block;
+}
+
+.nfe-code-reader strong {
+  color: #ffffff;
+}
+
+.nfe-code-reader span {
+  margin-top: var(--space-1);
+  color: rgba(229, 231, 235, 0.58);
+  font-size: var(--font-size-sm);
+}
+
 .xml-summary,
 .drawer-list,
 .drawer-timeline {
@@ -300,9 +326,8 @@
 }
 
 .xml-preview article {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) minmax(220px, 0.9fr);
   gap: var(--space-3);
   border-bottom: 1px solid rgba(229, 231, 235, 0.06);
   padding-bottom: var(--space-2);
@@ -543,6 +568,7 @@
   .estoque-panels-grid,
   .estoque-form-grid,
   .drawer-form-grid,
+  .nfe-code-reader,
   .produto-card-grid {
     grid-template-columns: 1fr;
   }
@@ -551,7 +577,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .xml-summary {
+  .xml-summary,
+  .xml-preview article {
     grid-template-columns: 1fr;
   }
 }
