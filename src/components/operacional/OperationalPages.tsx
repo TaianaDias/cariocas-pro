@@ -735,10 +735,11 @@ export function ComprasPageClient() {
 
 export function DesperdicioPageClient() {
   const { data: desperdicios, error, loading, refetch } = useAsyncData<Desperdicio>(listarTodosDesperdicios);
+  const { data: funcionarios, error: funcionariosError, loading: funcionariosLoading } = useAsyncData<Funcionario>(listarFuncionarios);
   const [formAberto, setFormAberto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1 });
+  const [form, setForm] = useState({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1, responsavel: "" });
   const total = desperdicios.reduce((acc, item) => acc + (item.custoEstimado || 0), 0);
   const categorias = new Set(desperdicios.map((item) => item.categoria || "Sem categoria")).size;
 
@@ -755,10 +756,10 @@ export function DesperdicioPageClient() {
         motivo: form.motivo,
         observacao: "",
         quantidade: Number(form.quantidade) || 1,
-        responsavel: "admin",
+        responsavel: form.responsavel || "Responsavel nao informado",
         unidade: "un",
       });
-      setForm({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1 });
+      setForm({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1, responsavel: "" });
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -788,11 +789,20 @@ export function DesperdicioPageClient() {
             <Field label="Motivo" value={form.motivo} onChange={(value) => setForm((current) => ({ ...current, motivo: value }))} />
             <Field label="Quantidade" type="number" value={form.quantidade} onChange={(value) => setForm((current) => ({ ...current, quantidade: Number(value) }))} />
             <Field label="Custo estimado" type="number" value={form.custoEstimado} onChange={(value) => setForm((current) => ({ ...current, custoEstimado: Number(value) }))} />
+            <SelectField label="Responsavel" value={form.responsavel} onChange={(value) => setForm((current) => ({ ...current, responsavel: value }))}>
+              <option value="">{funcionariosLoading ? "Carregando colaboradores..." : "Selecione o colaborador"}</option>
+              {funcionarios.map((funcionario) => (
+                <option key={funcionario.id || funcionario.email || funcionario.nome} value={funcionario.nome}>
+                  {funcionario.nome}
+                </option>
+              ))}
+            </SelectField>
           </div>
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
       ) : null}
 
+      {funcionariosError ? <EmptyState title="Erro ao carregar colaboradores" description={funcionariosError} /> : null}
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar desperdicio" description={error} /> : null}
       {!loading && !error && desperdicios.length === 0 ? (
         <EmptyState title="Nenhuma perda registrada" description="Registre desperdicios para medir impacto em CMV e margem." action={<Button onClick={() => setFormAberto(true)}>Registrar Perda</Button>} />
@@ -803,7 +813,7 @@ export function DesperdicioPageClient() {
             <Card className="operational-row" key={item.id || `${item.insumoId}-${item.data}`}>
               <div>
                 <strong>{item.insumoNome}</strong>
-                <span>{item.motivo || "Motivo nao informado"}</span>
+                <span>{item.motivo || "Motivo nao informado"} | Responsavel: {item.responsavel || "nao informado"}</span>
               </div>
               <div>
                 <Badge tone="danger">{item.categoria || "perda"}</Badge>
