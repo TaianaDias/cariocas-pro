@@ -96,6 +96,16 @@ export interface Fornecedor {
   atualizadoEm: Date;
 }
 
+export interface Mercado {
+  id?: string;
+  nome: string;
+  telefone: string;
+  endereco: string;
+  observacoes: string;
+  criadoEm: Date;
+  atualizadoEm: Date;
+}
+
 export interface FornecedorVinculo {
   fornecedorId?: string;
   fornecedorNome: string;
@@ -237,8 +247,12 @@ export interface PedidoCompra {
   id?: string;
   numero: string;
   status?: string;
+  origemCompra?: "fornecedor" | "mercado";
   fornecedorId: string;
   fornecedorNome: string;
+  mercadoId?: string;
+  mercadoNome?: string;
+  linkDisparo?: string;
   itens: PedidoCompraItem[];
   valorTotal: number;
   dataPedido: Date;

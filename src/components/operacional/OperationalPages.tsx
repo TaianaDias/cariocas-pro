@@ -11,8 +11,9 @@ import { listarDesperdicios, registrarDesperdicio } from "../../services/desperd
 import { listarInsumos } from "../../services/estoque.service";
 import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
 import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
+import { criarMercado, listarMercados } from "../../services/mercados.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
-import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, OrdemProducao, PedidoCompra } from "../../types";
+import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra } from "../../types";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -155,6 +156,27 @@ function Field({
   );
 }
 
+function SelectField({
+  children,
+  label,
+  onChange,
+  value,
+}: {
+  children: ReactNode;
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <label className="operational-field">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {children}
+      </select>
+    </label>
+  );
+}
+
 function SubmitRow({ loading, onSubmit }: { loading: boolean; onSubmit: () => void }) {
   return (
     <div className="operational-submit">
@@ -186,24 +208,61 @@ function isInsumoAbaixoMinimo(insumo: Insumo) {
   return minimo > 0 && atual <= minimo;
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function buildPurchaseMessage(itens: PedidoCompra["itens"], valorTotal: number) {
+  const linhas = itens.length
+    ? itens.map((item) => `- ${item.insumoNome}: ${item.quantidade} ${item.unidade}`).join("\n")
+    : "- Pedido a combinar";
+
+  return `Ola! Gostaria de fazer um pedido:\n\n${linhas}\n\nTotal estimado: ${money(valorTotal)}\n\nPedido automatico - Carioca's Pro.`;
+}
+
+function buildWhatsAppLink(phone: string, itens: PedidoCompra["itens"], valorTotal: number) {
+  const numero = onlyDigits(phone);
+  if (!numero) return "";
+  const numeroComPais = numero.startsWith("55") ? numero : `55${numero}`;
+  return `https://wa.me/${numeroComPais}?text=${encodeURIComponent(buildPurchaseMessage(itens, valorTotal))}`;
+}
+
 export function ComprasPageClient() {
   const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidos);
   const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumos);
+  const { data: fornecedores, error: fornecedoresError, loading: fornecedoresLoading } = useAsyncData<Fornecedor>(listarFornecedores);
+  const { data: mercados, error: mercadosError, loading: mercadosLoading, refetch: refetchMercados } = useAsyncData<Mercado>(listarMercados);
   const [formAberto, setFormAberto] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingMercado, setSavingMercado] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ fornecedorNome: "", numero: "", quantidades: {} as Record<string, number>, selectedIds: [] as string[], valorManual: 0 });
+  const [mercadoError, setMercadoError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    fornecedorId: "",
+    fornecedorNome: "",
+    fornecedorTelefone: "",
+    mercadoId: "",
+    mercadoNome: "",
+    mercadoTelefone: "",
+    numero: "",
+    origemCompra: "fornecedor" as "fornecedor" | "mercado",
+    quantidades: {} as Record<string, number>,
+    selectedIds: [] as string[],
+    valorManual: 0,
+  });
+  const [novoMercado, setNovoMercado] = useState({ endereco: "", nome: "", observacoes: "", telefone: "" });
   const total = pedidos.reduce((acc, pedido) => acc + (pedido.valorTotal || 0), 0);
   const pendentes = pedidos.filter((pedido) => pedido.status !== "recebido").length;
   const insumosAbaixoMinimo = insumos.filter(isInsumoAbaixoMinimo);
+  const selectedFornecedor = fornecedores.find((fornecedor) => fornecedor.id === form.fornecedorId);
+  const selectedMercado = mercados.find((mercado) => mercado.id === form.mercadoId);
   const selectedInsumos = form.selectedIds
     .map((id) => insumos.find((insumo) => insumo.id === id))
     .filter((insumo): insumo is Insumo => Boolean(insumo?.id));
-  const selectedTotal = selectedInsumos.reduce((acc, insumo) => {
-    const id = insumo.id || "";
-    const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
-    return acc + quantidade * getInsumoUnitCost(insumo);
-  }, 0);
+  const contatoDestino =
+    form.origemCompra === "fornecedor"
+      ? selectedFornecedor?.telefone || form.fornecedorTelefone
+      : selectedMercado?.telefone || form.mercadoTelefone;
 
   function setQuantidadeInsumo(insumo: Insumo, quantidade: number) {
     if (!insumo.id) return;
@@ -261,37 +320,91 @@ export function ComprasPageClient() {
     setFormAberto(true);
   }
 
+  function montarItensPedido() {
+    return selectedInsumos.map((insumo) => {
+      const id = insumo.id || "";
+      const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
+      const valorUnitario = getInsumoUnitCost(insumo);
+
+      return {
+        insumoId: id,
+        insumoNome: insumo.nome,
+        quantidade,
+        unidade: insumo.unidadeCompra || insumo.unidadeMedida || "un",
+        valorUnitario,
+        valorTotal: quantidade * valorUnitario,
+      };
+    });
+  }
+
+  function valorTotalPedido(itens: PedidoCompra["itens"]) {
+    return itens.reduce((acc, item) => acc + item.valorTotal, 0) + (Number(form.valorManual) || 0);
+  }
+
+  async function salvarMercado() {
+    if (!novoMercado.nome.trim()) {
+      setMercadoError("Informe o nome do mercado.");
+      return;
+    }
+
+    setSavingMercado(true);
+    setMercadoError(null);
+    try {
+      const id = await criarMercado({
+        endereco: novoMercado.endereco,
+        nome: novoMercado.nome,
+        observacoes: novoMercado.observacoes,
+        telefone: novoMercado.telefone,
+      });
+      setNovoMercado({ endereco: "", nome: "", observacoes: "", telefone: "" });
+      setForm((current) => ({ ...current, mercadoId: id, mercadoNome: novoMercado.nome, mercadoTelefone: novoMercado.telefone }));
+      refetchMercados();
+    } catch (err) {
+      setMercadoError(err instanceof Error ? err.message : "Nao foi possivel cadastrar o mercado.");
+    } finally {
+      setSavingMercado(false);
+    }
+  }
+
   async function salvar() {
     setSaving(true);
     setFormError(null);
     try {
-      const itens = selectedInsumos.map((insumo) => {
-        const id = insumo.id || "";
-        const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
-        const valorUnitario = getInsumoUnitCost(insumo);
-
-        return {
-          insumoId: id,
-          insumoNome: insumo.nome,
-          quantidade,
-          unidade: insumo.unidadeCompra || insumo.unidadeMedida || "un",
-          valorUnitario,
-          valorTotal: quantidade * valorUnitario,
-        };
-      });
-      const valorTotal = itens.reduce((acc, item) => acc + item.valorTotal, 0) + (Number(form.valorManual) || 0);
+      const itens = montarItensPedido();
+      const valorTotal = valorTotalPedido(itens);
+      const linkDisparo = buildWhatsAppLink(contatoDestino, itens, valorTotal);
+      const nomeDestino =
+        form.origemCompra === "fornecedor"
+          ? selectedFornecedor?.nome || form.fornecedorNome || "Fornecedor nao informado"
+          : selectedMercado?.nome || form.mercadoNome || "Mercado nao informado";
 
       await criarPedido({
         dataPedido: new Date(),
-        fornecedorId: "",
-        fornecedorNome: form.fornecedorNome || "Fornecedor nao informado",
+        fornecedorId: form.origemCompra === "fornecedor" ? form.fornecedorId : "",
+        fornecedorNome: nomeDestino,
         itens,
+        linkDisparo,
+        mercadoId: form.origemCompra === "mercado" ? form.mercadoId : "",
+        mercadoNome: form.origemCompra === "mercado" ? nomeDestino : "",
         numero: form.numero || `PED-${Date.now()}`,
         observacoes: "",
+        origemCompra: form.origemCompra,
         status: "pendente",
         valorTotal,
       }, "admin");
-      setForm({ fornecedorNome: "", numero: "", quantidades: {}, selectedIds: [], valorManual: 0 });
+      setForm({
+        fornecedorId: "",
+        fornecedorNome: "",
+        fornecedorTelefone: "",
+        mercadoId: "",
+        mercadoNome: "",
+        mercadoTelefone: "",
+        numero: "",
+        origemCompra: "fornecedor",
+        quantidades: {},
+        selectedIds: [],
+        valorManual: 0,
+      });
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -300,6 +413,10 @@ export function ComprasPageClient() {
       setSaving(false);
     }
   }
+
+  const previewItens = montarItensPedido();
+  const previewTotal = valorTotalPedido(previewItens);
+  const previewLink = buildWhatsAppLink(contatoDestino, previewItens, previewTotal);
 
   return (
     <PageShell
@@ -339,14 +456,84 @@ export function ComprasPageClient() {
       ) : null}
 
       {insumosError ? <EmptyState title="Erro ao carregar insumos" description={insumosError} /> : null}
+      {fornecedoresError ? <EmptyState title="Erro ao carregar fornecedores" description={fornecedoresError} /> : null}
+      {mercadosError ? <EmptyState title="Erro ao carregar mercados" description={mercadosError} /> : null}
 
       {formAberto ? (
         <ActionPanel title="Novo pedido de compra" error={formError} onClose={() => setFormAberto(false)}>
+          <div className="operational-segmented" role="group" aria-label="Origem da compra">
+            <button
+              type="button"
+              className={form.origemCompra === "fornecedor" ? "is-active" : ""}
+              onClick={() => setForm((current) => ({ ...current, origemCompra: "fornecedor" }))}
+            >
+              Fornecedor
+            </button>
+            <button
+              type="button"
+              className={form.origemCompra === "mercado" ? "is-active" : ""}
+              onClick={() => setForm((current) => ({ ...current, origemCompra: "mercado" }))}
+            >
+              Mercado
+            </button>
+          </div>
           <div className="operational-form-grid">
             <Field label="Numero" value={form.numero} onChange={(value) => setForm((current) => ({ ...current, numero: value }))} />
-            <Field label="Fornecedor" value={form.fornecedorNome} onChange={(value) => setForm((current) => ({ ...current, fornecedorNome: value }))} />
+            {form.origemCompra === "fornecedor" ? (
+              <SelectField
+                label="Fornecedor cadastrado"
+                value={form.fornecedorId}
+                onChange={(value) => {
+                  const fornecedor = fornecedores.find((item) => item.id === value);
+                  setForm((current) => ({
+                    ...current,
+                    fornecedorId: value,
+                    fornecedorNome: fornecedor?.nome || "",
+                    fornecedorTelefone: fornecedor?.telefone || "",
+                  }));
+                }}
+              >
+                <option value="">{fornecedoresLoading ? "Carregando fornecedores..." : "Selecione um fornecedor"}</option>
+                {fornecedores.map((fornecedor) => (
+                  <option key={fornecedor.id || fornecedor.nome} value={fornecedor.id || ""}>{fornecedor.nome}</option>
+                ))}
+              </SelectField>
+            ) : (
+              <SelectField
+                label="Mercado cadastrado"
+                value={form.mercadoId}
+                onChange={(value) => {
+                  const mercado = mercados.find((item) => item.id === value);
+                  setForm((current) => ({
+                    ...current,
+                    mercadoId: value,
+                    mercadoNome: mercado?.nome || "",
+                    mercadoTelefone: mercado?.telefone || "",
+                  }));
+                }}
+              >
+                <option value="">{mercadosLoading ? "Carregando mercados..." : "Selecione um mercado"}</option>
+                {mercados.map((mercado) => (
+                  <option key={mercado.id || mercado.nome} value={mercado.id || ""}>{mercado.nome}</option>
+                ))}
+              </SelectField>
+            )}
             <Field label="Valor manual/extra" type="number" value={form.valorManual} onChange={(value) => setForm((current) => ({ ...current, valorManual: Number(value) }))} />
           </div>
+          {form.origemCompra === "mercado" ? (
+            <div className="operational-market-form">
+              <strong>Cadastrar mercado</strong>
+              <div className="operational-form-grid">
+                <Field label="Nome do mercado" value={novoMercado.nome} onChange={(value) => setNovoMercado((current) => ({ ...current, nome: value }))} />
+                <Field label="Telefone/WhatsApp" value={novoMercado.telefone} onChange={(value) => setNovoMercado((current) => ({ ...current, telefone: value }))} />
+                <Field label="Endereco" value={novoMercado.endereco} onChange={(value) => setNovoMercado((current) => ({ ...current, endereco: value }))} />
+              </div>
+              <div className="operational-submit">
+                {mercadoError ? <span>{mercadoError}</span> : null}
+                <Button onClick={salvarMercado} disabled={savingMercado}>{savingMercado ? "Cadastrando..." : "Cadastrar mercado"}</Button>
+              </div>
+            </div>
+          ) : null}
           <div className="operational-buy-box">
             <header>
               <div>
@@ -388,9 +575,16 @@ export function ComprasPageClient() {
             </div>
             <footer>
               <span>Total estimado</span>
-              <strong>{money(selectedTotal + (Number(form.valorManual) || 0))}</strong>
+              <strong>{money(previewTotal)}</strong>
             </footer>
           </div>
+          {previewLink ? (
+            <a className="operational-link-button" href={previewLink} target="_blank" rel="noopener noreferrer">
+              Disparar pedido no WhatsApp
+            </a>
+          ) : (
+            <span className="operational-link-hint">Informe um fornecedor ou mercado com telefone para liberar o disparo automatico.</span>
+          )}
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
       ) : null}
@@ -410,7 +604,9 @@ export function ComprasPageClient() {
               <div>
                 <Badge tone={pedido.status === "recebido" ? "success" : "warning"}>{pedido.status || "pendente"}</Badge>
                 <b>{money(pedido.valorTotal)}</b>
+                <small>{pedido.origemCompra === "mercado" ? "Mercado" : "Fornecedor"}</small>
                 <small>{pedido.itens?.length || 0} itens</small>
+                {pedido.linkDisparo ? <a href={pedido.linkDisparo} target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
                 <small>{dateLabel(pedido.dataPedido)}</small>
               </div>
             </Card>
