@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
+import { useBarcode } from "../../hooks/useBarcode";
 import type { Insumo } from "../../types";
+import { Button } from "../ui/Button";
 import { Select } from "../ui/Select";
 import { TextInput } from "../ui/TextInput";
 import { ProdutoImagem } from "./ProdutoImagem";
@@ -11,6 +15,50 @@ type ProdutoAbaDadosGeraisProps = {
 };
 
 export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGeraisProps) {
+  const { buscarExterno, buscarPorCodigo } = useBarcode();
+  const [buscandoCodigo, setBuscandoCodigo] = useState(false);
+  const [feedbackCodigo, setFeedbackCodigo] = useState<string | null>(null);
+
+  async function reconhecerCodigo() {
+    const codigo = produto.codigoBarras?.trim();
+    if (!codigo || buscandoCodigo) return;
+
+    setBuscandoCodigo(true);
+    setFeedbackCodigo(null);
+
+    try {
+      const local = await buscarPorCodigo(codigo);
+      if (local) {
+        onChange({
+          categoriaId: produto.categoriaId || local.categoriaId || "",
+          codigoBarras: local.codigoBarras || codigo,
+          codigoInterno: produto.codigoInterno || local.codigoInterno || "",
+          marca: produto.marca || local.marca || "",
+          nome: produto.nome || local.nome || "",
+          sku: produto.sku || local.sku || "",
+        });
+        setFeedbackCodigo("Codigo encontrado no estoque. Dados preenchidos para conferencia.");
+        return;
+      }
+
+      const externo = await buscarExterno(codigo);
+      if (externo?.nome) {
+        onChange({
+          marca: produto.marca || externo.marca || "",
+          nome: produto.nome || externo.nome,
+        });
+        setFeedbackCodigo("Produto reconhecido em base externa. Confira os dados antes de salvar.");
+        return;
+      }
+
+      setFeedbackCodigo("Codigo nao encontrado. Voce pode preencher o cadastro manualmente.");
+    } catch {
+      setFeedbackCodigo("Nao foi possivel reconhecer este codigo agora.");
+    } finally {
+      setBuscandoCodigo(false);
+    }
+  }
+
   return (
     <section className="drawer-tab">
       <ProdutoImagem produto={produto} />
@@ -18,7 +66,26 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
         <TextInput label="Nome" value={produto.nome || ""} onChange={(event) => onChange({ nome: event.target.value })} />
         <TextInput label="SKU" value={produto.sku || ""} onChange={(event) => onChange({ sku: event.target.value })} />
         <TextInput label="Marca" value={produto.marca || ""} onChange={(event) => onChange({ marca: event.target.value })} />
-        <TextInput label="Codigo de barras" value={produto.codigoBarras || ""} onChange={(event) => onChange({ codigoBarras: event.target.value })} />
+        <div className="barcode-recognition">
+          <TextInput
+            label="Codigo de barras"
+            value={produto.codigoBarras || ""}
+            onChange={(event) => {
+              setFeedbackCodigo(null);
+              onChange({ codigoBarras: event.target.value });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                reconhecerCodigo();
+              }
+            }}
+          />
+          <Button variant="secondary" onClick={reconhecerCodigo} disabled={!produto.codigoBarras || buscandoCodigo}>
+            {buscandoCodigo ? "Buscando..." : "Reconhecer"}
+          </Button>
+          {feedbackCodigo ? <p className="estoque-feedback">{feedbackCodigo}</p> : null}
+        </div>
         <TextInput label="Categoria" value={produto.categoriaId || ""} onChange={(event) => onChange({ categoriaId: event.target.value })} />
         <TextInput label="Codigo interno" value={produto.codigoInterno || ""} onChange={(event) => onChange({ codigoInterno: event.target.value })} />
         <Select

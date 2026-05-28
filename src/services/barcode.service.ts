@@ -11,37 +11,62 @@ export function normalizarCodigo(codigo: string): string {
 
 export async function buscarProdutoPorCodigo(codigo: string): Promise<Insumo | null> {
   const normalizado = normalizarCodigo(codigo);
+  const codigoLimpo = codigo.trim();
 
-  if (!normalizado) return null;
-  if (cache.has(normalizado)) return cache.get(normalizado)!;
+  if (!normalizado && !codigoLimpo) return null;
+  if (normalizado && cache.has(normalizado)) return cache.get(normalizado)!;
 
-  const consulta = query(collection(db, "insumos"), where("codigoBarrasNormalizado", "==", normalizado), limit(1));
-  const snap = await getDocs(consulta);
+  const buscas = [
+    normalizado ? query(collection(db, "insumos"), where("codigoBarrasNormalizado", "==", normalizado), limit(1)) : null,
+    codigoLimpo ? query(collection(db, "insumos"), where("codigoBarras", "==", codigoLimpo), limit(1)) : null,
+    normalizado && normalizado !== codigoLimpo ? query(collection(db, "insumos"), where("codigoBarras", "==", normalizado), limit(1)) : null,
+  ].filter(Boolean);
 
-  if (!snap.empty) {
-    const produto = { id: snap.docs[0].id, ...snap.docs[0].data() } as Insumo;
-    cache.set(normalizado, produto);
-    return produto;
+  for (const consulta of buscas) {
+    const snap = await getDocs(consulta!);
+
+    if (!snap.empty) {
+      const produto = { id: snap.docs[0].id, ...snap.docs[0].data() } as Insumo;
+      if (normalizado) cache.set(normalizado, produto);
+      return produto;
+    }
   }
 
   return null;
 }
 
 export async function buscarExterno(codigo: string): Promise<{ nome: string; marca: string } | null> {
+  const normalizado = normalizarCodigo(codigo);
+  if (!normalizado) return null;
+
   try {
     const apiKey = process.env.NEXT_PUBLIC_COSMOS_API_KEY;
-    if (!apiKey) return null;
+    if (apiKey) {
+      const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${normalizado}.json`, {
+        headers: { "X-Cosmos-Token": apiKey },
+      });
 
-    const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${normalizarCodigo(codigo)}.json`, {
-      headers: { "X-Cosmos-Token": apiKey },
-    });
+      if (response.ok) {
+        const data = await response.json();
+        const nome = data?.description || data?.product_name || "";
+        if (nome) {
+          return {
+            marca: data?.brand?.name || data?.manufacturer || "",
+            nome,
+          };
+        }
+      }
+    }
 
-    if (!response.ok) return null;
+    const openFoodResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${normalizado}.json?fields=product_name,brands,generic_name`);
+    if (!openFoodResponse.ok) return null;
 
-    const data = await response.json();
+    const data = await openFoodResponse.json();
+    if (data?.status !== 1 || !data?.product) return null;
+
     return {
-      marca: data?.brand?.name || data?.manufacturer || "",
-      nome: data?.description || data?.product_name || "",
+      marca: data.product.brands || "",
+      nome: data.product.product_name || data.product.generic_name || "",
     };
   } catch {
     return null;
