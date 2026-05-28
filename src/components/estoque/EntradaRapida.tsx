@@ -25,6 +25,7 @@ type EntradaRapidaProps = {
   onCriarEntrada?: (dados: {
     codigoBarras?: string;
     custoTotal: number;
+    imagemUrl?: string;
     marca?: string;
     nome: string;
     quantidade: number;
@@ -48,6 +49,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
   const [codigo, setCodigo] = useState("");
   const [produto, setProduto] = useState<Insumo | null>(null);
   const [marcaExterna, setMarcaExterna] = useState("");
+  const [imagemExterna, setImagemExterna] = useState("");
   const [produtoNome, setProdutoNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
   const [unidade, setUnidade] = useState("unidade");
@@ -67,6 +69,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     const local = await buscarPorCodigo(codigo);
     if (local) {
       setProduto(local);
+      setImagemExterna(local.imagemUrl || local.imagemPrincipal || "");
       setMarcaExterna("");
       setProdutoNome(local.nome);
       setFeedback("Produto localizado no estoque.");
@@ -76,6 +79,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     const externo = await buscarExterno(codigo);
     if (externo) {
       setProduto(null);
+      setImagemExterna(externo.imagemUrl || "");
       setMarcaExterna(externo.marca);
       setProdutoNome(externo.nome);
       setFeedback("Produto encontrado em base externa. Confira e clique em Registrar Entrada para cadastrar e dar entrada.");
@@ -90,6 +94,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
       await onCriarEntrada({
         codigoBarras: codigo,
         custoTotal,
+        imagemUrl: imagemExterna,
         marca: marcaExterna,
         nome: produtoNome,
         quantidade,
@@ -131,6 +136,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
         <TextInput label="Codigo de Barras" value={codigo} onChange={(event) => {
           setCodigo(event.target.value);
           setProduto(null);
+          setImagemExterna("");
           setMarcaExterna("");
         }} placeholder="Digite ou escaneie" />
         <TextInput label="Produto" value={produtoNome} onChange={(event) => setProdutoNome(event.target.value)} placeholder="Produto localizado" />

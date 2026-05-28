@@ -92,6 +92,7 @@ export default function EstoquePage() {
     async (dados: {
       codigoBarras?: string;
       custoTotal: number;
+      imagemUrl?: string;
       marca?: string;
       nome: string;
       quantidade: number;

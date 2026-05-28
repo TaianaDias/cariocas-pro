@@ -33,6 +33,8 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
           categoriaId: produto.categoriaId || local.categoriaId || "",
           codigoBarras: local.codigoBarras || codigo,
           codigoInterno: produto.codigoInterno || local.codigoInterno || "",
+          imagemPrincipal: produto.imagemPrincipal || local.imagemPrincipal || local.imagemUrl || "",
+          imagemUrl: produto.imagemUrl || local.imagemUrl || local.imagemPrincipal || "",
           marca: produto.marca || local.marca || "",
           nome: produto.nome || local.nome || "",
           sku: produto.sku || local.sku || "",
@@ -44,6 +46,8 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
       const externo = await buscarExterno(codigo);
       if (externo?.nome) {
         onChange({
+          imagemPrincipal: produto.imagemPrincipal || externo.imagemUrl || "",
+          imagemUrl: produto.imagemUrl || externo.imagemUrl || "",
           marca: produto.marca || externo.marca || "",
           nome: produto.nome || externo.nome,
         });

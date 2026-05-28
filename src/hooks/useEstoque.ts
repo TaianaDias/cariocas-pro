@@ -29,6 +29,7 @@ type MovimentoInput = {
 type CriarEntradaInput = {
   codigoBarras?: string;
   custoTotal: number;
+  imagemUrl?: string;
   marca?: string;
   nome: string;
   quantidade: number;
@@ -151,6 +152,8 @@ export function useEstoque() {
       estoqueMaximo: 0,
       estoqueMinimo: 0,
       frequenciaPedido: "",
+      imagemPrincipal: dados.imagemUrl || "",
+      imagemUrl: dados.imagemUrl || "",
       localArmazenamento: "",
       loteInterno: "",
       marca: dados.marca || "",

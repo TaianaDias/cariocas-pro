@@ -1,4 +1,5 @@
 import type { Insumo, XmlImport, XmlItem } from "../types";
+import { buscarExterno } from "./barcode.service";
 import { atualizarDocumento, consultar, criarDocumento, obterDocumento } from "./db";
 
 const COLECAO = "importacoes_xml";
@@ -162,6 +163,8 @@ export async function processarLoteXml(
 
         vinculados++;
       } else if (item.acao === "criar") {
+        const produtoExterno = await buscarExterno(item.codigo);
+        const imagemUrl = produtoExterno?.imagemUrl || "";
         const novoInsumo = {
           nome: item.nome,
           sku: `XML-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -188,6 +191,8 @@ export async function processarLoteXml(
           validadeAposProducao: 0,
           loteInterno: "",
           frequenciaPedido: "",
+          imagemPrincipal: imagemUrl,
+          imagemUrl,
           diasPedido: 0,
           diasEntrega: 0,
           quantidadePadraoPedido: 0,

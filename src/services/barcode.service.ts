@@ -35,7 +35,13 @@ export async function buscarProdutoPorCodigo(codigo: string): Promise<Insumo | n
   return null;
 }
 
-export async function buscarExterno(codigo: string): Promise<{ nome: string; marca: string } | null> {
+export type ProdutoExterno = {
+  imagemUrl?: string;
+  marca: string;
+  nome: string;
+};
+
+export async function buscarExterno(codigo: string): Promise<ProdutoExterno | null> {
   const normalizado = normalizarCodigo(codigo);
   if (!normalizado) return null;
 
@@ -51,6 +57,7 @@ export async function buscarExterno(codigo: string): Promise<{ nome: string; mar
         const nome = data?.description || data?.product_name || "";
         if (nome) {
           return {
+            imagemUrl: data?.thumbnail || data?.image || data?.image_url || data?.picture || "",
             marca: data?.brand?.name || data?.manufacturer || "",
             nome,
           };
@@ -58,13 +65,14 @@ export async function buscarExterno(codigo: string): Promise<{ nome: string; mar
       }
     }
 
-    const openFoodResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${normalizado}.json?fields=product_name,brands,generic_name`);
+    const openFoodResponse = await fetch(`https://world.openfoodfacts.org/api/v2/product/${normalizado}.json?fields=product_name,brands,generic_name,image_url,image_front_url`);
     if (!openFoodResponse.ok) return null;
 
     const data = await openFoodResponse.json();
     if (data?.status !== 1 || !data?.product) return null;
 
     return {
+      imagemUrl: data.product.image_front_url || data.product.image_url || "",
       marca: data.product.brands || "",
       nome: data.product.product_name || data.product.generic_name || "",
     };
