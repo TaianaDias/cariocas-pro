@@ -22,6 +22,14 @@ type MovimentoRapido = {
 type EntradaRapidaProps = {
   focusBarcode?: boolean;
   onFechar?: () => void;
+  onCriarEntrada?: (dados: {
+    codigoBarras?: string;
+    custoTotal: number;
+    marca?: string;
+    nome: string;
+    quantidade: number;
+    unidade: string;
+  }) => void | Promise<void>;
   onRegistrar: (dados: MovimentoRapido) => void;
 };
 
@@ -36,9 +44,10 @@ const UNIDADES = [
   { label: "Litros", value: "l" },
 ];
 
-export function EntradaRapida({ focusBarcode = false, onFechar, onRegistrar }: EntradaRapidaProps) {
+export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, onRegistrar }: EntradaRapidaProps) {
   const [codigo, setCodigo] = useState("");
   const [produto, setProduto] = useState<Insumo | null>(null);
+  const [marcaExterna, setMarcaExterna] = useState("");
   const [produtoNome, setProdutoNome] = useState("");
   const [quantidade, setQuantidade] = useState(1);
   const [unidade, setUnidade] = useState("unidade");
@@ -58,6 +67,7 @@ export function EntradaRapida({ focusBarcode = false, onFechar, onRegistrar }: E
     const local = await buscarPorCodigo(codigo);
     if (local) {
       setProduto(local);
+      setMarcaExterna("");
       setProdutoNome(local.nome);
       setFeedback("Produto localizado no estoque.");
       return;
@@ -65,15 +75,30 @@ export function EntradaRapida({ focusBarcode = false, onFechar, onRegistrar }: E
 
     const externo = await buscarExterno(codigo);
     if (externo) {
+      setProduto(null);
+      setMarcaExterna(externo.marca);
       setProdutoNome(externo.nome);
-      setFeedback("Produto encontrado em base externa. Confira antes de registrar.");
+      setFeedback("Produto encontrado em base externa. Confira e clique em Registrar Entrada para cadastrar e dar entrada.");
       return;
     }
 
     setFeedback("Produto nao encontrado. Use Novo Insumo para cadastrar.");
   }
 
-  function registrar(tipo: "entrada" | "saida") {
+  async function registrar(tipo: "entrada" | "saida") {
+    if (tipo === "entrada" && !produto?.id && produtoNome.trim() && onCriarEntrada) {
+      await onCriarEntrada({
+        codigoBarras: codigo,
+        custoTotal,
+        marca: marcaExterna,
+        nome: produtoNome,
+        quantidade,
+        unidade,
+      });
+      setFeedback("Produto cadastrado e entrada registrada.");
+      return;
+    }
+
     if (!produto?.id) {
       setFeedback("Selecione um produto existente antes de registrar movimento.");
       return;
@@ -103,7 +128,11 @@ export function EntradaRapida({ focusBarcode = false, onFechar, onRegistrar }: E
       </div>
 
       <div className="estoque-form-grid">
-        <TextInput label="Codigo de Barras" value={codigo} onChange={(event) => setCodigo(event.target.value)} placeholder="Digite ou escaneie" />
+        <TextInput label="Codigo de Barras" value={codigo} onChange={(event) => {
+          setCodigo(event.target.value);
+          setProduto(null);
+          setMarcaExterna("");
+        }} placeholder="Digite ou escaneie" />
         <TextInput label="Produto" value={produtoNome} onChange={(event) => setProdutoNome(event.target.value)} placeholder="Produto localizado" />
         <Select label="Unidade" options={UNIDADES} value={unidade} onChange={(event) => setUnidade(event.target.value)} />
         <TextInput label="Quantidade" min={0} type="number" value={quantidade} onChange={(event) => setQuantidade(Number(event.target.value))} />
@@ -116,7 +145,7 @@ export function EntradaRapida({ focusBarcode = false, onFechar, onRegistrar }: E
 
       <div className="estoque-row-actions">
         <Button variant="secondary" onClick={handleBuscar} disabled={!codigo}>Buscar Codigo</Button>
-        <Button variant="primary" onClick={() => registrar("entrada")} disabled={!produto || custoTotal <= 0}>Registrar Entrada</Button>
+        <Button variant="primary" onClick={() => registrar("entrada")} disabled={(!produto && !produtoNome.trim()) || custoTotal <= 0}>Registrar Entrada</Button>
         <Button variant="secondary" onClick={() => registrar("saida")} disabled={!produto}>Registrar Saida</Button>
       </div>
 

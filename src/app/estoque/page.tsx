@@ -17,7 +17,7 @@ import { useCategoriasInsumos } from "../../hooks/useCategoriasInsumos";
 import { useEstoque } from "../../hooks/useEstoque";
 
 export default function EstoquePage() {
-  const { error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
+  const { criarInsumoComEntrada, error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
   const { categoriasList, criarCategoria, ocultarCategoria } = useCategoriasInsumos();
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
@@ -88,6 +88,25 @@ export default function EstoquePage() {
     [refetch, registrarMovimento],
   );
 
+  const handleCriarEntradaRapida = useCallback(
+    async (dados: {
+      codigoBarras?: string;
+      custoTotal: number;
+      marca?: string;
+      nome: string;
+      quantidade: number;
+      unidade: string;
+    }) => {
+      await criarInsumoComEntrada({
+        ...dados,
+        responsavel: "admin",
+      });
+      setMostrarEntradaRapida(false);
+      refetch();
+    },
+    [criarInsumoComEntrada, refetch],
+  );
+
   if (error) {
     return (
       <EmptyState
@@ -121,7 +140,12 @@ export default function EstoquePage() {
       />
 
       {mostrarEntradaRapida ? (
-        <EntradaRapida onRegistrar={handleRegistrarEntrada} onFechar={() => setMostrarEntradaRapida(false)} focusBarcode />
+        <EntradaRapida
+          onCriarEntrada={handleCriarEntradaRapida}
+          onRegistrar={handleRegistrarEntrada}
+          onFechar={() => setMostrarEntradaRapida(false)}
+          focusBarcode
+        />
       ) : null}
 
       {mostrarImportarXml ? (

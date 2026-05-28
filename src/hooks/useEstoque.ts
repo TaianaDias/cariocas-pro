@@ -26,6 +26,16 @@ type MovimentoInput = {
   tipo: "entrada" | "saida" | "ajuste" | "correcao" | "xml" | "producao";
 };
 
+type CriarEntradaInput = {
+  codigoBarras?: string;
+  custoTotal: number;
+  marca?: string;
+  nome: string;
+  quantidade: number;
+  responsavel: string;
+  unidade: string;
+};
+
 const kpisIniciais: EstoqueKpis = {
   abaixoMinimo: 0,
   aumentoCusto: 0,
@@ -117,6 +127,74 @@ export function useEstoque() {
     await batch.commit();
   }, []);
 
+  const criarInsumoComEntrada = useCallback(async (dados: CriarEntradaInput) => {
+    if (!dados.nome.trim()) throw new Error("Informe o nome do produto.");
+    if (dados.quantidade <= 0) throw new Error("Quantidade deve ser maior que zero.");
+    if (dados.custoTotal <= 0) throw new Error("Custo total deve ser maior que zero.");
+
+    const custoUnitario = Math.round((dados.custoTotal / dados.quantidade) * 100) / 100;
+    const batch = writeBatch(db);
+    const insumoRef = doc(collection(db, "insumos"));
+    const codigoNormalizado = dados.codigoBarras?.replace(/\D/g, "") || "";
+
+    batch.set(insumoRef, {
+      categoriaId: "",
+      codigoBarras: dados.codigoBarras || "",
+      codigoBarrasNormalizado: codigoNormalizado,
+      conversao: 1,
+      createdBy: dados.responsavel,
+      criadoEm: serverTimestamp(),
+      custoCompra: custoUnitario,
+      custoUnitario,
+      diasEntrega: 0,
+      diasPedido: 0,
+      estoqueMaximo: 0,
+      estoqueMinimo: 0,
+      frequenciaPedido: "",
+      localArmazenamento: "",
+      loteInterno: "",
+      marca: dados.marca || "",
+      margemEstimada: 0,
+      cmv: 0,
+      nome: dados.nome,
+      nomeNormalizado: dados.nome.toLowerCase(),
+      observacao: "Criado pela entrada rapida por codigo de barras",
+      origemCadastro: "barcode",
+      precosVenda: [],
+      promocaoAtiva: false,
+      quantidadeAtual: dados.quantidade,
+      quantidadePadraoPedido: 0,
+      responsavel: dados.responsavel,
+      sku: codigoNormalizado ? `BAR-${codigoNormalizado}` : `MANUAL-${Date.now()}`,
+      status: "ativo",
+      statusProduto: "ativo",
+      tipoEtiqueta: "",
+      unidadeCompra: dados.unidade,
+      unidadeMedida: dados.unidade,
+      unidadeUso: dados.unidade,
+      validadeAposAberto: 0,
+      validadeAposProducao: 0,
+      validadeOriginal: 0,
+      atualizadoEm: serverTimestamp(),
+    });
+
+    batch.set(doc(collection(db, "historico")), {
+      criadoEm: serverTimestamp(),
+      custoTotal: dados.custoTotal,
+      custoUnitario,
+      insumoId: insumoRef.id,
+      insumoNome: dados.nome,
+      observacao: `Entrada rapida em ${dados.unidade}`,
+      quantidade: dados.quantidade,
+      responsavel: dados.responsavel,
+      tipo: "entrada",
+      unidade: dados.unidade,
+    });
+
+    await batch.commit();
+    return insumoRef.id;
+  }, []);
+
   const registrarMovimento = useCallback(
     async (dados: MovimentoInput) => {
       const insumoAtual = insumos.find((item) => item.id === dados.insumoId);
@@ -201,6 +279,7 @@ export function useEstoque() {
     atualizarInsumo,
     categorias,
     criarInsumo,
+    criarInsumoComEntrada,
     deletarInsumo,
     error,
     insumos,
