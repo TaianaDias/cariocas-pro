@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { CategoriasInsumos } from "../../components/estoque/CategoriasInsumos";
 import { EntradaRapida } from "../../components/estoque/EntradaRapida";
@@ -19,6 +20,8 @@ import { useEstoque } from "../../hooks/useEstoque";
 export default function EstoquePage() {
   const { criarInsumoComEntrada, deletarInsumo, error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
   const { categoriasList, criarCategoria, ocultarCategoria } = useCategoriasInsumos();
+  const searchParams = useSearchParams();
+  const filtroAtencao = searchParams.get("atencao");
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
   const [modoVisualizacao, setModoVisualizacao] = useState<"cards" | "tabela">("cards");
@@ -34,6 +37,14 @@ export default function EstoquePage() {
       filtrados = filtrados.filter((insumo) => insumo.categoriaId === categoriaAtiva);
     }
 
+    if (filtroAtencao === "criticos") {
+      filtrados = filtrados.filter((insumo) => Number(insumo.quantidadeAtual) <= Number(insumo.estoqueMinimo));
+    }
+
+    if (filtroAtencao === "reposicao") {
+      filtrados = filtrados.filter((insumo) => Number(insumo.quantidadeAtual) <= 0);
+    }
+
     if (busca.trim()) {
       const termo = busca.toLowerCase();
       filtrados = filtrados.filter(
@@ -46,7 +57,9 @@ export default function EstoquePage() {
     }
 
     return filtrados;
-  }, [busca, categoriaAtiva, insumos]);
+  }, [busca, categoriaAtiva, filtroAtencao, insumos]);
+
+  const filtroAtencaoLabel = filtroAtencao === "criticos" ? "Itens criticos" : filtroAtencao === "reposicao" ? "Reposicao pendente" : "";
 
   const handleNovoInsumo = useCallback(() => {
     setProdutoEditandoId(null);
@@ -155,6 +168,14 @@ export default function EstoquePage() {
         onOcultarCategoria={ocultarCategoria}
         onSelect={setCategoriaAtiva}
       />
+
+      {filtroAtencaoLabel ? (
+        <div className="estoque-attention-filter">
+          <span>{filtroAtencaoLabel}</span>
+          <strong>{insumosFiltrados.length} itens precisam de atencao</strong>
+          <a href="/estoque">Limpar filtro</a>
+        </div>
+      ) : null}
 
       {mostrarEntradaRapida ? (
         <EntradaRapida

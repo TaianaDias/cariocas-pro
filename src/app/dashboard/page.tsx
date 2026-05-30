@@ -33,7 +33,7 @@ export default function DashboardPage() {
       <Section title="Indicadores">
         <div className="dashboard-kpi-grid">
           <KpiCard
-            title="Custo do Dia"
+            title="Total em Estoque"
             value={kpis ? `R$ ${kpis.custoDoDia.toFixed(2)}` : ""}
             variation={kpis ? `${kpis.variacaoCusto > 0 ? "↑" : "↓"} ${Math.abs(kpis.variacaoCusto)}%` : ""}
             loading={loading}
@@ -49,12 +49,14 @@ export default function DashboardPage() {
             loading={loading}
           />
           <KpiCard
+            href="/estoque?atencao=criticos"
             title="Itens Criticos"
             value={kpis ? `${kpis.itensCriticos} itens` : ""}
             variation=""
             loading={loading}
           />
           <KpiCard
+            href="/estoque?atencao=reposicao"
             title="Reposicao Pendente"
             value={kpis ? `${kpis.reposicaoPendente} pend.` : ""}
             variation=""

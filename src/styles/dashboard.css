@@ -166,6 +166,21 @@
   padding: var(--space-5);
 }
 
+.dashboard-kpi-link {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dashboard-kpi-link:hover,
+.dashboard-kpi-link:focus-visible {
+  border-color: rgba(212, 32, 32, 0.42);
+  transform: translateY(-2px);
+  outline: none;
+}
+
 .kpi-card__title {
   color: rgba(229, 231, 235, 0.66);
   font-size: var(--font-size-sm);
