@@ -32,7 +32,7 @@ async function parseResponse(response: Response) {
 }
 
 function extrairXml(data: Record<string, unknown>) {
-  return String(data.xml || data.xmlNfe || data.nfeXml || data.conteudoXml || data.XML || "");
+  return String(data.xml || data.xmlNfe || data.nfeXml || data.conteudoXml || data.XML || data.data || "");
 }
 
 export async function POST(request: Request) {
