@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         [tokenHeader]: tokenHeader.toLowerCase() === "authorization" ? `Bearer ${tokenValue}` : tokenValue,
       },
       cache: "no-store",
-      method: process.env.NFE_LOOKUP_METHOD?.trim() || "POST",
+      method: process.env.NFE_LOOKUP_METHOD?.trim() || "PUT",
     });
 
     if (!response.ok) {
