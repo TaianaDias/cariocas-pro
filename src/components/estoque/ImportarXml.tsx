@@ -79,6 +79,11 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         throw new Error(data.error || "Nao foi possivel consultar a NF-e pela chave.");
       }
 
+      if (!data.xml) {
+        setResultado(data.statusMessage || "Consulta enviada. Aguarde alguns segundos e clique em Ler nota novamente.");
+        return;
+      }
+
       aplicarXmlNoPreview(data.xml, `nfe-${chave}.xml`);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Nao foi possivel ler a nota fiscal pelo codigo.");
