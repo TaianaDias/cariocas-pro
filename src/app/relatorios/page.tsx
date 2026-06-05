@@ -1,3 +1,1 @@
-export default function Page() {
-  return <div>Pagina: Relatorios</div>;
-}
+export { default } from "../financeiro/relatorios/page";

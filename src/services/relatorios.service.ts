@@ -1,4 +1,4 @@
-import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
 import type { Desperdicio, Insumo, PedidoCompra } from "../types";
@@ -50,7 +50,6 @@ export async function getRelatorioCompras(dataInicio: Date, dataFim: Date): Prom
     collection(db, "pedidos_compra"),
     where("dataPedido", ">=", dataInicio),
     where("dataPedido", "<=", dataFim),
-    orderBy("dataPedido", "desc"),
   );
   const snapshot = await getDocs(pedidosQuery);
   const agrupado: Record<string, RelatorioPedidos> = {};
@@ -75,8 +74,6 @@ export async function getRelatorioProdutos(dataInicio: Date, dataFim: Date): Pro
     collection(db, "historico"),
     where("criadoEm", ">=", dataInicio),
     where("criadoEm", "<=", dataFim),
-    where("tipo", "==", "entrada"),
-    orderBy("criadoEm", "desc"),
   );
   const [historicoSnap, insumosSnap, categoriasSnap] = await Promise.all([
     getDocs(historicoQuery),
@@ -94,6 +91,8 @@ export async function getRelatorioProdutos(dataInicio: Date, dataFim: Date): Pro
 
   for (const item of historicoSnap.docs) {
     const data = item.data();
+    if (data.tipo !== "entrada") continue;
+
     const id = String(data.insumoId || "unknown");
     const insumo = insumos.get(id);
 
