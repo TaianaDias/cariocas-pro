@@ -14,7 +14,7 @@ import { listarInsumos } from "../../services/estoque.service";
 import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
 import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarMercado, listarMercados } from "../../services/mercados.service";
-import { listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
+import { atualizarProducaoPorcao, deletarProducaoPorcao, listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
 import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra, ProducaoPorcao } from "../../types";
 
@@ -967,7 +967,9 @@ export function ProducaoPageClient() {
   const { data: porcoes, error: porcoesError, loading: porcoesLoading, refetch: refetchPorcoes } = useAsyncData<ProducaoPorcao>(listarPorcoesDisponiveis);
   const [formAberto, setFormAberto] = useState(false);
   const [porcaoAberta, setPorcaoAberta] = useState(false);
+  const [porcaoEditando, setPorcaoEditando] = useState<ProducaoPorcao | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingEdicaoPorcao, setSavingEdicaoPorcao] = useState(false);
   const [savingPorcao, setSavingPorcao] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ custoTotal: 0, nome: "", rendimento: 1, unidade: "un" });
@@ -978,6 +980,15 @@ export function ProducaoPageClient() {
     porcoes: 1,
     quantidade: 1,
     quantidadePorPorcao: 1,
+  });
+  const [porcaoEditForm, setPorcaoEditForm] = useState({
+    area: "",
+    formatoPorcao: "pacote",
+    observacao: "",
+    porcoesDisponiveis: 1,
+    porcoesGeradas: 1,
+    quantidadePorPorcao: 1,
+    unidadePorcao: "un",
   });
   const custoFichas = fichas.reduce((acc, item) => acc + (item.custoTotal || 0), 0);
   const loading = fichasLoading || ordensLoading || insumosLoading || porcoesLoading;
@@ -1048,6 +1059,58 @@ export function ProducaoPageClient() {
     }
   }
 
+  function abrirEdicaoPorcao(porcao: ProducaoPorcao) {
+    setFormError(null);
+    setPorcaoEditando(porcao);
+    setPorcaoEditForm({
+      area: porcao.area || "producao",
+      formatoPorcao: porcao.formatoPorcao || "porcao",
+      observacao: porcao.observacao || "",
+      porcoesDisponiveis: Number(porcao.porcoesDisponiveis) || 0,
+      porcoesGeradas: Number(porcao.porcoesGeradas) || 1,
+      quantidadePorPorcao: Number(porcao.quantidadePorPorcao) || 0,
+      unidadePorcao: porcao.unidadePorcao || porcao.unidade || "un",
+    });
+  }
+
+  async function salvarEdicaoPorcao() {
+    if (!porcaoEditando?.id) return;
+
+    setSavingEdicaoPorcao(true);
+    setFormError(null);
+    try {
+      await atualizarProducaoPorcao(porcaoEditando.id, {
+        area: porcaoEditForm.area,
+        formatoPorcao: porcaoEditForm.formatoPorcao,
+        observacao: porcaoEditForm.observacao,
+        porcoesDisponiveis: Number(porcaoEditForm.porcoesDisponiveis) || 0,
+        porcoesGeradas: Number(porcaoEditForm.porcoesGeradas) || 1,
+        quantidadePorPorcao: Number(porcaoEditForm.quantidadePorPorcao) || 0,
+        unidadePorcao: porcaoEditForm.unidadePorcao,
+      });
+      setPorcaoEditando(null);
+      refetchPorcoes();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel editar a porcao.");
+    } finally {
+      setSavingEdicaoPorcao(false);
+    }
+  }
+
+  async function excluirPorcao(porcao: ProducaoPorcao) {
+    if (!porcao.id) return;
+    const confirmou = window.confirm(`Excluir a porcao de "${porcao.insumoNome}"? Esta acao remove o controle da porcao, mas nao devolve automaticamente a baixa ao estoque.`);
+    if (!confirmou) return;
+
+    setFormError(null);
+    try {
+      await deletarProducaoPorcao(porcao.id);
+      refetchPorcoes();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir a porcao.");
+    }
+  }
+
   return (
     <PageShell
       actions={
@@ -1106,6 +1169,38 @@ export function ProducaoPageClient() {
         </ActionPanel>
       ) : null}
 
+      {porcaoEditando ? (
+        <ActionPanel title={`Editar porcao - ${porcaoEditando.insumoNome}`} error={formError} onClose={() => setPorcaoEditando(null)}>
+          <div className="operational-form-grid">
+            <Field label="Porcoes geradas" type="number" value={porcaoEditForm.porcoesGeradas} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, porcoesGeradas: Number(value) }))} />
+            <Field label="Porcoes disponiveis" type="number" value={porcaoEditForm.porcoesDisponiveis} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, porcoesDisponiveis: Number(value) }))} />
+            <SelectField label="Formato" value={porcaoEditForm.formatoPorcao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, formatoPorcao: value }))}>
+              <option value="pacote">Pacote</option>
+              <option value="bisnaga">Bisnaga</option>
+              <option value="pote">Pote</option>
+              <option value="saco">Saco</option>
+              <option value="unidade">Unidade</option>
+              <option value="porcao">Porcao</option>
+            </SelectField>
+            <Field label="Qtd por porcao" type="number" value={porcaoEditForm.quantidadePorPorcao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, quantidadePorPorcao: Number(value) }))} />
+            <Field label="Unidade da porcao" value={porcaoEditForm.unidadePorcao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, unidadePorcao: value }))} />
+            <Field label="Area" value={porcaoEditForm.area} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, area: value }))} />
+            <Field label="Observacao" value={porcaoEditForm.observacao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, observacao: value }))} />
+          </div>
+          <Card className="operational-row">
+            <div>
+              <strong>Baixa original preservada</strong>
+              <span>{porcaoEditando.quantidadeBaixada} {porcaoEditando.unidade} ja foram baixados do estoque quando essa porcao foi criada.</span>
+            </div>
+            <div>
+              <Badge tone="warning">controle</Badge>
+              <small>Editar aqui nao devolve estoque bruto.</small>
+            </div>
+          </Card>
+          <SubmitRow loading={savingEdicaoPorcao} onSubmit={salvarEdicaoPorcao} />
+        </ActionPanel>
+      ) : null}
+
       {formAberto ? (
         <ActionPanel title="Nova ficha tecnica" error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
@@ -1152,6 +1247,10 @@ export function ProducaoPageClient() {
                 <Badge tone="success">{porcao.formatoPorcao || "porcao"}</Badge>
                 <small>Baixado: {porcao.quantidadeBaixada} {porcao.unidade}</small>
                 <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porcao.unidade} por porcao` : money(porcao.custoPorPorcao)}</small>
+                <div className="operational-row__actions">
+                  <button type="button" onClick={() => abrirEdicaoPorcao(porcao)}>Editar</button>
+                  <button type="button" onClick={() => excluirPorcao(porcao)}>Excluir</button>
+                </div>
               </div>
             </Card>
           ))}

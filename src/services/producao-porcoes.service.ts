@@ -1,5 +1,5 @@
 import type { Insumo, ProducaoPorcao } from "../types";
-import { atualizarDocumento, criarDocumento, obterDocumento, obterTodos } from "./db";
+import { atualizarDocumento, criarDocumento, deletarDocumento, obterDocumento, obterTodos } from "./db";
 import { listarInsumos } from "./estoque.service";
 import { registrarHistorico } from "./historico.service";
 
@@ -17,6 +17,16 @@ type SaidaParaProducaoInput = {
   quantidade: number;
   responsavel: string;
   unidade: string;
+  unidadePorcao?: string;
+};
+
+type AtualizarPorcaoInput = {
+  area?: string;
+  formatoPorcao?: string;
+  observacao?: string;
+  porcoesDisponiveis?: number;
+  porcoesGeradas?: number;
+  quantidadePorPorcao?: number;
   unidadePorcao?: string;
 };
 
@@ -145,5 +155,44 @@ export async function getProducaoPorcao(id: string): Promise<ProducaoPorcao | nu
   } catch (error) {
     console.error("Erro ao buscar producao de porcoes", error);
     return null;
+  }
+}
+
+export async function atualizarProducaoPorcao(id: string, dados: AtualizarPorcaoInput): Promise<void> {
+  try {
+    const porcaoAtual = await obterDocumento<ProducaoPorcao>(COLECAO_PORCOES, id);
+    if (!porcaoAtual) throw new Error("Porcao nao encontrada.");
+
+    const porcoesGeradas = Number(dados.porcoesGeradas ?? porcaoAtual.porcoesGeradas) || 0;
+    const porcoesDisponiveis = Number(dados.porcoesDisponiveis ?? porcaoAtual.porcoesDisponiveis) || 0;
+
+    if (porcoesGeradas <= 0) throw new Error("A quantidade gerada precisa ser maior que zero.");
+    if (porcoesDisponiveis < 0) throw new Error("Porcoes disponiveis nao pode ser negativo.");
+    if (porcoesDisponiveis > porcoesGeradas) throw new Error("Porcoes disponiveis nao pode ser maior que porcoes geradas.");
+
+    const status: ProducaoPorcao["status"] = porcoesDisponiveis <= 0 ? "finalizado" : porcoesDisponiveis < porcoesGeradas ? "parcial" : "disponivel";
+
+    await atualizarDocumento<ProducaoPorcao>(COLECAO_PORCOES, id, {
+      area: dados.area || porcaoAtual.area,
+      formatoPorcao: dados.formatoPorcao || porcaoAtual.formatoPorcao,
+      observacao: dados.observacao ?? porcaoAtual.observacao,
+      porcoesDisponiveis,
+      porcoesGeradas,
+      quantidadePorPorcao: Number(dados.quantidadePorPorcao ?? porcaoAtual.quantidadePorPorcao) || 0,
+      status,
+      unidadePorcao: dados.unidadePorcao || porcaoAtual.unidadePorcao || porcaoAtual.unidade,
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar porcao de producao", error);
+    throw error;
+  }
+}
+
+export async function deletarProducaoPorcao(id: string): Promise<void> {
+  try {
+    await deletarDocumento(COLECAO_PORCOES, id);
+  } catch (error) {
+    console.error("Erro ao excluir porcao de producao", error);
+    throw error;
   }
 }
