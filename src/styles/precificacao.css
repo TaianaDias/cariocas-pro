@@ -1,12 +1,14 @@
 .precificacao-page {
   display: grid;
   gap: var(--space-6);
+  width: 100%;
+  min-width: 0;
 }
 
 .precificacao-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: var(--space-5);
   border: var(--border-subtle);
   border-radius: var(--radius-xl);
@@ -15,6 +17,16 @@
     rgba(18, 18, 20, 0.88);
   padding: var(--space-8);
   box-shadow: var(--shadow-panel);
+}
+
+.precificacao-hero > div:first-child,
+.precificacao-form,
+.precificacao-costs,
+.precificacao-list,
+.precificacao-result,
+.receita-card,
+.receita-card__body {
+  min-width: 0;
 }
 
 .precificacao-eyebrow,
@@ -37,6 +49,8 @@
   max-width: 760px;
   margin: 0;
   color: rgba(229, 231, 235, 0.74);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
 }
 
 .precificacao-hero__actions,
@@ -47,11 +61,16 @@
   gap: var(--space-3);
 }
 
+.precificacao-hero__actions {
+  justify-content: flex-end;
+}
+
 .precificacao-tabs {
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
   padding-bottom: var(--space-1);
+  scrollbar-width: thin;
 }
 
 .precificacao-tabs button {
@@ -63,6 +82,7 @@
   color: rgba(229, 231, 235, 0.74);
   font-size: var(--font-size-sm);
   font-weight: 850;
+  white-space: nowrap;
   padding: 0 var(--space-4);
 }
 
@@ -86,6 +106,8 @@
 .precificacao-kpi {
   display: grid;
   gap: var(--space-2);
+  min-height: 112px;
+  align-content: space-between;
 }
 
 .precificacao-simple-mode {
@@ -114,8 +136,11 @@
 
 .precificacao-kpi strong,
 .precificacao-result strong {
+  min-width: 0;
   color: #ffffff;
   font-size: var(--font-size-xl);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
 }
 
 .precificacao-kpi--success strong {
@@ -127,7 +152,7 @@
 }
 
 .precificacao-grid {
-  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
   align-items: start;
 }
 
@@ -154,6 +179,8 @@
 .precificacao-list > strong {
   color: #ffffff;
   font-size: var(--font-size-lg);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .precificacao-form__grid {
@@ -165,6 +192,7 @@
 .precificacao-field {
   display: grid;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .precificacao-field input,
@@ -175,6 +203,8 @@
   border-radius: var(--radius-md);
   background: rgba(13, 13, 15, 0.82);
   color: var(--text-base);
+  font-size: var(--font-size-sm);
+  line-height: 1.35;
   outline: none;
   padding: 12px 13px;
 }
@@ -199,6 +229,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 42px;
   border: var(--border-subtle);
   border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.025);
@@ -206,6 +237,10 @@
   font-size: var(--font-size-sm);
   font-weight: 800;
   padding: 9px 12px;
+}
+
+.precificacao-switch span {
+  overflow-wrap: anywhere;
 }
 
 .precificacao-ingredient {
@@ -222,7 +257,8 @@
 
 .precificacao-ingredients-list div {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
   gap: var(--space-3);
   border: var(--border-subtle);
   border-radius: var(--radius-md);
@@ -230,8 +266,16 @@
   padding: var(--space-3);
 }
 
+.precificacao-ingredients-list span,
+.precificacao-ingredients-list strong,
+.precificacao-ingredients-list small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .precificacao-ingredients-list small {
   color: var(--text-muted);
+  text-align: right;
 }
 
 .receitas-grid {
@@ -241,10 +285,11 @@
 
 .receita-card {
   display: grid;
-  grid-template-columns: 132px 1fr;
+  grid-template-columns: 136px minmax(0, 1fr);
   gap: var(--space-4);
   overflow: hidden;
   border-color: rgba(229, 231, 235, 0.1);
+  align-items: stretch;
 }
 
 .receita-card--saudavel {
@@ -261,7 +306,8 @@
 
 .receita-card__image {
   display: grid;
-  min-height: 132px;
+  min-height: 136px;
+  aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
   border-radius: var(--radius-md);
@@ -283,25 +329,41 @@
 .receita-card__body {
   display: grid;
   gap: var(--space-3);
+  align-content: start;
 }
 
 .receita-card h2 {
   margin: 0;
   color: #ffffff;
   font-size: var(--font-size-lg);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
 }
 
 .receita-card dl {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
   gap: var(--space-2);
   margin: 0;
+}
+
+.receita-card dl > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 2px;
+  border: 1px solid rgba(229, 231, 235, 0.06);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 8px 9px;
 }
 
 .receita-card dt {
   color: rgba(229, 231, 235, 0.54);
   font-size: var(--font-size-xs);
   font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .receita-card dd {
@@ -309,27 +371,41 @@
   color: #ffffff;
   font-size: var(--font-size-sm);
   font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .receita-card__prices {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
 .receita-card__prices span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(212, 32, 32, 0.25);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   background: rgba(212, 32, 32, 0.1);
   color: rgba(255, 255, 255, 0.86);
   font-size: var(--font-size-xs);
   font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
   padding: 6px 9px;
+}
+
+.receita-card__actions {
+  justify-content: flex-end;
 }
 
 .precificacao-result {
   align-content: center;
   min-height: 240px;
+  text-align: left;
 }
 
 .precificacao-result--saudavel {
@@ -348,6 +424,9 @@
 .precificacao-result p {
   margin: 0;
   color: rgba(229, 231, 235, 0.74);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 980px) {
@@ -359,25 +438,61 @@
 
   .precificacao-hero {
     align-items: stretch;
-    flex-direction: column;
     padding: var(--space-5);
+  }
+
+  .precificacao-hero__actions,
+  .receita-card__actions {
+    justify-content: flex-start;
   }
 
   .precificacao-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .receita-card dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
+  .precificacao-page {
+    gap: var(--space-5);
+  }
+
   .precificacao-hero h1 {
     font-size: var(--font-size-2xl);
+  }
+
+  .precificacao-hero p {
+    font-size: var(--font-size-xs);
+  }
+
+  .precificacao-hero__actions .button {
+    width: 100%;
   }
 
   .precificacao-kpis,
   .precificacao-form__grid,
   .receita-card,
-  .receita-card dl {
+  .receita-card dl,
+  .receita-card__prices,
+  .precificacao-ingredients-list div {
     grid-template-columns: 1fr;
+  }
+
+  .receita-card__image {
+    min-height: 180px;
+    aspect-ratio: 16 / 9;
+  }
+
+  .precificacao-switches {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .precificacao-ingredients-list small {
+    text-align: left;
   }
 
   .receita-card__actions .button {
