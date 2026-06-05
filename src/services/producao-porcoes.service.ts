@@ -1,5 +1,5 @@
 import type { Insumo, ProducaoPorcao } from "../types";
-import { atualizarDocumento, consultar, criarDocumento, obterDocumento } from "./db";
+import { atualizarDocumento, criarDocumento, obterDocumento, obterTodos } from "./db";
 import { listarInsumos } from "./estoque.service";
 import { registrarHistorico } from "./historico.service";
 
@@ -125,11 +125,14 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
 
 export async function listarPorcoesDisponiveis(): Promise<ProducaoPorcao[]> {
   try {
-    return consultar<ProducaoPorcao>(
-      COLECAO_PORCOES,
-      [{ campo: "porcoesDisponiveis", operador: ">" as const, valor: 0 }],
-      { campo: "criadoEm", direcao: "desc" },
-    );
+    const porcoes = await obterTodos<ProducaoPorcao>(COLECAO_PORCOES);
+    return porcoes
+      .filter((porcao) => Number(porcao.porcoesDisponiveis) > 0)
+      .sort((a, b) => {
+        const dataA = a.criadoEm && typeof a.criadoEm === "object" && "toDate" in a.criadoEm ? (a.criadoEm as { toDate: () => Date }).toDate().getTime() : 0;
+        const dataB = b.criadoEm && typeof b.criadoEm === "object" && "toDate" in b.criadoEm ? (b.criadoEm as { toDate: () => Date }).toDate().getTime() : 0;
+        return dataB - dataA;
+      });
   } catch (error) {
     console.error("Erro ao listar porcoes disponiveis", error);
     return [];
