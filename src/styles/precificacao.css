@@ -3,6 +3,7 @@
   gap: var(--space-6);
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .precificacao-hero {
@@ -100,7 +101,7 @@
 }
 
 .precificacao-kpis {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
 }
 
 .precificacao-kpi {
@@ -152,12 +153,12 @@
 }
 
 .precificacao-grid {
-  grid-template-columns: minmax(340px, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(min(100%, 420px), 0.82fr) minmax(min(100%, 420px), 1.18fr);
   align-items: start;
 }
 
 .precificacao-grid--simulator {
-  grid-template-columns: minmax(320px, 1fr) minmax(280px, 0.7fr);
+  grid-template-columns: minmax(min(100%, 420px), 1fr) minmax(min(100%, 320px), 0.7fr);
 }
 
 .precificacao-form,
@@ -342,7 +343,7 @@
 
 .receita-card dl {
   display: grid;
-  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 104px), 1fr));
   gap: var(--space-2);
   margin: 0;
 }
@@ -426,6 +427,18 @@
   color: rgba(229, 231, 235, 0.74);
   font-size: var(--font-size-sm);
   line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.precificacao-page .empty-state {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.precificacao-page .empty-state h2,
+.precificacao-page .empty-state p {
+  max-width: min(100%, 520px);
   overflow-wrap: anywhere;
 }
 
