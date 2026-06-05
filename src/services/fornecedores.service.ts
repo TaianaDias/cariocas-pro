@@ -1,7 +1,19 @@
-import type { Fornecedor, FornecedorVinculo } from "../types";
+import type { Fornecedor, FornecedorVinculo, Insumo } from "../types";
 import { atualizarDocumento, batchEscrita, consultar, criarDocumento, deletarDocumento, obterDocumento, obterTodos } from "./db";
 
 const COLECAO = "fornecedores";
+const COLECAO_INSUMOS = "insumos";
+
+type VincularInsumoFornecedorInput = {
+  conversao?: number;
+  custoUnitario: number;
+  diasEntrega?: number;
+  diasPedido?: number;
+  frequenciaPedido?: string;
+  principal?: boolean;
+  quantidadePadrao?: number;
+  unidadeUso?: string;
+};
 
 export async function listarFornecedores(): Promise<Fornecedor[]> {
   try {
@@ -43,6 +55,7 @@ export async function atualizarFornecedor(id: string, dados: Partial<Fornecedor>
 
 export async function deletarFornecedor(id: string): Promise<void> {
   try {
+    await removerFornecedorDosInsumos(id);
     return deletarDocumento(COLECAO, id);
   } catch (error) {
     console.error("Erro ao deletar fornecedor", error);
@@ -107,5 +120,76 @@ export async function desvincularProduto(fornecedorId: string, produtoId: string
   } catch (error) {
     console.error("Erro ao desvincular produto", error);
     throw error;
+  }
+}
+
+export async function vincularInsumoAoFornecedor(
+  fornecedor: Fornecedor,
+  insumo: Insumo,
+  dados: VincularInsumoFornecedorInput,
+): Promise<void> {
+  try {
+    if (!fornecedor.id || !insumo.id) throw new Error("Fornecedor e insumo sao obrigatorios.");
+    if (dados.custoUnitario <= 0) throw new Error("Informe um custo maior que zero.");
+
+    const vinculosAtuais = insumo.fornecedores || [];
+    const outrosFornecedores = vinculosAtuais.filter((item) => item.fornecedorId !== fornecedor.id);
+    const principal = Boolean(dados.principal) || vinculosAtuais.length === 0;
+    const vinculo: FornecedorVinculo = {
+      cnpjFornecedor: fornecedor.cnpj,
+      conversao: Number(dados.conversao) || 1,
+      custo: Number(dados.custoUnitario) || 0,
+      custoUnitario: Number(dados.custoUnitario) || 0,
+      diasEntrega: Number(dados.diasEntrega) || 0,
+      diasPedido: Number(dados.diasPedido) || 0,
+      fornecedorId: fornecedor.id,
+      fornecedorNome: fornecedor.nome,
+      frequenciaPedido: dados.frequenciaPedido || "",
+      principal,
+      quantidadePadrao: Number(dados.quantidadePadrao) || 1,
+      telefoneFornecedor: fornecedor.telefone,
+      unidadeUso: dados.unidadeUso || insumo.unidadeCompra || insumo.unidadeMedida,
+    };
+    const fornecedores = principal ? outrosFornecedores.map((item) => ({ ...item, principal: false })) : outrosFornecedores;
+    const proximosFornecedores = [...fornecedores, vinculo];
+    const fornecedorPrincipal = principal || !insumo.fornecedorPrincipal ? fornecedor.nome : insumo.fornecedorPrincipal;
+
+    await atualizarDocumento<Insumo>(COLECAO_INSUMOS, insumo.id, {
+      fornecedorPrincipal,
+      fornecedores: proximosFornecedores,
+    });
+
+    await criarDocumento(`${COLECAO}/${fornecedor.id}/produtos`, {
+      ...vinculo,
+      insumoId: insumo.id,
+      insumoNome: insumo.nome,
+    });
+  } catch (error) {
+    console.error("Erro ao vincular insumo ao fornecedor", error);
+    throw error;
+  }
+}
+
+async function removerFornecedorDosInsumos(fornecedorId: string): Promise<void> {
+  const insumos = await obterTodos<Insumo>(COLECAO_INSUMOS);
+  const operacoes = insumos
+    .filter((insumo) => insumo.id && insumo.fornecedores?.some((fornecedor) => fornecedor.fornecedorId === fornecedorId))
+    .map((insumo) => {
+      const fornecedores = (insumo.fornecedores || []).filter((fornecedor) => fornecedor.fornecedorId !== fornecedorId);
+      const principal = fornecedores.find((fornecedor) => fornecedor.principal) || fornecedores[0];
+
+      return {
+        caminho: COLECAO_INSUMOS,
+        dados: {
+          fornecedorPrincipal: principal?.fornecedorNome || "",
+          fornecedores: fornecedores.map((fornecedor, index) => ({ ...fornecedor, principal: fornecedor.principal || index === 0 })),
+        },
+        docId: insumo.id!,
+        tipo: "update" as const,
+      };
+    });
+
+  if (operacoes.length) {
+    await batchEscrita(operacoes);
   }
 }

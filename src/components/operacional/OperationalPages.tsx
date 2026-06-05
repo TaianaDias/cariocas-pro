@@ -11,7 +11,7 @@ import { atualizarPedido, criarPedido, deletarPedido, listarPedidos } from "../.
 import { getConfiguracao } from "../../services/configuracoes.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
 import { listarInsumos } from "../../services/estoque.service";
-import { criarFornecedor, listarFornecedores } from "../../services/fornecedores.service";
+import { atualizarFornecedor, criarFornecedor, deletarFornecedor, listarFornecedores, vincularInsumoAoFornecedor } from "../../services/fornecedores.service";
 import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarMercado, listarMercados } from "../../services/mercados.service";
 import { atualizarProducaoPorcao, deletarProducaoPorcao, listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
@@ -831,18 +831,88 @@ export function DesperdicioPageClient() {
 
 export function FornecedoresPageClient() {
   const { data: fornecedores, error, loading, refetch } = useAsyncData<Fornecedor>(listarFornecedores);
+  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumos);
   const [formAberto, setFormAberto] = useState(false);
+  const [fornecedorEditando, setFornecedorEditando] = useState<Fornecedor | null>(null);
+  const [fornecedorVinculo, setFornecedorVinculo] = useState<Fornecedor | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingVinculo, setSavingVinculo] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ cnpj: "", email: "", nome: "", telefone: "" });
+  const [form, setForm] = useState({ cnpj: "", email: "", endereco: "", nome: "", observacoes: "", telefone: "" });
+  const [vinculoForm, setVinculoForm] = useState({
+    conversao: 1,
+    custoUnitario: 0,
+    diasEntrega: 0,
+    diasPedido: 0,
+    frequenciaPedido: "",
+    insumoId: "",
+    principal: true,
+    quantidadePadrao: 1,
+    unidadeUso: "",
+  });
   const comContato = fornecedores.filter((item) => item.telefone || item.email).length;
+  const loadingPage = loading || insumosLoading;
+  const pageError = error || insumosError;
+  const vinculosPorFornecedor = fornecedores.reduce<Record<string, Insumo[]>>((acc, fornecedor) => {
+    if (!fornecedor.id) return acc;
+    acc[fornecedor.id] = insumos.filter((insumo) => insumo.fornecedores?.some((item) => item.fornecedorId === fornecedor.id));
+    return acc;
+  }, {});
+
+  function abrirNovoFornecedor() {
+    setFornecedorEditando(null);
+    setForm({ cnpj: "", email: "", endereco: "", nome: "", observacoes: "", telefone: "" });
+    setFormError(null);
+    setFormAberto(true);
+  }
+
+  function abrirEditarFornecedor(fornecedor: Fornecedor) {
+    setFornecedorEditando(fornecedor);
+    setForm({
+      cnpj: fornecedor.cnpj || "",
+      email: fornecedor.email || "",
+      endereco: fornecedor.endereco || "",
+      nome: fornecedor.nome || "",
+      observacoes: fornecedor.observacoes || "",
+      telefone: fornecedor.telefone || "",
+    });
+    setFormError(null);
+    setFormAberto(true);
+  }
+
+  function abrirVinculoFornecedor(fornecedor: Fornecedor) {
+    setFornecedorVinculo(fornecedor);
+    setVinculoForm({
+      conversao: 1,
+      custoUnitario: 0,
+      diasEntrega: 0,
+      diasPedido: 0,
+      frequenciaPedido: "",
+      insumoId: "",
+      principal: true,
+      quantidadePadrao: 1,
+      unidadeUso: "",
+    });
+    setFormError(null);
+  }
+
+  function melhorCustoDoInsumo(insumo: Insumo) {
+    const fornecedoresInsumo = insumo.fornecedores || [];
+    if (!fornecedoresInsumo.length) return null;
+    return [...fornecedoresInsumo].sort((a, b) => (Number(a.custoUnitario || a.custo) || 0) - (Number(b.custoUnitario || b.custo) || 0))[0];
+  }
 
   async function salvar() {
     setSaving(true);
     setFormError(null);
     try {
-      await criarFornecedor({ ...form, endereco: "", observacoes: "" });
-      setForm({ cnpj: "", email: "", nome: "", telefone: "" });
+      if (fornecedorEditando?.id) {
+        await atualizarFornecedor(fornecedorEditando.id, form);
+      } else {
+        await criarFornecedor(form);
+      }
+      setForm({ cnpj: "", email: "", endereco: "", nome: "", observacoes: "", telefone: "" });
+      setFornecedorEditando(null);
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -852,39 +922,131 @@ export function FornecedoresPageClient() {
     }
   }
 
+  async function excluirFornecedor(fornecedor: Fornecedor) {
+    if (!fornecedor.id) return;
+    const confirmou = window.confirm(`Excluir "${fornecedor.nome}"? O fornecedor tambem sera removido dos vinculos dos insumos.`);
+    if (!confirmou) return;
+
+    setFormError(null);
+    try {
+      await deletarFornecedor(fornecedor.id);
+      refetch();
+      refetchInsumos();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir o fornecedor.");
+    }
+  }
+
+  async function salvarVinculo() {
+    if (!fornecedorVinculo?.id) return;
+    const insumo = insumos.find((item) => item.id === vinculoForm.insumoId);
+    if (!insumo?.id) {
+      setFormError("Selecione um insumo.");
+      return;
+    }
+
+    setSavingVinculo(true);
+    setFormError(null);
+    try {
+      await vincularInsumoAoFornecedor(fornecedorVinculo, insumo, {
+        conversao: Number(vinculoForm.conversao) || 1,
+        custoUnitario: Number(vinculoForm.custoUnitario) || 0,
+        diasEntrega: Number(vinculoForm.diasEntrega) || 0,
+        diasPedido: Number(vinculoForm.diasPedido) || 0,
+        frequenciaPedido: vinculoForm.frequenciaPedido,
+        principal: vinculoForm.principal,
+        quantidadePadrao: Number(vinculoForm.quantidadePadrao) || 1,
+        unidadeUso: vinculoForm.unidadeUso || insumo.unidadeCompra || insumo.unidadeMedida,
+      });
+      setFornecedorVinculo(null);
+      refetchInsumos();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel vincular o insumo.");
+    } finally {
+      setSavingVinculo(false);
+    }
+  }
+
   return (
-    <PageShell actions={<Button onClick={() => setFormAberto(true)}>Novo Fornecedor</Button>} eyebrow="Fornecedores" subtitle="Base de parceiros, contatos e compras recorrentes." title="Fornecedores">
+    <PageShell actions={<Button onClick={abrirNovoFornecedor}>Novo Fornecedor</Button>} eyebrow="Fornecedores" subtitle="Base de parceiros, contatos, custos por insumo e compras recorrentes." title="Fornecedores">
       <section className="operational-kpis">
         <Kpi label="Fornecedores" value={String(fornecedores.length)} />
         <Kpi label="Com contato" value={String(comContato)} />
+        <Kpi label="Insumos vinculados" value={String(insumos.filter((item) => item.fornecedores?.length).length)} />
         <Kpi label="Sem contato" value={String(Math.max(fornecedores.length - comContato, 0))} />
       </section>
       {formAberto ? (
-        <ActionPanel title="Novo fornecedor" error={formError} onClose={() => setFormAberto(false)}>
+        <ActionPanel title={fornecedorEditando ? "Editar fornecedor" : "Novo fornecedor"} error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
             <Field label="Nome" value={form.nome} onChange={(value) => setForm((current) => ({ ...current, nome: value }))} />
             <Field label="CNPJ" value={form.cnpj} onChange={(value) => setForm((current) => ({ ...current, cnpj: value }))} />
             <Field label="Telefone" value={form.telefone} onChange={(value) => setForm((current) => ({ ...current, telefone: value }))} />
             <Field label="Email" value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
+            <Field label="Endereco" value={form.endereco} onChange={(value) => setForm((current) => ({ ...current, endereco: value }))} />
+            <Field label="Observacoes" value={form.observacoes} onChange={(value) => setForm((current) => ({ ...current, observacoes: value }))} />
           </div>
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
       ) : null}
-      {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar fornecedores" description={error} /> : null}
-      {!loading && !error && fornecedores.length === 0 ? (
-        <EmptyState title="Nenhum fornecedor cadastrado" description="Cadastre fornecedores para organizar compras, prazos e custos." action={<Button onClick={() => setFormAberto(true)}>Novo Fornecedor</Button>} />
+
+      {fornecedorVinculo ? (
+        <ActionPanel title={`Insumos de ${fornecedorVinculo.nome}`} error={formError} onClose={() => setFornecedorVinculo(null)}>
+          <div className="operational-form-grid">
+            <SelectField label="Insumo" value={vinculoForm.insumoId} onChange={(value) => {
+              const insumo = insumos.find((item) => item.id === value);
+              setVinculoForm((current) => ({ ...current, insumoId: value, unidadeUso: insumo?.unidadeCompra || insumo?.unidadeMedida || current.unidadeUso }));
+            }}>
+              <option value="">Selecione o insumo</option>
+              {insumos.map((insumo) => (
+                <option key={insumo.id || insumo.nome} value={insumo.id || ""}>{insumo.nome}</option>
+              ))}
+            </SelectField>
+            <Field label="Custo unitario" type="number" value={vinculoForm.custoUnitario} onChange={(value) => setVinculoForm((current) => ({ ...current, custoUnitario: Number(value) }))} />
+            <Field label="Unidade compra/uso" value={vinculoForm.unidadeUso} onChange={(value) => setVinculoForm((current) => ({ ...current, unidadeUso: value }))} />
+            <Field label="Conversao" type="number" value={vinculoForm.conversao} onChange={(value) => setVinculoForm((current) => ({ ...current, conversao: Number(value) }))} />
+            <Field label="Qtd padrao pedido" type="number" value={vinculoForm.quantidadePadrao} onChange={(value) => setVinculoForm((current) => ({ ...current, quantidadePadrao: Number(value) }))} />
+            <Field label="Dias entrega" type="number" value={vinculoForm.diasEntrega} onChange={(value) => setVinculoForm((current) => ({ ...current, diasEntrega: Number(value) }))} />
+            <Field label="Dias pedido" type="number" value={vinculoForm.diasPedido} onChange={(value) => setVinculoForm((current) => ({ ...current, diasPedido: Number(value) }))} />
+            <Field label="Frequencia pedido" value={vinculoForm.frequenciaPedido} onChange={(value) => setVinculoForm((current) => ({ ...current, frequenciaPedido: value }))} />
+            <SelectField label="Fornecedor principal deste insumo" value={vinculoForm.principal ? "sim" : "nao"} onChange={(value) => setVinculoForm((current) => ({ ...current, principal: value === "sim" }))}>
+              <option value="sim">Sim</option>
+              <option value="nao">Nao</option>
+            </SelectField>
+          </div>
+          <SubmitRow loading={savingVinculo} onSubmit={salvarVinculo} />
+        </ActionPanel>
       ) : null}
-      {!loading && fornecedores.length ? (
+
+      {loadingPage ? <LoadingGrid /> : pageError ? <EmptyState title="Erro ao carregar fornecedores" description={pageError} /> : null}
+      {!loadingPage && !pageError && fornecedores.length === 0 ? (
+        <EmptyState title="Nenhum fornecedor cadastrado" description="Cadastre fornecedores para organizar compras, prazos e custos." action={<Button onClick={abrirNovoFornecedor}>Novo Fornecedor</Button>} />
+      ) : null}
+      {!loadingPage && fornecedores.length ? (
         <section className="operational-list">
           {fornecedores.map((fornecedor) => (
             <Card className="operational-row" key={fornecedor.id || fornecedor.cnpj || fornecedor.nome}>
               <div>
                 <strong>{fornecedor.nome}</strong>
-                <span>{fornecedor.cnpj || "CNPJ nao informado"}</span>
+                <span>{fornecedor.cnpj || "CNPJ nao informado"} - {(fornecedor.id && vinculosPorFornecedor[fornecedor.id]?.length) || 0} insumos</span>
+                {fornecedor.id && vinculosPorFornecedor[fornecedor.id]?.length ? (
+                  <small>
+                    {vinculosPorFornecedor[fornecedor.id].slice(0, 4).map((insumo) => {
+                      const vinculo = insumo.fornecedores?.find((item) => item.fornecedorId === fornecedor.id);
+                      const melhor = melhorCustoDoInsumo(insumo);
+                      const melhorValor = melhor?.fornecedorId === fornecedor.id;
+                      return `${insumo.nome}: ${money(Number(vinculo?.custoUnitario || vinculo?.custo) || 0)}${melhorValor ? " (melhor valor)" : ""}`;
+                    }).join(" | ")}
+                  </small>
+                ) : null}
               </div>
               <div>
                 <Badge>{fornecedor.telefone || "Sem telefone"}</Badge>
                 <small>{fornecedor.email || "Sem email"}</small>
+                <div className="operational-row__actions">
+                  <button type="button" onClick={() => abrirVinculoFornecedor(fornecedor)}>Insumos</button>
+                  <button type="button" onClick={() => abrirEditarFornecedor(fornecedor)}>Editar</button>
+                  <button type="button" onClick={() => excluirFornecedor(fornecedor)}>Excluir</button>
+                </div>
               </div>
             </Card>
           ))}
