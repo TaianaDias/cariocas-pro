@@ -7,16 +7,17 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { useAuth } from "../../hooks/useAuth";
+import { employeePermissionOptions } from "../../lib/access-control";
 import { atualizarPedido, criarPedido, deletarPedido, listarPedidos } from "../../services/compras.service";
 import { getConfiguracao } from "../../services/configuracoes.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
 import { listarInsumos } from "../../services/estoque.service";
 import { atualizarFornecedor, criarFornecedor, deletarFornecedor, listarFornecedores, vincularInsumoAoFornecedor } from "../../services/fornecedores.service";
-import { criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
+import { atualizarFuncionario, criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarMercado, listarMercados } from "../../services/mercados.service";
 import { atualizarProducaoPorcao, deletarProducaoPorcao, listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
-import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra, ProducaoPorcao } from "../../types";
+import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra, PermissaoFuncionario, ProducaoPorcao } from "../../types";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
@@ -1059,17 +1060,92 @@ export function FornecedoresPageClient() {
 export function FuncionariosPageClient() {
   const { data: funcionarios, error, loading, refetch } = useAsyncData<Funcionario>(listarFuncionarios);
   const [formAberto, setFormAberto] = useState(false);
+  const [funcionarioEditando, setFuncionarioEditando] = useState<Funcionario | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ cargo: "", email: "", nome: "", telefone: "", turno: "" });
+  const [form, setForm] = useState({
+    ativo: true,
+    cargo: "",
+    email: "",
+    nome: "",
+    observacao: "",
+    permissoes: ["dashboard.ver"] as PermissaoFuncionario[],
+    role: "funcionario",
+    telefone: "",
+    turno: "",
+  });
   const ativos = funcionarios.filter((item) => item.ativo).length;
+  const comAcesso = funcionarios.filter((item) => item.ativo && item.permissoes?.length).length;
+
+  function abrirNovoFuncionario() {
+    setFuncionarioEditando(null);
+    setForm({
+      ativo: true,
+      cargo: "",
+      email: "",
+      nome: "",
+      observacao: "",
+      permissoes: ["dashboard.ver"],
+      role: "funcionario",
+      telefone: "",
+      turno: "",
+    });
+    setFormError(null);
+    setFormAberto(true);
+  }
+
+  function abrirEdicaoFuncionario(funcionario: Funcionario) {
+    setFuncionarioEditando(funcionario);
+    setForm({
+      ativo: funcionario.ativo,
+      cargo: funcionario.cargo || "",
+      email: funcionario.email || "",
+      nome: funcionario.nome || "",
+      observacao: funcionario.observacao || "",
+      permissoes: funcionario.permissoes?.length ? funcionario.permissoes : ["dashboard.ver"],
+      role: funcionario.role || "funcionario",
+      telefone: funcionario.telefone || "",
+      turno: funcionario.turno || "",
+    });
+    setFormError(null);
+    setFormAberto(true);
+  }
+
+  function togglePermissao(permissao: PermissaoFuncionario) {
+    setForm((current) => {
+      const existe = current.permissoes.includes(permissao);
+      const permissoes = existe ? current.permissoes.filter((item) => item !== permissao) : [...current.permissoes, permissao];
+      return { ...current, permissoes };
+    });
+  }
 
   async function salvar() {
     setSaving(true);
     setFormError(null);
     try {
-      await criarFuncionario({ ...form, ativo: true, dataContratacao: new Date(), observacao: "" });
-      setForm({ cargo: "", email: "", nome: "", telefone: "", turno: "" });
+      if (!form.nome.trim()) throw new Error("Informe o nome do funcionario.");
+      if (!form.email.trim()) throw new Error("Informe o email usado no login do funcionario.");
+      if (!form.permissoes.length) throw new Error("Libere pelo menos um acesso.");
+
+      const dados = {
+        ativo: form.ativo,
+        cargo: form.cargo,
+        email: form.email.trim().toLowerCase(),
+        observacao: form.observacao,
+        permissoes: form.permissoes,
+        role: form.role as Funcionario["role"],
+        telefone: form.telefone,
+        turno: form.turno,
+      };
+
+      if (funcionarioEditando?.id) {
+        await atualizarFuncionario(funcionarioEditando.id, { ...dados, nome: form.nome });
+      } else {
+        await criarFuncionario({ ...dados, nome: form.nome, dataContratacao: new Date() });
+      }
+
+      setForm({ ativo: true, cargo: "", email: "", nome: "", observacao: "", permissoes: ["dashboard.ver"], role: "funcionario", telefone: "", turno: "" });
+      setFuncionarioEditando(null);
       setFormAberto(false);
       refetch();
     } catch (err) {
@@ -1080,27 +1156,55 @@ export function FuncionariosPageClient() {
   }
 
   return (
-    <PageShell actions={<Button onClick={() => setFormAberto(true)}>Novo Funcionario</Button>} eyebrow="Equipe" subtitle="Acompanhe cargos, turnos, contatos e status da equipe." title="Funcionarios">
+    <PageShell actions={<Button onClick={abrirNovoFuncionario}>Novo Funcionario</Button>} eyebrow="Equipe" subtitle="Controle equipe, papel e liberacoes por modulo com bloqueio de rota." title="Funcionarios">
       <section className="operational-kpis">
         <Kpi label="Funcionarios" value={String(funcionarios.length)} />
         <Kpi label="Ativos" value={String(ativos)} />
+        <Kpi label="Com acesso" value={String(comAcesso)} />
         <Kpi label="Inativos" value={String(Math.max(funcionarios.length - ativos, 0))} />
       </section>
       {formAberto ? (
-        <ActionPanel title="Novo funcionario" error={formError} onClose={() => setFormAberto(false)}>
+        <ActionPanel title={funcionarioEditando ? "Editar acessos do funcionario" : "Novo funcionario"} error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
             <Field label="Nome" value={form.nome} onChange={(value) => setForm((current) => ({ ...current, nome: value }))} />
             <Field label="Cargo" value={form.cargo} onChange={(value) => setForm((current) => ({ ...current, cargo: value }))} />
             <Field label="Turno" value={form.turno} onChange={(value) => setForm((current) => ({ ...current, turno: value }))} />
             <Field label="Telefone" value={form.telefone} onChange={(value) => setForm((current) => ({ ...current, telefone: value }))} />
             <Field label="Email" value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
+            <SelectField label="Papel" value={form.role} onChange={(value) => setForm((current) => ({ ...current, role: value }))}>
+              <option value="funcionario">Funcionario</option>
+              <option value="gerente">Gerente</option>
+            </SelectField>
+            <SelectField label="Status" value={form.ativo ? "ativo" : "inativo"} onChange={(value) => setForm((current) => ({ ...current, ativo: value === "ativo" }))}>
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </SelectField>
+            <Field label="Observacao" value={form.observacao} onChange={(value) => setForm((current) => ({ ...current, observacao: value }))} />
+          </div>
+          <div className="operational-permissions">
+            <strong>Modulos liberados</strong>
+            <span>O funcionario so conseguira abrir os modulos marcados abaixo. Rotas diretas tambem sao bloqueadas.</span>
+            <div className="operational-permissions__grid">
+              {employeePermissionOptions.map((item) => {
+                const checked = form.permissoes.includes(item.permission);
+                return (
+                  <label className={`operational-permission ${checked ? "is-active" : ""}`} key={item.permission}>
+                    <input checked={checked} type="checkbox" onChange={() => togglePermissao(item.permission)} />
+                    <span>
+                      <b>{item.label}</b>
+                      <small>{item.risk || "Acesso operacional"}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
           <SubmitRow loading={saving} onSubmit={salvar} />
         </ActionPanel>
       ) : null}
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar funcionarios" description={error} /> : null}
       {!loading && !error && funcionarios.length === 0 ? (
-        <EmptyState title="Nenhum funcionario cadastrado" description="Cadastre a equipe para controlar acesso, funcoes e operacao." action={<Button onClick={() => setFormAberto(true)}>Novo Funcionario</Button>} />
+        <EmptyState title="Nenhum funcionario cadastrado" description="Cadastre a equipe para controlar acesso, funcoes e operacao." action={<Button onClick={abrirNovoFuncionario}>Novo Funcionario</Button>} />
       ) : null}
       {!loading && funcionarios.length ? (
         <section className="operational-list">
@@ -1109,10 +1213,15 @@ export function FuncionariosPageClient() {
               <div>
                 <strong>{funcionario.nome}</strong>
                 <span>{funcionario.cargo || "Cargo nao informado"} - {funcionario.turno || "Turno nao informado"}</span>
+                <small>{(funcionario.permissoes || []).map((permissao) => employeePermissionOptions.find((item) => item.permission === permissao)?.label || permissao).join(" | ") || "Sem modulos liberados"}</small>
               </div>
               <div>
                 <Badge tone={funcionario.ativo ? "success" : "neutral"}>{funcionario.ativo ? "ativo" : "inativo"}</Badge>
+                <Badge>{funcionario.role || "funcionario"}</Badge>
                 <small>{funcionario.email || funcionario.telefone || "Sem contato"}</small>
+                <div className="operational-row__actions">
+                  <button type="button" onClick={() => abrirEdicaoFuncionario(funcionario)}>Editar acessos</button>
+                </div>
               </div>
             </Card>
           ))}

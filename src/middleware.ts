@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { canAccessAppPath, parsePermissions } from "./lib/access-control";
+
 const publicRoutes = ["/", "/login", "/cadastro", "/planos", "/auditoria"];
 
 const planOrder: Record<string, number> = {
@@ -48,9 +50,11 @@ function getRequiredPlan(pathname: string) {
 
 function canOpenRoute(request: NextRequest, pathname: string) {
   const plan = normalizePlan(request.cookies.get("user.plan")?.value);
+  const role = request.cookies.get("user.role")?.value;
+  const permissions = parsePermissions(request.cookies.get("user.permissions")?.value);
   const requiredPlan = getRequiredPlan(pathname);
 
-  return planOrder[plan] >= planOrder[requiredPlan];
+  return planOrder[plan] >= planOrder[requiredPlan] && canAccessAppPath({ path: pathname, permissions, plan, role });
 }
 
 export function middleware(request: NextRequest) {

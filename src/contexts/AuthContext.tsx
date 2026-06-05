@@ -15,6 +15,7 @@ import { FirebaseError } from "firebase/app";
 import {
   ensureUserProfile,
   getUserProfile,
+  listenUserProfile,
   loginWithEmail,
   logoutUser,
   onAuthChange,
@@ -23,6 +24,7 @@ import {
 } from "../services/auth.service";
 import { atualizarPlano } from "../services/usuarios.service";
 import type { Plano } from "../lib/plan";
+import { serializePermissions } from "../lib/access-control";
 
 type AuthContextValue = {
   error: string | null;
@@ -69,6 +71,7 @@ function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
     document.cookie = "user.email=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.plan=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.role=; path=/; max-age=0; sameSite=lax";
+    document.cookie = "user.permissions=; path=/; max-age=0; sameSite=lax";
     return;
   }
 
@@ -76,6 +79,7 @@ function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
   document.cookie = `user.email=${currentUser.email ?? ""}; path=/; sameSite=lax`;
   document.cookie = `user.plan=${profile?.plano ?? profile?.plan ?? "free"}; path=/; sameSite=lax`;
   document.cookie = `user.role=${profile?.role ?? "user"}; path=/; sameSite=lax`;
+  document.cookie = `user.permissions=${serializePermissions(profile?.permissoes)}; path=/; sameSite=lax`;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -118,6 +122,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
   }, [loadUserProfile]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    return listenUserProfile(user.uid, (profile) => {
+      if (!profile) return;
+      setUserProfile(profile);
+      setAuthCookies(user, profile);
+    });
+  }, [user]);
 
   const login = useCallback(
     async (email: string, password: string) => {

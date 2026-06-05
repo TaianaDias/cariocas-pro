@@ -8,6 +8,8 @@ export interface Usuario {
   role?: "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
   empresaId?: string;
   lojaId?: string;
+  permissoes?: PermissaoFuncionario[];
+  funcionarioAtivo?: boolean;
   criadoEm: Date;
   ultimoAcesso: Date;
 }
@@ -363,6 +365,8 @@ export interface Funcionario {
   telefone: string;
   email: string;
   turno: string;
+  role?: PapelUsuario;
+  permissoes?: PermissaoFuncionario[];
   dataContratacao: Date;
   ativo: boolean;
   observacao: string;
@@ -387,6 +391,20 @@ export interface ConfiguracaoEstabelecimento {
 
 export type PlanoSaas = "free" | "essencial" | "pro" | "plus" | "full";
 export type PapelUsuario = "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
+export type PermissaoFuncionario =
+  | "dashboard.ver"
+  | "estoque.ver"
+  | "compras.ver"
+  | "producao.ver"
+  | "desperdicio.ver"
+  | "fornecedores.ver"
+  | "funcionarios.gerenciar"
+  | "financeiro.ver"
+  | "precificacao.ver"
+  | "relatorios.ver"
+  | "configuracoes.ver"
+  | "ia.ver"
+  | "whatsapp.ver";
 export type UnidadeMedidaPrecificacao = "KG" | "G" | "UN" | "ML" | "L" | "CAIXA" | "PACOTE";
 export type MetodoCusto = "medio_automatico" | "ultimo_custo_compra" | "manual_travado";
 export type CanalVenda = "balcao" | "delivery_proprio" | "ifood" | "99food" | "parceiros";

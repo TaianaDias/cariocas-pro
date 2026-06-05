@@ -1,4 +1,5 @@
-import { canOpenPath, getRequiredPlanForPath, planCatalog } from "../../lib/plan";
+import { getRequiredPlanForPath, planCatalog } from "../../lib/plan";
+import { canAccessAppPath } from "../../lib/access-control";
 import { useAuth } from "../../hooks/useAuth";
 
 const navigationItems = [
@@ -20,6 +21,8 @@ const navigationItems = [
 export function Sidebar() {
   const { userProfile } = useAuth();
   const planoAtual = userProfile?.plano || userProfile?.plan || "free";
+  const roleAtual = userProfile?.role || "user";
+  const permissoes = userProfile?.permissoes || [];
 
   return (
     <aside className="sidebar" aria-label="Navegacao principal">
@@ -30,7 +33,7 @@ export function Sidebar() {
 
       <nav className="sidebar__nav" aria-label="Menu principal">
         {navigationItems.map((item) => {
-          const liberado = canOpenPath(planoAtual, item.href);
+          const liberado = canAccessAppPath({ path: item.href, permissions: permissoes, plan: planoAtual, role: roleAtual });
           const requiredPlan = getRequiredPlanForPath(item.href);
 
           return (

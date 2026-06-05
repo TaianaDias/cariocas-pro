@@ -1,10 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 import { Spinner } from "../ui/Spinner";
-import { canOpenPath } from "../../lib/plan";
+import { canAccessAppPath } from "../../lib/access-control";
 import { useAuth } from "../../hooks/useAuth";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -15,8 +16,21 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { loading, user, userProfile } = useAuth();
   const isPublicRoute = pathname === "/" || pathname === "/login" || pathname === "/cadastro" || pathname === "/planos" || pathname === "/auditoria";
+  const canOpenCurrentPath = isPublicRoute || canAccessAppPath({
+    path: pathname,
+    permissions: userProfile?.permissoes || [],
+    plan: userProfile?.plano || userProfile?.plan || "free",
+    role: userProfile?.role || "user",
+  });
+
+  useEffect(() => {
+    if (!loading && user && !canOpenCurrentPath) {
+      router.replace("/dashboard");
+    }
+  }, [canOpenCurrentPath, loading, router, user]);
 
   if (isPublicRoute) {
     return <>{children}</>;
@@ -32,6 +46,10 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (!canOpenCurrentPath) {
     return null;
   }
 
@@ -55,7 +73,12 @@ export function AppShell({ children }: AppShellProps) {
           { href: "/precificacao", label: "Precificacao" },
           { href: "/relatorios", label: "Relatorios" },
         ].map((item) => {
-          const enabled = canOpenPath(userProfile?.plano || userProfile?.plan || "free", item.href);
+          const enabled = canAccessAppPath({
+            path: item.href,
+            permissions: userProfile?.permissoes || [],
+            plan: userProfile?.plano || userProfile?.plan || "free",
+            role: userProfile?.role || "user",
+          });
           return (
             <a className={!enabled ? "is-locked" : ""} href={enabled ? item.href : "/dashboard"} key={item.href}>
               {enabled ? item.label : "Bloqueado"}

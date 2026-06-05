@@ -8,9 +8,10 @@ import {
   type User,
   type UserCredential,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { auth, db } from "../lib/firebase";
+import type { PermissaoFuncionario } from "../types";
 
 export type UserProfile = {
   uid: string;
@@ -22,6 +23,8 @@ export type UserProfile = {
   role: "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
   empresaId?: string;
   lojaId?: string;
+  permissoes?: PermissaoFuncionario[];
+  funcionarioAtivo?: boolean;
   createdAt?: unknown;
   criadoEm?: unknown;
   ultimoAcesso?: unknown;
@@ -74,6 +77,13 @@ export async function getUserProfile(uid: string) {
   }
 
   return profileSnap.data() as UserProfile;
+}
+
+export function listenUserProfile(uid: string, callback: (profile: UserProfile | null) => void): Unsubscribe {
+  const profileRef = doc(db, "usuarios", uid);
+  return onSnapshot(profileRef, (snapshot) => {
+    callback(snapshot.exists() ? (snapshot.data() as UserProfile) : null);
+  });
 }
 
 export async function loginWithEmail(email: string, password: string): Promise<UserCredential> {
