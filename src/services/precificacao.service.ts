@@ -5,6 +5,7 @@ import type {
   CustosFixosPrecificacao,
   CustosVariaveisPrecificacao,
   HistoricoCustoInsumo,
+  Insumo,
   MetaFinanceiraPrecificacao,
   PrecificacaoCanal,
   ReceitaIngrediente,
@@ -67,6 +68,23 @@ export const custosFixosPadrao: CustosFixosPrecificacao = {
   salarios: 0,
   sistema: 0,
 };
+
+export function normalizarUnidadePrecificacao(unidade?: string): UnidadeMedidaPrecificacao {
+  const value = (unidade || "UN").trim().toUpperCase();
+  if (value === "KG" || value === "G" || value === "UN" || value === "ML" || value === "L" || value === "CAIXA" || value === "PACOTE" || value === "FATIA" || value === "PORCAO") {
+    return value;
+  }
+
+  if (value === "UNIDADE" || value === "UND" || value === "UNID") return "UN";
+  if (value === "PORÇÃO") return "PORCAO";
+  return "UN";
+}
+
+export function calcularCustoUnitarioUsoInsumo(insumo: Pick<Insumo, "conversao" | "custoCompra" | "custoUnitario">) {
+  const conversao = Math.max(Number(insumo.conversao) || 1, 1);
+  const custoCompra = Number(insumo.custoCompra) || 0;
+  return moeda(Number(insumo.custoUnitario) || custoCompra / conversao);
+}
 
 function criarCanal(
   canal: PrecificacaoCanal["canal"],
@@ -137,7 +155,28 @@ export function calcularCustoFixoPorPedido(custos: CustosFixosPrecificacao) {
 }
 
 export function calcularCustoIngrediente(ingrediente: Pick<ReceitaIngrediente, "custoUnitarioConvertido" | "quantidade" | "unidade">) {
-  return moeda(ingrediente.custoUnitarioConvertido * converterQuantidade(ingrediente.quantidade, ingrediente.unidade));
+  return moeda(ingrediente.custoUnitarioConvertido * ingrediente.quantidade);
+}
+
+export function atualizarIngredientesComEstoque(
+  ingredientes: ReceitaIngrediente[],
+  insumos: Pick<Insumo, "conversao" | "custoCompra" | "custoUnitario" | "id" | "nome" | "unidadeUso">[],
+) {
+  const insumosPorId = new Map(insumos.filter((insumo) => insumo.id).map((insumo) => [insumo.id, insumo]));
+
+  return ingredientes.map((ingrediente) => {
+    const insumo = insumosPorId.get(ingrediente.insumoId);
+    if (!insumo) return ingrediente;
+
+    const custoUnitarioConvertido = calcularCustoUnitarioUsoInsumo(insumo);
+    return {
+      ...ingrediente,
+      custoTotal: moeda(ingrediente.quantidade * custoUnitarioConvertido),
+      custoUnitarioConvertido,
+      insumoNome: ingrediente.insumoNome || insumo.nome,
+      unidade: normalizarUnidadePrecificacao(insumo.unidadeUso || ingrediente.unidade),
+    };
+  });
 }
 
 export function calcularStatus(cmv: number, margem: number, lucro: number, metas: MetaFinanceiraPrecificacao): StatusFinanceiroReceita {

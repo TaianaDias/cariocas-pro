@@ -7,11 +7,11 @@ import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { usePrecificacao } from "../../hooks/usePrecificacao";
 import { canAccessPrecificacao } from "../../lib/permissions";
-import { simularPreco } from "../../services/precificacao.service";
-import type { ReceitaIngrediente, ReceitaPrecificacao, StatusFinanceiroReceita, UnidadeMedidaPrecificacao } from "../../types";
+import { calcularCustoUnitarioUsoInsumo, normalizarUnidadePrecificacao, simularPreco } from "../../services/precificacao.service";
+import type { Insumo, ReceitaIngrediente, ReceitaPrecificacao, StatusFinanceiroReceita, UnidadeMedidaPrecificacao } from "../../types";
 
 const abas = ["Fichas Tecnicas", "CMV Dinamico", "Custos", "Precificacao", "Simulacoes", "Relatorios", "Dashboard Financeiro"];
-const unidades: UnidadeMedidaPrecificacao[] = ["KG", "G", "UN", "ML", "L", "CAIXA", "PACOTE"];
+const unidades: UnidadeMedidaPrecificacao[] = ["KG", "G", "UN", "ML", "L", "CAIXA", "PACOTE", "FATIA", "PORCAO"];
 
 const receitaInicial: Partial<ReceitaPrecificacao> = {
   ativa: true,
@@ -39,6 +39,8 @@ export function PrecificacaoPageClient() {
     unidade: "G",
   });
   const [ingredienteError, setIngredienteError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [recalculando, setRecalculando] = useState(false);
   const [simulador, setSimulador] = useState({
     custo: 12,
     desconto: 0,
@@ -99,9 +101,40 @@ export function PrecificacaoPageClient() {
     setIngrediente({ custoUnitarioConvertido: 0, insumoNome: "", quantidade: 0, tipo: "insumo", unidade: "G" });
   }
 
+  function selecionarInsumo(insumoId: string) {
+    const insumo = precificacao.insumos.find((item) => item.id === insumoId);
+    if (!insumo) {
+      setIngrediente({ custoUnitarioConvertido: 0, insumoId: "", insumoNome: "", quantidade: 0, tipo: "insumo", unidade: "G" });
+      return;
+    }
+
+    setIngrediente((current) => ({
+      ...current,
+      custoUnitarioConvertido: calcularCustoUnitarioUsoInsumo(insumo),
+      insumoId: insumo.id,
+      insumoNome: insumo.nome,
+      tipo: "insumo",
+      unidade: normalizarUnidadePrecificacao(insumo.unidadeUso || insumo.unidadeMedida || insumo.unidadeCompra),
+    }));
+    setIngredienteError(null);
+  }
+
   async function salvarReceita() {
     await precificacao.salvarReceita(form);
     setForm(receitaInicial);
+  }
+
+  async function recalcularTudo() {
+    setRecalculando(true);
+    setActionError(null);
+
+    try {
+      await precificacao.recalcularAgora();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Nao foi possivel recalcular.");
+    } finally {
+      setRecalculando(false);
+    }
   }
 
   return (
@@ -114,9 +147,12 @@ export function PrecificacaoPageClient() {
         </div>
         <div className="precificacao-hero__actions">
           <Button onClick={() => setAbaAtiva("Fichas Tecnicas")}>+ Nova Receita</Button>
-          <Button variant="secondary" onClick={precificacao.refetch}>Recalcular CMV</Button>
+          <Button variant="secondary" onClick={recalcularTudo} disabled={recalculando || !precificacao.canRecalculate}>
+            {recalculando ? "Recalculando..." : "Recalcular CMV"}
+          </Button>
         </div>
       </section>
+      {actionError ? <p className="precificacao-inline-error">{actionError}</p> : null}
 
       <nav className="precificacao-tabs" aria-label="Abas de precificacao">
         {abasDisponiveis.map((aba) => (
@@ -170,7 +206,17 @@ export function PrecificacaoPageClient() {
             <div className="precificacao-ingredient">
               <strong>Adicionar Ingrediente</strong>
               <div className="precificacao-form__grid">
-                <Field label="Insumo ou receita base" value={ingrediente.insumoNome || ""} onChange={(value) => setIngrediente({ ...ingrediente, insumoNome: value })} />
+                <label className="precificacao-field">
+                  <span>Insumo do estoque</span>
+                  <select value={ingrediente.insumoId || ""} onChange={(event) => selecionarInsumo(event.target.value)}>
+                    <option value="">Selecione um insumo</option>
+                    {precificacao.insumos.map((insumo) => (
+                      <option key={insumo.id || insumo.nome} value={insumo.id || ""}>
+                        {insumo.nome} - {getInsumoConversionLabel(insumo)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Field label="Quantidade" value={String(ingrediente.quantidade || "")} onChange={(value) => setIngrediente({ ...ingrediente, quantidade: parseNumber(value) })} />
                 <label className="precificacao-field">
                   <span>Unidade</span>
@@ -182,6 +228,11 @@ export function PrecificacaoPageClient() {
                   <Field label="Custo unitario convertido" value={String(ingrediente.custoUnitarioConvertido || "")} onChange={(value) => setIngrediente({ ...ingrediente, custoUnitarioConvertido: parseNumber(value) })} />
                 ) : null}
               </div>
+              {ingrediente.insumoId && precificacao.canSeeMoney ? (
+                <p className="precificacao-ingredients-empty">
+                  Conversao do estoque aplicada: {getSelectedInsumoSummary(precificacao.insumos, ingrediente.insumoId)}
+                </p>
+              ) : null}
               {ingredienteError ? <p className="precificacao-inline-error">{ingredienteError}</p> : null}
               <Button variant="secondary" onClick={adicionarIngrediente}>Adicionar Ingrediente</Button>
             </div>
@@ -273,6 +324,20 @@ function parseNumber(value: unknown) {
   const normalized = trimmed.includes(",") ? trimmed.replace(/\./g, "").replace(",", ".") : trimmed;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getInsumoConversionLabel(insumo: Insumo) {
+  const unidadeUso = insumo.unidadeUso || insumo.unidadeMedida || insumo.unidadeCompra || "UN";
+  const conversao = Math.max(Number(insumo.conversao) || 1, 1);
+  const custoUnitario = calcularCustoUnitarioUsoInsumo(insumo);
+  return `${conversao} ${unidadeUso} | ${money(custoUnitario)} cada`;
+}
+
+function getSelectedInsumoSummary(insumos: Insumo[], insumoId?: string) {
+  const insumo = insumos.find((item) => item.id === insumoId);
+  if (!insumo) return "insumo nao encontrado";
+
+  return `${money(Number(insumo.custoCompra) || 0)} por ${insumo.unidadeCompra || "compra"} rende ${Math.max(Number(insumo.conversao) || 1, 1)} ${insumo.unidadeUso || insumo.unidadeMedida || "un"}.`;
 }
 
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {

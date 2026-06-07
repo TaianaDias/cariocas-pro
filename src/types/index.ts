@@ -405,7 +405,7 @@ export type PermissaoFuncionario =
   | "configuracoes.ver"
   | "ia.ver"
   | "whatsapp.ver";
-export type UnidadeMedidaPrecificacao = "KG" | "G" | "UN" | "ML" | "L" | "CAIXA" | "PACOTE";
+export type UnidadeMedidaPrecificacao = "KG" | "G" | "UN" | "ML" | "L" | "CAIXA" | "PACOTE" | "FATIA" | "PORCAO";
 export type MetodoCusto = "medio_automatico" | "ultimo_custo_compra" | "manual_travado";
 export type CanalVenda = "balcao" | "delivery_proprio" | "ifood" | "99food" | "parceiros";
 export type StatusFinanceiroReceita = "saudavel" | "atencao" | "critico";

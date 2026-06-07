@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { canSeePrecificacaoMoney, canUsePrecificacaoCompleta, hasPrecificacaoPermission } from "../lib/permissions";
 import {
+  atualizarIngredientesComEstoque,
   custosFixosPadrao,
   custosVariaveisPadrao,
   gerarAlertasFinanceiros,
@@ -14,9 +15,11 @@ import {
   salvarCustosFixos,
   salvarReceitaPrecificacao,
 } from "../services/precificacao.service";
+import { listarInsumos } from "../services/estoque.service";
 import type {
   CustosFixosPrecificacao,
   CustosVariaveisPrecificacao,
+  Insumo,
   MetaFinanceiraPrecificacao,
   ReceitaPrecificacao,
 } from "../types";
@@ -30,6 +33,7 @@ export function usePrecificacao() {
   const lojaId = userProfile?.lojaId;
   const lojaSegura = lojaId || "matriz";
   const [receitas, setReceitas] = useState<ReceitaPrecificacao[]>([]);
+  const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [custosFixos, setCustosFixos] = useState<CustosFixosPrecificacao>({
     ...custosFixosPadrao,
     empresaId,
@@ -55,8 +59,18 @@ export function usePrecificacao() {
       return receitas.map(mascararReceitaPrecificacao);
     }
 
-    return receitas.map((receita) => recalcularReceita(receita, custosFixos, custosVariaveis, metas));
-  }, [canSeeMoney, custosFixos, custosVariaveis, metas, receitas]);
+    return receitas.map((receita) =>
+      recalcularReceita(
+        {
+          ...receita,
+          ingredientes: atualizarIngredientesComEstoque(receita.ingredientes || [], insumos),
+        },
+        custosFixos,
+        custosVariaveis,
+        metas,
+      ),
+    );
+  }, [canSeeMoney, custosFixos, custosVariaveis, insumos, metas, receitas]);
 
   const kpis = useMemo(() => {
     if (!canSeeMoney) {
@@ -85,13 +99,19 @@ export function usePrecificacao() {
 
     try {
       if (!canSeeMoney) {
+        const insumosData = await listarInsumos();
+        setInsumos(insumosData);
         setReceitas([]);
         setError(null);
         return;
       }
 
-      const dados = await listarReceitasPrecificacao(empresaId, lojaSegura);
+      const [dados, insumosData] = await Promise.all([
+        listarReceitasPrecificacao(empresaId, lojaSegura),
+        listarInsumos(),
+      ]);
       setReceitas(dados);
+      setInsumos(insumosData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar precificacao.");
@@ -110,6 +130,7 @@ export function usePrecificacao() {
         ...receita,
         createdBy: user?.uid || "sistema",
         empresaId,
+        ingredientes: atualizarIngredientesComEstoque(receita.ingredientes || [], insumos),
         lojaId: lojaSegura,
       },
       custosFixos,
@@ -131,6 +152,21 @@ export function usePrecificacao() {
     await salvarCustosFixos(normalizados);
   }
 
+  async function recalcularAgora() {
+    const response = await fetch("/api/precificacao/recalcular", {
+      body: JSON.stringify({ empresaId, lojaId: lojaSegura }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(data.error || "Nao foi possivel recalcular a precificacao.");
+    }
+
+    await carregar();
+  }
+
   return {
     alertas,
     canConfigure,
@@ -146,9 +182,11 @@ export function usePrecificacao() {
     metas,
     plan,
     receitas: receitasCalculadas,
+    recalcularAgora,
     refetch: carregar,
     role,
     empresaId,
+    insumos,
     lojaId: lojaSegura,
     salvarCustos,
     salvarReceita,
