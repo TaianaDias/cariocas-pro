@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -181,12 +181,84 @@ function SelectField({
   );
 }
 
+function SearchableInsumoField({
+  descricao,
+  insumos,
+  label,
+  onChange,
+  placeholder = "Pesquisar por nome, marca, SKU ou codigo",
+  value,
+}: {
+  descricao?: (insumo: Insumo) => string;
+  insumos: Insumo[];
+  label: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  value: string;
+}) {
+  const selected = insumos.find((insumo) => insumo.id === value);
+  const [busca, setBusca] = useState(selected?.nome || "");
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    const base = termo ? insumos.filter((insumo) => matchInsumoSearch(insumo, termo)) : insumos;
+    return base.slice(0, 20);
+  }, [busca, insumos]);
+
+  useEffect(() => {
+    setBusca(selected?.nome || "");
+  }, [selected?.id, selected?.nome]);
+
+  return (
+    <label className="operational-field operational-search-field">
+      <span>{label}</span>
+      <input
+        type="search"
+        value={busca}
+        placeholder={placeholder}
+        onChange={(event) => {
+          setBusca(event.target.value);
+          onChange("");
+        }}
+      />
+      <div className="operational-search-field__list">
+        {filtrados.length ? (
+          filtrados.map((insumo) => (
+            <button
+              className={value === insumo.id ? "is-selected" : ""}
+              key={insumo.id || insumo.nome}
+              type="button"
+              onClick={() => {
+                onChange(insumo.id || "");
+                setBusca(insumo.nome || "");
+              }}
+            >
+              <strong>{insumo.nome}</strong>
+              <small>{descricao ? descricao(insumo) : defaultInsumoDescription(insumo)}</small>
+            </button>
+          ))
+        ) : (
+          <small>Nenhum insumo encontrado.</small>
+        )}
+      </div>
+    </label>
+  );
+}
+
 function SubmitRow({ loading, onSubmit }: { loading: boolean; onSubmit: () => void }) {
   return (
     <div className="operational-submit">
       <Button onClick={onSubmit} disabled={loading}>{loading ? "Salvando..." : "Salvar"}</Button>
     </div>
   );
+}
+
+function matchInsumoSearch(insumo: Insumo, termo: string) {
+  return [insumo.nome, insumo.sku, insumo.marca, insumo.codigoBarras, insumo.categoriaId]
+    .some((campo) => String(campo || "").toLowerCase().includes(termo));
+}
+
+function defaultInsumoDescription(insumo: Insumo) {
+  return `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeMedida || insumo.unidadeCompra || "un"} em estoque`;
 }
 
 function getInsumoUnitCost(insumo: Insumo) {
@@ -254,6 +326,7 @@ export function ComprasPageClient() {
   const [formError, setFormError] = useState<string | null>(null);
   const [mercadoError, setMercadoError] = useState<string | null>(null);
   const [adminWhatsapp, setAdminWhatsapp] = useState("");
+  const [buscaInsumoCompra, setBuscaInsumoCompra] = useState("");
   const [form, setForm] = useState({
     adminWhatsapp: "",
     fornecedorId: "",
@@ -272,6 +345,12 @@ export function ComprasPageClient() {
   const total = pedidos.reduce((acc, pedido) => acc + (pedido.valorTotal || 0), 0);
   const pendentes = pedidos.filter((pedido) => pedido.status !== "recebido").length;
   const insumosAbaixoMinimo = insumos.filter(isInsumoAbaixoMinimo);
+  const insumosCompraFiltrados = useMemo(() => {
+    const termo = buscaInsumoCompra.trim().toLowerCase();
+    const base = termo ? insumos.filter((insumo) => matchInsumoSearch(insumo, termo)) : insumos;
+    const selecionados = new Set(form.selectedIds);
+    return [...base].sort((a, b) => Number(selecionados.has(b.id || "")) - Number(selecionados.has(a.id || ""))).slice(0, 60);
+  }, [buscaInsumoCompra, form.selectedIds, insumos]);
   const selectedFornecedor = fornecedores.find((fornecedor) => fornecedor.id === form.fornecedorId);
   const selectedMercado = mercados.find((mercado) => mercado.id === form.mercadoId);
   const selectedInsumos = form.selectedIds
@@ -650,8 +729,17 @@ export function ComprasPageClient() {
               </div>
               <Badge tone="neutral">{insumosLoading ? "carregando" : `${selectedInsumos.length} selecionados`}</Badge>
             </header>
+            <label className="operational-field operational-search-field operational-search-field--inline">
+              <span>Pesquisar insumo</span>
+              <input
+                type="search"
+                value={buscaInsumoCompra}
+                placeholder="Pesquisar por nome, marca, SKU ou codigo"
+                onChange={(event) => setBuscaInsumoCompra(event.target.value)}
+              />
+            </label>
             <div className="operational-buy-list">
-              {insumos.map((insumo) => {
+              {insumosCompraFiltrados.map((insumo) => {
                 const id = insumo.id || "";
                 const checked = form.selectedIds.includes(id);
                 const quantidade = Number(form.quantidades[id]) || getSuggestedPurchaseQuantity(insumo);
@@ -680,6 +768,7 @@ export function ComprasPageClient() {
                 );
               })}
               {!insumosLoading && insumos.length === 0 ? <span className="operational-buy-empty">Nenhum insumo cadastrado no estoque.</span> : null}
+              {!insumosLoading && insumos.length > 0 && insumosCompraFiltrados.length === 0 ? <span className="operational-buy-empty">Nenhum insumo encontrado para essa busca.</span> : null}
             </div>
             <footer>
               <span>Total estimado</span>
@@ -993,15 +1082,15 @@ export function FornecedoresPageClient() {
       {fornecedorVinculo ? (
         <ActionPanel title={`Insumos de ${fornecedorVinculo.nome}`} error={formError} onClose={() => setFornecedorVinculo(null)}>
           <div className="operational-form-grid">
-            <SelectField label="Insumo" value={vinculoForm.insumoId} onChange={(value) => {
-              const insumo = insumos.find((item) => item.id === value);
-              setVinculoForm((current) => ({ ...current, insumoId: value, unidadeUso: insumo?.unidadeCompra || insumo?.unidadeMedida || current.unidadeUso }));
-            }}>
-              <option value="">Selecione o insumo</option>
-              {insumos.map((insumo) => (
-                <option key={insumo.id || insumo.nome} value={insumo.id || ""}>{insumo.nome}</option>
-              ))}
-            </SelectField>
+            <SearchableInsumoField
+              label="Insumo"
+              value={vinculoForm.insumoId}
+              insumos={insumos}
+              onChange={(value) => {
+                const insumo = insumos.find((item) => item.id === value);
+                setVinculoForm((current) => ({ ...current, insumoId: value, unidadeUso: insumo?.unidadeCompra || insumo?.unidadeMedida || current.unidadeUso }));
+              }}
+            />
             <Field label="Custo unitario" type="number" value={vinculoForm.custoUnitario} onChange={(value) => setVinculoForm((current) => ({ ...current, custoUnitario: Number(value) }))} />
             <Field label="Unidade compra/uso" value={vinculoForm.unidadeUso} onChange={(value) => setVinculoForm((current) => ({ ...current, unidadeUso: value }))} />
             <Field label="Conversao" type="number" value={vinculoForm.conversao} onChange={(value) => setVinculoForm((current) => ({ ...current, conversao: Number(value) }))} />
@@ -1404,14 +1493,13 @@ export function ProducaoPageClient() {
       {porcaoAberta ? (
         <ActionPanel title="Porcionar item do estoque" error={formError} onClose={() => setPorcaoAberta(false)}>
           <div className="operational-form-grid">
-            <SelectField label="Item em estoque" value={porcaoForm.insumoId} onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoId: value }))}>
-              <option value="">Selecione o item</option>
-              {itensDisponiveisProducao.map((insumo) => (
-                <option key={insumo.id || insumo.nome} value={insumo.id || ""}>
-                  {insumo.nome} - {insumo.quantidadeAtual} {insumo.unidadeMedida}
-                </option>
-              ))}
-            </SelectField>
+            <SearchableInsumoField
+              label="Item em estoque"
+              value={porcaoForm.insumoId}
+              insumos={itensDisponiveisProducao}
+              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeMedida || insumo.unidadeCompra || "un"} disponivel`}
+              onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoId: value }))}
+            />
             <Field label="Quantidade a baixar" type="number" value={porcaoForm.quantidade} onChange={(value) => setPorcaoForm((current) => ({ ...current, quantidade: Number(value) }))} />
             <Field label="Quantidade de porcoes" type="number" value={porcaoForm.porcoes} onChange={(value) => setPorcaoForm((current) => ({ ...current, porcoes: Number(value) }))} />
             <SelectField label="Formato" value={porcaoForm.formatoPorcao} onChange={(value) => setPorcaoForm((current) => ({ ...current, formatoPorcao: value }))}>
