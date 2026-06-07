@@ -261,6 +261,25 @@
   gap: var(--space-2);
 }
 
+.precificacao-inline-error,
+.precificacao-ingredients-empty {
+  margin: 0;
+  border: 1px solid rgba(212, 32, 32, 0.22);
+  border-radius: var(--radius-md);
+  background: rgba(212, 32, 32, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
+.precificacao-ingredients-empty {
+  border-color: rgba(229, 231, 235, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  color: rgba(229, 231, 235, 0.62);
+}
+
 .precificacao-ingredients-list div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;

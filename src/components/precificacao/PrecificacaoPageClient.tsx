@@ -38,6 +38,7 @@ export function PrecificacaoPageClient() {
     tipo: "insumo",
     unidade: "G",
   });
+  const [ingredienteError, setIngredienteError] = useState<string | null>(null);
   const [simulador, setSimulador] = useState({
     custo: 12,
     desconto: 0,
@@ -63,17 +64,27 @@ export function PrecificacaoPageClient() {
   }
 
   function adicionarIngrediente() {
-    if (!ingrediente.insumoNome || Number(ingrediente.quantidade || 0) <= 0) {
+    const insumoNome = ingrediente.insumoNome?.trim() || "";
+    const quantidade = parseNumber(ingrediente.quantidade);
+    const custoUnitarioConvertido = precificacao.canSeeMoney ? parseNumber(ingrediente.custoUnitarioConvertido) : 0;
+
+    if (!insumoNome) {
+      setIngredienteError("Informe o insumo ou receita base.");
+      return;
+    }
+
+    if (quantidade <= 0) {
+      setIngredienteError("Informe uma quantidade maior que zero.");
       return;
     }
 
     const novoIngrediente: ReceitaIngrediente = {
-      custoTotal: 0,
-      custoUnitarioConvertido: precificacao.canSeeMoney ? Number(ingrediente.custoUnitarioConvertido || 0) : 0,
+      custoTotal: quantidade * custoUnitarioConvertido,
+      custoUnitarioConvertido,
       empresaId: precificacao.empresaId,
       insumoId: ingrediente.insumoId || crypto.randomUUID(),
-      insumoNome: ingrediente.insumoNome,
-      quantidade: Number(ingrediente.quantidade || 0),
+      insumoNome,
+      quantidade,
       receitaId: form.id || "nova",
       tipo: ingrediente.tipo || "insumo",
       unidade: ingrediente.unidade || "G",
@@ -84,6 +95,7 @@ export function PrecificacaoPageClient() {
       ...current,
       ingredientes: [...(current.ingredientes || []), novoIngrediente],
     }));
+    setIngredienteError(null);
     setIngrediente({ custoUnitarioConvertido: 0, insumoNome: "", quantidade: 0, tipo: "insumo", unidade: "G" });
   }
 
@@ -159,7 +171,7 @@ export function PrecificacaoPageClient() {
               <strong>Adicionar Ingrediente</strong>
               <div className="precificacao-form__grid">
                 <Field label="Insumo ou receita base" value={ingrediente.insumoNome || ""} onChange={(value) => setIngrediente({ ...ingrediente, insumoNome: value })} />
-                <Field label="Quantidade" type="number" value={String(ingrediente.quantidade || "")} onChange={(value) => setIngrediente({ ...ingrediente, quantidade: Number(value) })} />
+                <Field label="Quantidade" value={String(ingrediente.quantidade || "")} onChange={(value) => setIngrediente({ ...ingrediente, quantidade: parseNumber(value) })} />
                 <label className="precificacao-field">
                   <span>Unidade</span>
                   <select value={ingrediente.unidade} onChange={(event) => setIngrediente({ ...ingrediente, unidade: event.target.value as UnidadeMedidaPrecificacao })}>
@@ -167,9 +179,10 @@ export function PrecificacaoPageClient() {
                   </select>
                 </label>
                 {precificacao.canSeeMoney ? (
-                  <Field label="Custo unitario convertido" type="number" value={String(ingrediente.custoUnitarioConvertido || "")} onChange={(value) => setIngrediente({ ...ingrediente, custoUnitarioConvertido: Number(value) })} />
+                  <Field label="Custo unitario convertido" value={String(ingrediente.custoUnitarioConvertido || "")} onChange={(value) => setIngrediente({ ...ingrediente, custoUnitarioConvertido: parseNumber(value) })} />
                 ) : null}
               </div>
+              {ingredienteError ? <p className="precificacao-inline-error">{ingredienteError}</p> : null}
               <Button variant="secondary" onClick={adicionarIngrediente}>Adicionar Ingrediente</Button>
             </div>
 
@@ -252,6 +265,16 @@ function Field({ label, onChange, type = "text", value }: { label: string; value
   );
 }
 
+function parseNumber(value: unknown) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (typeof value !== "string") return 0;
+
+  const trimmed = value.trim();
+  const normalized = trimmed.includes(",") ? trimmed.replace(/\./g, "").replace(",", ".") : trimmed;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function Switch({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) {
   return (
     <label className="precificacao-switch">
@@ -271,6 +294,10 @@ function Kpi({ label, tone, value }: { label: string; value: string; tone?: "suc
 }
 
 function ListaIngredientes({ canSeeMoney, ingredientes }: { ingredientes: ReceitaIngrediente[]; canSeeMoney: boolean }) {
+  if (!ingredientes.length) {
+    return <p className="precificacao-ingredients-empty">Nenhum ingrediente adicionado ainda.</p>;
+  }
+
   return (
     <div className="precificacao-ingredients-list">
       {ingredientes.map((item) => (
