@@ -38,6 +38,7 @@ export function PrecificacaoPageClient() {
     tipo: "insumo",
     unidade: "G",
   });
+  const [buscaInsumo, setBuscaInsumo] = useState("");
   const [ingredienteError, setIngredienteError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [recalculando, setRecalculando] = useState(false);
@@ -54,6 +55,17 @@ export function PrecificacaoPageClient() {
   const allowed = canAccessPrecificacao(precificacao.plan, precificacao.role);
   const abasDisponiveis = precificacao.canUseFullModule ? abas : ["Fichas Tecnicas"];
   const simulacao = useMemo(() => simularPreco(simulador), [simulador]);
+  const insumosFiltrados = useMemo(() => {
+    const termo = buscaInsumo.trim().toLowerCase();
+    const base = termo
+      ? precificacao.insumos.filter((insumo) => {
+          const campos = [insumo.nome, insumo.sku, insumo.marca, insumo.codigoBarras, insumo.categoriaId];
+          return campos.some((campo) => String(campo || "").toLowerCase().includes(termo));
+        })
+      : precificacao.insumos;
+
+    return base.slice(0, 20);
+  }, [buscaInsumo, precificacao.insumos]);
 
   if (!allowed) {
     return (
@@ -99,6 +111,7 @@ export function PrecificacaoPageClient() {
     }));
     setIngredienteError(null);
     setIngrediente({ custoUnitarioConvertido: 0, insumoNome: "", quantidade: 0, tipo: "insumo", unidade: "G" });
+    setBuscaInsumo("");
   }
 
   function selecionarInsumo(insumoId: string) {
@@ -116,6 +129,7 @@ export function PrecificacaoPageClient() {
       tipo: "insumo",
       unidade: normalizarUnidadePrecificacao(insumo.unidadeUso || insumo.unidadeMedida || insumo.unidadeCompra),
     }));
+    setBuscaInsumo(insumo.nome || "");
     setIngredienteError(null);
   }
 
@@ -206,16 +220,34 @@ export function PrecificacaoPageClient() {
             <div className="precificacao-ingredient">
               <strong>Adicionar Ingrediente</strong>
               <div className="precificacao-form__grid">
-                <label className="precificacao-field">
+                <label className="precificacao-field precificacao-stock-search">
                   <span>Insumo do estoque</span>
-                  <select value={ingrediente.insumoId || ""} onChange={(event) => selecionarInsumo(event.target.value)}>
-                    <option value="">Selecione um insumo</option>
-                    {precificacao.insumos.map((insumo) => (
-                      <option key={insumo.id || insumo.nome} value={insumo.id || ""}>
-                        {insumo.nome} - {getInsumoConversionLabel(insumo)}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="search"
+                    value={buscaInsumo}
+                    placeholder="Pesquisar por nome, marca, SKU ou codigo"
+                    onChange={(event) => {
+                      setBuscaInsumo(event.target.value);
+                      setIngrediente((current) => ({ ...current, insumoId: "", insumoNome: event.target.value }));
+                    }}
+                  />
+                  <div className="precificacao-stock-search__list">
+                    {insumosFiltrados.length ? (
+                      insumosFiltrados.map((insumo) => (
+                        <button
+                          className={ingrediente.insumoId === insumo.id ? "is-selected" : ""}
+                          key={insumo.id || insumo.nome}
+                          type="button"
+                          onClick={() => selecionarInsumo(insumo.id || "")}
+                        >
+                          <strong>{insumo.nome}</strong>
+                          <span>{getInsumoConversionLabel(insumo)}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <small>Nenhum insumo encontrado.</small>
+                    )}
+                  </div>
                 </label>
                 <Field label="Quantidade" value={String(ingrediente.quantidade || "")} onChange={(value) => setIngrediente({ ...ingrediente, quantidade: parseNumber(value) })} />
                 <label className="precificacao-field">
