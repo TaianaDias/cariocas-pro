@@ -20,6 +20,8 @@ export const produtoSchema = z.object({
   conversao: z.number().min(1).default(1),
   custoCompra: z.number().min(0).default(0),
   custoUnitario: z.number().min(0).default(0),
+  metodoCusto: z.enum(["medio_automatico", "ultimo_custo_compra", "manual_travado"]).default("ultimo_custo_compra"),
+  custoManualTravado: z.number().min(0).optional(),
   custoAnterior: z.number().optional(),
   precoVenda: z.number().min(0).default(0),
   custoPromocional: z.number().optional(),

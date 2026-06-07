@@ -80,7 +80,11 @@ export function normalizarUnidadePrecificacao(unidade?: string): UnidadeMedidaPr
   return "UN";
 }
 
-export function calcularCustoUnitarioUsoInsumo(insumo: Pick<Insumo, "conversao" | "custoCompra" | "custoUnitario">) {
+export function calcularCustoUnitarioUsoInsumo(insumo: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "metodoCusto">) {
+  if (insumo.metodoCusto === "manual_travado") {
+    return moeda(Number(insumo.custoManualTravado) || Number(insumo.custoUnitario) || 0);
+  }
+
   const conversao = Math.max(Number(insumo.conversao) || 1, 1);
   const custoCompra = Number(insumo.custoCompra) || 0;
   return moeda(Number(insumo.custoUnitario) || custoCompra / conversao);
@@ -160,7 +164,7 @@ export function calcularCustoIngrediente(ingrediente: Pick<ReceitaIngrediente, "
 
 export function atualizarIngredientesComEstoque(
   ingredientes: ReceitaIngrediente[],
-  insumos: Pick<Insumo, "conversao" | "custoCompra" | "custoUnitario" | "id" | "nome" | "unidadeUso">[],
+  insumos: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "id" | "metodoCusto" | "nome" | "unidadeUso">[],
 ) {
   const insumosPorId = new Map(insumos.filter((insumo) => insumo.id).map((insumo) => [insumo.id, insumo]));
 

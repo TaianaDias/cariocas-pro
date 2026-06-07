@@ -330,12 +330,17 @@ function getInsumoConversionLabel(insumo: Insumo) {
   const unidadeUso = insumo.unidadeUso || insumo.unidadeMedida || insumo.unidadeCompra || "UN";
   const conversao = Math.max(Number(insumo.conversao) || 1, 1);
   const custoUnitario = calcularCustoUnitarioUsoInsumo(insumo);
-  return `${conversao} ${unidadeUso} | ${money(custoUnitario)} cada`;
+  const metodo = insumo.metodoCusto === "manual_travado" ? "travado" : `${conversao} ${unidadeUso}`;
+  return `${metodo} | ${money(custoUnitario)} cada`;
 }
 
 function getSelectedInsumoSummary(insumos: Insumo[], insumoId?: string) {
   const insumo = insumos.find((item) => item.id === insumoId);
   if (!insumo) return "insumo nao encontrado";
+
+  if (insumo.metodoCusto === "manual_travado") {
+    return `${money(calcularCustoUnitarioUsoInsumo(insumo))} fixo por ${insumo.unidadeUso || insumo.unidadeMedida || "un"}.`;
+  }
 
   return `${money(Number(insumo.custoCompra) || 0)} por ${insumo.unidadeCompra || "compra"} rende ${Math.max(Number(insumo.conversao) || 1, 1)} ${insumo.unidadeUso || insumo.unidadeMedida || "un"}.`;
 }

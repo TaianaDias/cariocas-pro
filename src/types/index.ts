@@ -42,6 +42,8 @@ export interface Insumo {
   conversao: number;
   custoCompra: number;
   custoUnitario?: number;
+  metodoCusto?: MetodoCusto;
+  custoManualTravado?: number;
   custoAnterior?: number;
   precoVenda?: number;
   custoPromocional?: number;
