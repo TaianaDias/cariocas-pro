@@ -68,5 +68,5 @@ export function canAccessAppPath({
   const requiredPermission = getPermissionForPath(path);
   if (!requiredPermission) return true;
 
-  return (permissions || []).includes(requiredPermission);
+  return (permissions || []).includes("*") || (permissions || []).includes(requiredPermission);
 }

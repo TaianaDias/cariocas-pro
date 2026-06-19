@@ -4,14 +4,50 @@ export interface Usuario {
   nome: string;
   email: string;
   fotoUrl?: string;
+  tipoConta?: string;
   plano?: "free" | "essencial" | "pro" | "plus" | "full";
+  plan?: "free" | "essencial" | "pro" | "plus" | "full";
   role?: "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
   empresaId?: string;
   lojaId?: string;
   permissoes?: PermissaoFuncionario[];
+  ativo?: boolean;
   funcionarioAtivo?: boolean;
   criadoEm: Date;
   ultimoAcesso: Date;
+}
+
+export interface Empresa {
+  id: string;
+  nomeFantasia: string;
+  razaoSocial?: string;
+  cnpj?: string;
+  plano: "free" | "essencial" | "pro" | "plus" | "full";
+  status: "ativo" | "inativo" | "suspenso";
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+}
+
+export interface Loja {
+  id: string;
+  nome: string;
+  matriz: boolean;
+  status?: "ativo" | "inativo";
+  configuracoes?: Record<string, unknown>;
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
+}
+
+export interface CategoriaEstoque {
+  id?: string;
+  nome: string;
+  nomeNormalizado?: string;
+  ordem: number;
+  ativo: boolean;
+  empresaId: string;
+  lojaId?: string;
+  criadoEm?: unknown;
+  atualizadoEm?: unknown;
 }
 
 // ===== INSUMO =====
@@ -394,6 +430,7 @@ export interface ConfiguracaoEstabelecimento {
 export type PlanoSaas = "free" | "essencial" | "pro" | "plus" | "full";
 export type PapelUsuario = "admin" | "dono" | "proprietario" | "gerente" | "funcionario" | "user";
 export type PermissaoFuncionario =
+  | "*"
   | "dashboard.ver"
   | "estoque.ver"
   | "compras.ver"

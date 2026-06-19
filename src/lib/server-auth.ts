@@ -16,7 +16,7 @@ type ServerUserProfile = {
   uid: string;
 };
 
-function getAdminApp(): App | null {
+export function getAdminApp(): App | null {
   const existing = getApps()[0];
   if (existing) {
     return existing;

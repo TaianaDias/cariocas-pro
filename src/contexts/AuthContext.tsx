@@ -72,6 +72,8 @@ function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
     document.cookie = "user.plan=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.role=; path=/; max-age=0; sameSite=lax";
     document.cookie = "user.permissions=; path=/; max-age=0; sameSite=lax";
+    document.cookie = "user.empresaId=; path=/; max-age=0; sameSite=lax";
+    document.cookie = "user.lojaId=; path=/; max-age=0; sameSite=lax";
     return;
   }
 
@@ -80,6 +82,28 @@ function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
   document.cookie = `user.plan=${profile?.plano ?? profile?.plan ?? "free"}; path=/; sameSite=lax`;
   document.cookie = `user.role=${profile?.role ?? "user"}; path=/; sameSite=lax`;
   document.cookie = `user.permissions=${serializePermissions(profile?.permissoes)}; path=/; sameSite=lax`;
+  document.cookie = `user.empresaId=${profile?.empresaId ?? ""}; path=/; sameSite=lax`;
+  document.cookie = `user.lojaId=${profile?.lojaId ?? ""}; path=/; sameSite=lax`;
+}
+
+async function runOnboarding(currentUser: User, profile: UserProfile | null) {
+  const token = await currentUser.getIdToken();
+  const response = await fetch("/api/onboarding", {
+    body: JSON.stringify({
+      nome: profile?.nome || currentUser.displayName || "Usuario",
+      tipoConta: profile?.tipoConta || "Hamburgueria / Restaurante",
+    }),
+    headers: {
+      authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || "Nao foi possivel preparar a empresa para este usuario.");
+  }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -92,9 +116,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthCookies(currentUser, null);
     const existingProfile = await getUserProfile(currentUser.uid);
     const profile = existingProfile ?? (await ensureUserProfile(currentUser));
-    setUserProfile(profile);
-    setAuthCookies(currentUser, profile);
-    return profile;
+    await runOnboarding(currentUser, profile);
+    const onboardedProfile = await getUserProfile(currentUser.uid);
+    const nextProfile = onboardedProfile ?? profile;
+    setUserProfile(nextProfile);
+    setAuthCookies(currentUser, nextProfile);
+    return nextProfile;
   }, []);
 
   useEffect(() => {

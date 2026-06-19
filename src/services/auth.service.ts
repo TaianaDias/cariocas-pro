@@ -24,6 +24,7 @@ export type UserProfile = {
   empresaId?: string;
   lojaId?: string;
   permissoes?: PermissaoFuncionario[];
+  ativo?: boolean;
   funcionarioAtivo?: boolean;
   createdAt?: unknown;
   criadoEm?: unknown;
@@ -57,7 +58,12 @@ export async function ensureUserProfile(user: User, nome?: string, tipoConta = "
     tipoConta,
     plano: "free",
     plan: "free",
-    role: "user",
+    role: "dono",
+    ativo: true,
+    empresaId: user.uid,
+    lojaId: "matriz",
+    permissoes: ["*"],
+    funcionarioAtivo: true,
     createdAt: serverTimestamp(),
     criadoEm: serverTimestamp(),
     ultimoAcesso: serverTimestamp(),

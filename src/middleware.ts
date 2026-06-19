@@ -36,6 +36,15 @@ function isAuthenticated(request: NextRequest) {
   return Boolean(request.cookies.get("user.uid")?.value);
 }
 
+function hasTenantContext(request: NextRequest) {
+  const uid = request.cookies.get("user.uid")?.value;
+  const empresaId = request.cookies.get("user.empresaId")?.value;
+  const lojaId = request.cookies.get("user.lojaId")?.value;
+  const role = request.cookies.get("user.role")?.value;
+
+  return Boolean(uid && empresaId && lojaId && role);
+}
+
 function normalizePlan(plan?: string) {
   return plan === "essencial" || plan === "pro" || plan === "plus" || plan === "full" ? plan : "free";
 }
@@ -60,12 +69,17 @@ function canOpenRoute(request: NextRequest, pathname: string) {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authenticated = isAuthenticated(request);
+  const tenantReady = hasTenantContext(request);
 
-  if (authenticated && (pathname === "/login" || pathname === "/cadastro")) {
+  if (authenticated && tenantReady && (pathname === "/login" || pathname === "/cadastro")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   if (!authenticated && !isPublicRoute(pathname)) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (authenticated && !tenantReady && !isPublicRoute(pathname)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
