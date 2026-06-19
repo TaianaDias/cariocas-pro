@@ -53,6 +53,8 @@ export interface CategoriaEstoque {
 // ===== INSUMO =====
 export interface Insumo {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   nome: string;
   nomeNormalizado?: string;
   sku: string;
@@ -120,6 +122,10 @@ export interface Categoria {
   cor: string;
   icone: string;
   ordem: number;
+  empresaId?: string;
+  lojaId?: string;
+  ativo?: boolean;
+  oculta?: boolean;
   criadoEm: Date;
 }
 
@@ -176,6 +182,8 @@ export interface FichaIngrediente {
 // ===== HISTORICO =====
 export interface Historico {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   tipo?: string;
   insumoId: string;
   insumoNome: string;
@@ -207,6 +215,8 @@ export interface XmlItem {
 
 export interface XmlImport {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   arquivoNome: string;
   fornecedorNome: string;
   fornecedorCnpj: string;
@@ -375,6 +385,8 @@ export interface OrdemProducao {
 
 export interface ProducaoPorcao {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   insumoId: string;
   insumoNome: string;
   quantidadeBaixada: number;

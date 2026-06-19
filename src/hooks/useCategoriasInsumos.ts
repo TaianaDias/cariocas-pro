@@ -5,6 +5,7 @@ import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, update
 
 import { db } from "../lib/firebase";
 import type { Categoria } from "../types";
+import { useAuth } from "./useAuth";
 
 const CATEGORIAS_PADRAO = [
   { cor: "#DC2626", icone: "C", nome: "Carnes", ordem: 1 },
@@ -22,55 +23,76 @@ const CATEGORIAS_PADRAO = [
 type CategoriaComOculta = Categoria & { oculta?: boolean };
 
 export function useCategoriasInsumos() {
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
   const [categorias, setCategorias] = useState<CategoriaComOculta[]>([]);
   const [categoriasRemovidas, setCategoriasRemovidas] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const consulta = query(collection(db, "categoriasInsumos"), orderBy("ordem", "asc"));
+    if (!empresaId) {
+      setCategorias([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    const categoriasRef = collection(db, "empresas", empresaId, "categoriasEstoque");
+    const consulta = query(categoriasRef, orderBy("ordem", "asc"));
 
     return onSnapshot(consulta, (snapshot) => {
       const items = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as CategoriaComOculta);
       if (items.length === 0) {
         CATEGORIAS_PADRAO.forEach((categoria) => {
-          addDoc(collection(db, "categoriasInsumos"), { ...categoria, criadoEm: serverTimestamp() });
+          addDoc(categoriasRef, { ...categoria, ativo: true, criadoEm: serverTimestamp(), empresaId, lojaId });
         });
       }
       setCategorias(items);
       setLoading(false);
     });
-  }, []);
+  }, [empresaId, lojaId]);
 
   useEffect(() => {
-    const consulta = query(collection(db, "categoriasInsumosRemovidas"), orderBy("ordem", "asc"));
+    if (!empresaId) {
+      setCategoriasRemovidas([]);
+      return undefined;
+    }
+
+    const consulta = query(collection(db, "empresas", empresaId, "categoriasEstoqueRemovidas"), orderBy("ordem", "asc"));
 
     return onSnapshot(consulta, (snapshot) => {
       setCategoriasRemovidas(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Categoria));
     });
-  }, []);
+  }, [empresaId]);
 
   const criarCategoria = useCallback(
     async (nome: string, cor = "#6B7280", icone = "C") => {
       const maxOrdem = categorias.reduce((max, categoria) => Math.max(max, categoria.ordem || 0), 0);
-      await addDoc(collection(db, "categoriasInsumos"), {
+      if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
+      await addDoc(collection(db, "empresas", empresaId, "categoriasEstoque"), {
+        ativo: true,
         cor,
         criadoEm: serverTimestamp(),
+        empresaId,
         icone,
+        lojaId,
         nome,
+        nomeNormalizado: nome.toLowerCase(),
         ordem: maxOrdem + 1,
       });
     },
-    [categorias],
+    [categorias, empresaId, lojaId],
   );
 
   const ocultarCategoria = useCallback(
     async (id: string) => {
       const categoria = categorias.find((item) => item.id === id);
       if (!categoria) return;
-      await addDoc(collection(db, "categoriasInsumosRemovidas"), categoria);
-      await updateDoc(doc(db, "categoriasInsumos", id), { oculta: true });
+      if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
+      await addDoc(collection(db, "empresas", empresaId, "categoriasEstoqueRemovidas"), categoria);
+      await updateDoc(doc(db, "empresas", empresaId, "categoriasEstoque", id), { oculta: true, atualizadoEm: serverTimestamp() });
     },
-    [categorias],
+    [categorias, empresaId],
   );
 
   return {

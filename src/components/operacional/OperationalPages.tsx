@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -22,6 +22,14 @@ import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercad
 type Status = "idle" | "loading" | "ready" | "error";
 
 const listarTodosDesperdicios = () => listarDesperdicios();
+
+function useTenantContext() {
+  const { user, userProfile } = useAuth();
+  return {
+    empresaId: userProfile?.empresaId || user?.uid || "",
+    lojaId: userProfile?.lojaId || "matriz",
+  };
+}
 
 function money(value: number) {
   return new Intl.NumberFormat("pt-BR", { currency: "BRL", style: "currency" }).format(value || 0);
@@ -315,8 +323,11 @@ function buildWhatsAppLink(phone: string, itens: PedidoCompra["itens"], valorTot
 
 export function ComprasPageClient() {
   const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
+  const listarInsumosTenant = useCallback(() => listarInsumos({ empresaId, lojaId }), [empresaId, lojaId]);
   const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidos);
-  const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumos);
+  const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumosTenant);
   const { data: fornecedores, error: fornecedoresError, loading: fornecedoresLoading } = useAsyncData<Fornecedor>(listarFornecedores);
   const { data: mercados, error: mercadosError, loading: mercadosLoading, refetch: refetchMercados } = useAsyncData<Mercado>(listarMercados);
   const [formAberto, setFormAberto] = useState(false);
@@ -920,8 +931,10 @@ export function DesperdicioPageClient() {
 }
 
 export function FornecedoresPageClient() {
+  const { empresaId, lojaId } = useTenantContext();
+  const listarInsumosTenant = useCallback(() => listarInsumos({ empresaId, lojaId }), [empresaId, lojaId]);
   const { data: fornecedores, error, loading, refetch } = useAsyncData<Fornecedor>(listarFornecedores);
-  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumos);
+  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumosTenant);
   const [formAberto, setFormAberto] = useState(false);
   const [fornecedorEditando, setFornecedorEditando] = useState<Fornecedor | null>(null);
   const [fornecedorVinculo, setFornecedorVinculo] = useState<Fornecedor | null>(null);
@@ -1321,10 +1334,13 @@ export function FuncionariosPageClient() {
 }
 
 export function ProducaoPageClient() {
+  const { empresaId, lojaId } = useTenantContext();
+  const listarInsumosTenant = useCallback(() => listarInsumos({ empresaId, lojaId }), [empresaId, lojaId]);
   const { data: fichas, error: fichasError, loading: fichasLoading, refetch: refetchFichas } = useAsyncData<FichaTecnica>(listarFichasTecnicas);
   const { data: ordens, error: ordensError, loading: ordensLoading } = useAsyncData<OrdemProducao>(listarOrdensProducao);
-  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumos);
-  const { data: porcoes, error: porcoesError, loading: porcoesLoading, refetch: refetchPorcoes } = useAsyncData<ProducaoPorcao>(listarPorcoesDisponiveis);
+  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumosTenant);
+  const listarPorcoesTenant = useCallback(() => listarPorcoesDisponiveis({ empresaId, lojaId }), [empresaId, lojaId]);
+  const { data: porcoes, error: porcoesError, loading: porcoesLoading, refetch: refetchPorcoes } = useAsyncData<ProducaoPorcao>(listarPorcoesTenant);
   const [formAberto, setFormAberto] = useState(false);
   const [porcaoAberta, setPorcaoAberta] = useState(false);
   const [porcaoEditando, setPorcaoEditando] = useState<ProducaoPorcao | null>(null);
@@ -1397,9 +1413,11 @@ export function ProducaoPageClient() {
     try {
       await registrarSaidaParaProducao({
         area: porcaoForm.area,
+        empresaId,
         formatoPorcao: porcaoForm.formatoPorcao,
         insumoId: insumoSelecionado.id,
         insumoNome: insumoSelecionado.nome,
+        lojaId,
         observacao: `Porcionado em formato ${porcaoForm.formatoPorcao}`,
         porcoes: Number(porcaoForm.porcoes) || 1,
         quantidade: Number(porcaoForm.quantidade) || 1,
@@ -1441,7 +1459,9 @@ export function ProducaoPageClient() {
     try {
       await atualizarProducaoPorcao(porcaoEditando.id, {
         area: porcaoEditForm.area,
+        empresaId,
         formatoPorcao: porcaoEditForm.formatoPorcao,
+        lojaId,
         observacao: porcaoEditForm.observacao,
         porcoesDisponiveis: Number(porcaoEditForm.porcoesDisponiveis) || 0,
         porcoesGeradas: Number(porcaoEditForm.porcoesGeradas) || 1,
@@ -1464,7 +1484,7 @@ export function ProducaoPageClient() {
 
     setFormError(null);
     try {
-      await deletarProducaoPorcao(porcao.id);
+      await deletarProducaoPorcao(porcao.id, { empresaId, lojaId });
       refetchPorcoes();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir a porcao.");

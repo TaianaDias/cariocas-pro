@@ -8,9 +8,11 @@ const COLECAO_INSUMOS = "insumos";
 
 type SaidaParaProducaoInput = {
   area?: string;
+  empresaId?: string;
   formatoPorcao?: string;
   insumoId?: string;
   insumoNome: string;
+  lojaId?: string;
   observacao?: string;
   porcoes: number;
   quantidadePorPorcao?: number;
@@ -22,7 +24,9 @@ type SaidaParaProducaoInput = {
 
 type AtualizarPorcaoInput = {
   area?: string;
+  empresaId?: string;
   formatoPorcao?: string;
+  lojaId?: string;
   observacao?: string;
   porcoesDisponiveis?: number;
   porcoesGeradas?: number;
@@ -51,8 +55,13 @@ function converterQuantidade(quantidade: number, unidadeOrigem: string, unidadeD
   return quantidade;
 }
 
-async function buscarInsumoPorNome(nome: string): Promise<Insumo | null> {
-  const resultados = await listarInsumos({ busca: nome });
+type TenantContext = {
+  empresaId?: string;
+  lojaId?: string;
+};
+
+async function buscarInsumoPorNome(nome: string, context?: TenantContext): Promise<Insumo | null> {
+  const resultados = await listarInsumos({ busca: nome, empresaId: context?.empresaId, lojaId: context?.lojaId });
   const alvo = normalizar(nome);
 
   return (
@@ -68,9 +77,17 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
     if (input.quantidade <= 0) throw new Error("A quantidade precisa ser maior que zero.");
     if (input.porcoes <= 0) throw new Error("A quantidade de porcoes precisa ser maior que zero.");
 
-    const insumo = input.insumoId ? await obterDocumento<Insumo>(COLECAO_INSUMOS, input.insumoId) : await buscarInsumoPorNome(input.insumoNome);
+    const insumo = input.insumoId
+      ? await obterDocumento<Insumo>(COLECAO_INSUMOS, input.insumoId)
+      : await buscarInsumoPorNome(input.insumoNome, input);
     if (!insumo?.id) {
       throw new Error(`Nao encontrei o insumo "${input.insumoNome}" no estoque.`);
+    }
+    if (input.empresaId && insumo.empresaId && insumo.empresaId !== input.empresaId) {
+      throw new Error("Este insumo nao pertence a empresa atual.");
+    }
+    if (input.lojaId && insumo.lojaId && insumo.lojaId !== input.lojaId) {
+      throw new Error("Este insumo nao pertence a loja atual.");
     }
 
     const quantidadeBaixa = converterQuantidade(input.quantidade, input.unidade, insumo.unidadeMedida);
@@ -90,6 +107,8 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
     });
 
     const producao: Omit<ProducaoPorcao, "id" | "criadoEm" | "atualizadoEm"> = {
+      empresaId: input.empresaId || insumo.empresaId,
+      lojaId: input.lojaId || insumo.lojaId,
       insumoId: insumo.id,
       insumoNome: insumo.nome,
       quantidadeBaixada: quantidadeBaixa,
@@ -119,6 +138,8 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
       custoTotal,
       observacao: `${input.porcoes} porcoes geradas para ${producao.area}`,
       responsavel: input.responsavel,
+      empresaId: input.empresaId || insumo.empresaId,
+      lojaId: input.lojaId || insumo.lojaId,
     });
 
     return {
@@ -133,11 +154,15 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
   }
 }
 
-export async function listarPorcoesDisponiveis(): Promise<ProducaoPorcao[]> {
+export async function listarPorcoesDisponiveis(context?: TenantContext): Promise<ProducaoPorcao[]> {
   try {
     const porcoes = await obterTodos<ProducaoPorcao>(COLECAO_PORCOES);
     return porcoes
-      .filter((porcao) => Number(porcao.porcoesDisponiveis) > 0)
+      .filter((porcao) => {
+        const pertenceEmpresa = !context?.empresaId || porcao.empresaId === context.empresaId;
+        const pertenceLoja = !context?.lojaId || porcao.lojaId === context.lojaId;
+        return pertenceEmpresa && pertenceLoja && Number(porcao.porcoesDisponiveis) > 0;
+      })
       .sort((a, b) => {
         const dataA = a.criadoEm && typeof a.criadoEm === "object" && "toDate" in a.criadoEm ? (a.criadoEm as { toDate: () => Date }).toDate().getTime() : 0;
         const dataB = b.criadoEm && typeof b.criadoEm === "object" && "toDate" in b.criadoEm ? (b.criadoEm as { toDate: () => Date }).toDate().getTime() : 0;
@@ -162,6 +187,12 @@ export async function atualizarProducaoPorcao(id: string, dados: AtualizarPorcao
   try {
     const porcaoAtual = await obterDocumento<ProducaoPorcao>(COLECAO_PORCOES, id);
     if (!porcaoAtual) throw new Error("Porcao nao encontrada.");
+    if (dados.empresaId && porcaoAtual.empresaId && porcaoAtual.empresaId !== dados.empresaId) {
+      throw new Error("Esta porcao nao pertence a empresa atual.");
+    }
+    if (dados.lojaId && porcaoAtual.lojaId && porcaoAtual.lojaId !== dados.lojaId) {
+      throw new Error("Esta porcao nao pertence a loja atual.");
+    }
 
     const porcoesGeradas = Number(dados.porcoesGeradas ?? porcaoAtual.porcoesGeradas) || 0;
     const porcoesDisponiveis = Number(dados.porcoesDisponiveis ?? porcaoAtual.porcoesDisponiveis) || 0;
@@ -188,8 +219,16 @@ export async function atualizarProducaoPorcao(id: string, dados: AtualizarPorcao
   }
 }
 
-export async function deletarProducaoPorcao(id: string): Promise<void> {
+export async function deletarProducaoPorcao(id: string, context?: TenantContext): Promise<void> {
   try {
+    const porcaoAtual = await obterDocumento<ProducaoPorcao>(COLECAO_PORCOES, id);
+    if (!porcaoAtual) throw new Error("Porcao nao encontrada.");
+    if (context?.empresaId && porcaoAtual.empresaId && porcaoAtual.empresaId !== context.empresaId) {
+      throw new Error("Esta porcao nao pertence a empresa atual.");
+    }
+    if (context?.lojaId && porcaoAtual.lojaId && porcaoAtual.lojaId !== context.lojaId) {
+      throw new Error("Esta porcao nao pertence a loja atual.");
+    }
     await deletarDocumento(COLECAO_PORCOES, id);
   } catch (error) {
     console.error("Erro ao excluir porcao de producao", error);

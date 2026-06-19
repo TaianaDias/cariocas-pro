@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { useAuth } from "./useAuth";
 import { listarCategorias } from "../services/categorias.service";
 import { listarInsumos } from "../services/estoque.service";
 import type { Categoria, Insumo } from "../types";
@@ -34,6 +35,9 @@ const kpisVazios: EstoqueKpiData = {
 };
 
 export function useEstoqueData(): EstoqueData {
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
   const [data, setData] = useState<EstoqueData>({
     insumos: [],
     categorias: [],
@@ -47,7 +51,22 @@ export function useEstoqueData(): EstoqueData {
     setData((current) => ({ ...current, loading: true, error: null }));
 
     try {
-      const [insumos, categorias] = await Promise.all([listarInsumos(), listarCategorias()]);
+      if (!empresaId || !lojaId) {
+        setData({
+          insumos: [],
+          categorias: [],
+          kpis: kpisVazios,
+          loading: false,
+          error: null,
+          refetch: carregar,
+        });
+        return;
+      }
+
+      const [insumos, categorias] = await Promise.all([
+        listarInsumos({ empresaId, lojaId }),
+        listarCategorias({ empresaId }),
+      ]);
 
       const abaixoMinimo = insumos.filter(
         (insumo) => insumo.quantidadeAtual <= insumo.estoqueMinimo && insumo.estoqueMinimo > 0,
@@ -84,7 +103,7 @@ export function useEstoqueData(): EstoqueData {
         refetch: carregar,
       }));
     }
-  }, []);
+  }, [empresaId, lojaId]);
 
   useEffect(() => {
     carregar();

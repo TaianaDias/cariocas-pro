@@ -95,7 +95,9 @@ function prepararPayload(produto: Partial<Insumo>) {
 }
 
 export function ProdutoDrawer({ aberto, onFechar, onSalvo, produtoId }: ProdutoDrawerProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
   const [abaAtiva, setAbaAtiva] = useState<AbaId>("dados");
   const [draft, setDraft] = useState<Partial<Insumo>>(produtoVazio);
   const [erroSalvar, setErroSalvar] = useState<string | null>(null);
@@ -129,10 +131,15 @@ export function ProdutoDrawer({ aberto, onFechar, onSalvo, produtoId }: ProdutoD
       const payloadCompleto = {
         ...payload,
         cmv: Number(draft.cmv) || 0,
+        empresaId,
+        lojaId,
         margemEstimada: Number(draft.margemEstimada) || 0,
         observacao: draft.observacao || "",
         precosVenda: draft.precosVenda || [],
       } as Omit<Insumo, "id" | "criadoEm" | "atualizadoEm" | "createdBy">;
+      if (!empresaId || !lojaId) {
+        throw new Error("Contexto de empresa/loja nao encontrado.");
+      }
       if (produtoId) {
         await atualizarInsumo(produtoId, payloadCompleto);
       } else {

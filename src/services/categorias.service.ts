@@ -3,9 +3,14 @@ import { atualizarDocumento, criarDocumento, deletarDocumento, obterDocumento, o
 
 const COLECAO = "categorias";
 
-export async function listarCategorias(): Promise<Categoria[]> {
+type FiltrosCategorias = {
+  empresaId?: string;
+};
+
+export async function listarCategorias(filtros?: FiltrosCategorias): Promise<Categoria[]> {
   try {
-    return obterTodos<Categoria>(COLECAO);
+    const caminho = filtros?.empresaId ? `empresas/${filtros.empresaId}/categoriasEstoque` : COLECAO;
+    return obterTodos<Categoria>(caminho);
   } catch (error) {
     console.error("Erro ao listar categorias", error);
     return [];

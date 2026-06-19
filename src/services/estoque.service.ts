@@ -12,7 +12,9 @@ const COLECAO = "insumos";
 
 type FiltrosInsumos = {
   categoriaId?: string;
+  empresaId?: string;
   fornecedorId?: string;
+  lojaId?: string;
   status?: string;
   busca?: string;
   apenasCriticos?: boolean;
@@ -21,12 +23,14 @@ type FiltrosInsumos = {
 export async function listarInsumos(filtros?: FiltrosInsumos): Promise<Insumo[]> {
   try {
     const filtrosConsulta = [
+      ...(filtros?.empresaId ? [{ campo: "empresaId", operador: "==" as const, valor: filtros.empresaId }] : []),
+      ...(filtros?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: filtros.lojaId }] : []),
       ...(filtros?.categoriaId ? [{ campo: "categoriaId", operador: "==" as const, valor: filtros.categoriaId }] : []),
       ...(filtros?.status ? [{ campo: "status", operador: "==" as const, valor: filtros.status }] : []),
       ...(filtros?.apenasCriticos ? [{ campo: "quantidadeAtual", operador: "<=" as const, valor: 0 }] : []),
     ];
 
-    const resultados = await consultar<Insumo>(COLECAO, filtrosConsulta, { campo: "nome", direcao: "asc" });
+    const resultados = (await consultar<Insumo>(COLECAO, filtrosConsulta)).sort((a, b) => a.nome.localeCompare(b.nome));
 
     if (!filtros?.busca) {
       return resultados;
@@ -45,10 +49,18 @@ export async function listarInsumos(filtros?: FiltrosInsumos): Promise<Insumo[]>
   }
 }
 
-export function ouvirInsumos(callback: (insumos: Insumo[]) => void, categoriaId?: string): () => void {
+export function ouvirInsumos(callback: (insumos: Insumo[]) => void, categoriaId?: string, context?: { empresaId?: string; lojaId?: string }): () => void {
   try {
-    const filtros = categoriaId ? [{ campo: "categoriaId", operador: "==" as const, valor: categoriaId }] : [];
-    return ouvirColecao<Insumo>(COLECAO, callback, filtros, { campo: "nome", direcao: "asc" });
+    const filtros = [
+      ...(context?.empresaId ? [{ campo: "empresaId", operador: "==" as const, valor: context.empresaId }] : []),
+      ...(context?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: context.lojaId }] : []),
+      ...(categoriaId ? [{ campo: "categoriaId", operador: "==" as const, valor: categoriaId }] : []),
+    ];
+    return ouvirColecao<Insumo>(
+      COLECAO,
+      (items) => callback([...items].sort((a, b) => a.nome.localeCompare(b.nome))),
+      filtros,
+    );
   } catch (error) {
     console.error("Erro ao ouvir insumos", error);
     return () => undefined;
@@ -66,9 +78,13 @@ export async function getInsumo(id: string): Promise<Insumo | null> {
 
 export const buscarInsumo = getInsumo;
 
-export async function getInsumoPorCodigoBarras(codigo: string): Promise<Insumo | null> {
+export async function getInsumoPorCodigoBarras(codigo: string, context?: { empresaId?: string; lojaId?: string }): Promise<Insumo | null> {
   try {
-    const resultados = await consultar<Insumo>(COLECAO, [{ campo: "codigoBarras", operador: "==" as const, valor: codigo }]);
+    const resultados = await consultar<Insumo>(COLECAO, [
+      ...(context?.empresaId ? [{ campo: "empresaId", operador: "==" as const, valor: context.empresaId }] : []),
+      ...(context?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: context.lojaId }] : []),
+      { campo: "codigoBarras", operador: "==" as const, valor: codigo },
+    ]);
     return resultados.length > 0 ? resultados[0] : null;
   } catch (error) {
     console.error("Erro ao buscar insumo por codigo de barras", error);
@@ -81,6 +97,9 @@ export async function criarInsumo(
   uid: string,
 ): Promise<string> {
   try {
+    if (!dados.empresaId || !dados.lojaId) {
+      throw new Error("empresaId e lojaId sao obrigatorios para criar insumo.");
+    }
     return criarDocumento(COLECAO, { ...dados, createdBy: uid });
   } catch (error) {
     console.error("Erro ao criar insumo", error);
@@ -90,6 +109,9 @@ export async function criarInsumo(
 
 export async function atualizarInsumo(id: string, dados: Partial<Insumo>): Promise<void> {
   try {
+    if (!dados.empresaId || !dados.lojaId) {
+      throw new Error("empresaId e lojaId sao obrigatorios para atualizar insumo.");
+    }
     return atualizarDocumento<Insumo>(COLECAO, id, dados);
   } catch (error) {
     console.error("Erro ao atualizar insumo", error);

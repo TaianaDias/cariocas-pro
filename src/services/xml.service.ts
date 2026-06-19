@@ -161,7 +161,16 @@ export async function processarLoteXml(
           ];
       let existentes: Insumo[] = [];
       for (const filtro of buscas) {
-        existentes = await consultar<Insumo>("insumos", [filtro], undefined, 1);
+        existentes = await consultar<Insumo>(
+          "insumos",
+          [
+            ...(contexto?.empresaId ? [{ campo: "empresaId", operador: "==" as const, valor: contexto.empresaId }] : []),
+            ...(contexto?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: contexto.lojaId }] : []),
+            filtro,
+          ],
+          undefined,
+          1,
+        );
         if (existentes.length) break;
       }
       const produtoExistenteId = item.produtoExistenteId || existentes[0]?.id;
@@ -186,14 +195,17 @@ export async function processarLoteXml(
           custoAnterior: custoAtual,
           custoCompra: novoCusto,
           custoUnitario: novoCusto,
+          empresaId: contexto?.empresaId || produto.empresaId,
           fornecedorPrincipal: contexto?.fornecedorNome || produto.fornecedorPrincipal,
           ...(imagemUrl ? { imagemPrincipal: imagemUrl, imagemUrl } : {}),
+          lojaId: contexto?.lojaId || produto.lojaId,
           quantidadeAtual: novaQuantidade,
         });
 
         await criarDocumento("historico", {
           custoTotal: item.valorTotal,
           custoUnitario: item.valorUnitario,
+          empresaId: contexto?.empresaId,
           fornecedorId: contexto?.fornecedorCnpj || "",
           insumoId: produtoExistenteId,
           insumoNome: produto.nome,
@@ -202,6 +214,7 @@ export async function processarLoteXml(
           responsavel: uid,
           tipo: "xml",
           unidade: item.unidade,
+          lojaId: contexto?.lojaId,
           xmlId: importacaoId,
         });
 
@@ -259,6 +272,7 @@ export async function processarLoteXml(
         await criarDocumento("historico", {
           custoTotal: item.valorTotal,
           custoUnitario: item.valorUnitario,
+          empresaId: contexto?.empresaId,
           fornecedorId: contexto?.fornecedorCnpj || "",
           insumoId,
           insumoNome: item.nome,
@@ -267,6 +281,7 @@ export async function processarLoteXml(
           responsavel: uid,
           tipo: "xml",
           unidade: item.unidade,
+          lojaId: contexto?.lojaId,
           xmlId: importacaoId,
         });
         criados++;
@@ -290,10 +305,12 @@ export async function importarArquivoXml(xmlText: string, options: ImportarArqui
       createdBy: options.uid,
       fornecedorCnpj: parseado.fornecedorCnpj,
       fornecedorNome: parseado.fornecedorNome,
+      empresaId: options.empresaId,
       itens,
       itensCriados: 0,
       itensVinculados: 0,
       totalItens: itens.length,
+      lojaId: options.lojaId,
     },
     options.uid,
   );

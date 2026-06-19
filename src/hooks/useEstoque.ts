@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
 import type { Categoria, Historico, Insumo } from "../types";
+import { useAuth } from "./useAuth";
 
 export interface EstoqueKpis {
   abaixoMinimo: number;
@@ -59,6 +60,9 @@ function calcularKpis(items: Insumo[]): EstoqueKpis {
 }
 
 export function useEstoque() {
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [kpis, setKpis] = useState<EstoqueKpis>(kpisIniciais);
@@ -66,12 +70,25 @@ export function useEstoque() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const consulta = query(collection(db, "insumos"), orderBy("nome", "asc"));
+    if (!empresaId || !lojaId) {
+      setInsumos([]);
+      setKpis(kpisIniciais);
+      setLoading(false);
+      return undefined;
+    }
+
+    const consulta = query(
+      collection(db, "insumos"),
+      where("empresaId", "==", empresaId),
+      where("lojaId", "==", lojaId),
+    );
 
     return onSnapshot(
       consulta,
       (snapshot) => {
-        const items = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Insumo);
+        const items = snapshot.docs
+          .map((item) => ({ id: item.id, ...item.data() }) as Insumo)
+          .sort((a, b) => a.nome.localeCompare(b.nome));
         setInsumos(items);
         setKpis(calcularKpis(items));
         setLoading(false);
@@ -82,42 +99,56 @@ export function useEstoque() {
         setLoading(false);
       },
     );
-  }, []);
+  }, [empresaId, lojaId]);
 
   useEffect(() => {
-    const consulta = query(collection(db, "categoriasInsumos"), orderBy("ordem", "asc"));
+    if (!empresaId) {
+      setCategorias([]);
+      return undefined;
+    }
+
+    const consulta = query(collection(db, "empresas", empresaId, "categoriasEstoque"), orderBy("ordem", "asc"));
 
     return onSnapshot(consulta, (snapshot) => {
       setCategorias(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Categoria));
     });
-  }, []);
+  }, [empresaId]);
 
   const criarInsumo = useCallback(async (dados: Partial<Insumo>, uid: string) => {
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     const ref = await addDoc(collection(db, "insumos"), {
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, "") || "",
       createdBy: uid,
+      empresaId,
+      lojaId,
       criadoEm: serverTimestamp(),
       nomeNormalizado: dados.nome?.toLowerCase() || "",
       atualizadoEm: serverTimestamp(),
     });
 
     return ref.id;
-  }, []);
+  }, [empresaId, lojaId]);
 
   const atualizarInsumo = useCallback(async (id: string, dados: Partial<Insumo>) => {
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     await updateDoc(doc(db, "insumos", id), {
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, ""),
+      empresaId,
+      lojaId,
       nomeNormalizado: dados.nome?.toLowerCase(),
       atualizadoEm: serverTimestamp(),
     });
-  }, []);
+  }, [empresaId, lojaId]);
 
   const deletarInsumo = useCallback(async (id: string, nome: string, responsavel: string) => {
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     const batch = writeBatch(db);
     batch.delete(doc(db, "insumos", id));
     batch.set(doc(collection(db, "historico")), {
+      empresaId,
+      lojaId,
       insumoId: id,
       insumoNome: nome,
       tipo: "correcao",
@@ -127,9 +158,10 @@ export function useEstoque() {
       criadoEm: serverTimestamp(),
     } satisfies Omit<Historico, "id" | "criadoEm"> & { criadoEm: unknown });
     await batch.commit();
-  }, []);
+  }, [empresaId, lojaId]);
 
   const criarInsumoComEntrada = useCallback(async (dados: CriarEntradaInput) => {
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     if (!dados.nome.trim()) throw new Error("Informe o nome do produto.");
     if (dados.quantidade <= 0) throw new Error("Quantidade deve ser maior que zero.");
     if (dados.custoTotal <= 0) throw new Error("Custo total deve ser maior que zero.");
@@ -145,6 +177,8 @@ export function useEstoque() {
       codigoBarrasNormalizado: codigoNormalizado,
       conversao: 1,
       createdBy: dados.responsavel,
+      empresaId,
+      lojaId,
       criadoEm: serverTimestamp(),
       custoCompra: custoUnitario,
       custoUnitario,
@@ -184,6 +218,8 @@ export function useEstoque() {
 
     batch.set(doc(collection(db, "historico")), {
       criadoEm: serverTimestamp(),
+      empresaId,
+      lojaId,
       custoTotal: dados.custoTotal,
       custoUnitario,
       insumoId: insumoRef.id,
@@ -197,10 +233,11 @@ export function useEstoque() {
 
     await batch.commit();
     return insumoRef.id;
-  }, []);
+  }, [empresaId, lojaId]);
 
   const registrarMovimento = useCallback(
     async (dados: MovimentoInput) => {
+      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
       const insumoAtual = insumos.find((item) => item.id === dados.insumoId);
       if (!insumoAtual?.id) throw new Error("Insumo nao encontrado");
 
@@ -230,6 +267,8 @@ export function useEstoque() {
       });
       batch.set(doc(collection(db, "historico")), {
         ...dados,
+        empresaId,
+        lojaId,
         custoUnitario: dados.custoTotal ? dados.custoTotal / dados.quantidade : null,
         custoTotal: dados.custoTotal || null,
         criadoEm: serverTimestamp(),
@@ -254,11 +293,12 @@ export function useEstoque() {
         console.error("Erro ao disparar automacao de estoque:", err);
       }
     },
-    [insumos],
+    [empresaId, insumos, lojaId],
   );
 
   const zerarEstoque = useCallback(
     async (responsavel: string) => {
+      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
       const batch = writeBatch(db);
       for (const insumo of insumos) {
         if (!insumo.id || insumo.quantidadeAtual <= 0) continue;
@@ -267,6 +307,8 @@ export function useEstoque() {
           quantidadeAtual: 0,
         });
         batch.set(doc(collection(db, "historico")), {
+          empresaId,
+          lojaId,
           insumoId: insumo.id,
           insumoNome: insumo.nome,
           tipo: "correcao",
@@ -278,7 +320,7 @@ export function useEstoque() {
       }
       await batch.commit();
     },
-    [insumos],
+    [empresaId, insumos, lojaId],
   );
 
   return {

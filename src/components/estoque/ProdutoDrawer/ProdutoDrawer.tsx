@@ -59,7 +59,7 @@ const emptyInsumo: Partial<Insumo> = {
 };
 
 export function ProdutoDrawer({ insumoId, onClose, onSaved }: ProdutoDrawerProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [insumo, setInsumo] = useState<Partial<Insumo>>(emptyInsumo);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,14 +101,22 @@ export function ProdutoDrawer({ insumoId, onClose, onSaved }: ProdutoDrawerProps
   }
 
   async function handleSalvar() {
+    const empresaId = userProfile?.empresaId || user?.uid || "";
+    const lojaId = userProfile?.lojaId || "matriz";
+
     setLoading(true);
     setError(null);
 
     try {
+      if (!empresaId || !lojaId) {
+        throw new Error("Nao foi possivel identificar empresa e loja.");
+      }
+
+      const payload = { ...insumo, empresaId, lojaId };
       if (insumoId) {
-        await atualizarInsumo(insumoId, insumo);
+        await atualizarInsumo(insumoId, payload);
       } else {
-        await criarInsumo(insumo as Omit<Insumo, "id" | "criadoEm" | "atualizadoEm" | "createdBy">, user?.uid ?? "");
+        await criarInsumo(payload as Omit<Insumo, "id" | "criadoEm" | "atualizadoEm" | "createdBy">, user?.uid ?? "");
       }
       onSaved();
     } catch (err) {

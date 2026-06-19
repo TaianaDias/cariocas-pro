@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Plano, permissao ou empresa invalidos para recalcular precificacao." }, { status: 403 });
   }
 
-  const insumos = await listarInsumos();
+  const insumos = await listarInsumos({ empresaId: authorization.empresaId, lojaId: authorization.lojaId || undefined });
   const receitas = await listarReceitasPrecificacao(authorization.empresaId, authorization.lojaId || undefined);
   const recalculadas = receitas.map((receita) =>
     recalcularReceita(

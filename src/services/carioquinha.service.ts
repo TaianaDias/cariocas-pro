@@ -1,8 +1,14 @@
 import { getComprasRecomendadas, getCmvForaIdeal, getKpis, getPrevisaoRuptura } from "./dashboard.service";
 import { criarInsumo, getInsumosCriticos } from "./estoque.service";
+import { obterDocumento } from "./db";
 import { registrarHistorico } from "./historico.service";
 import { listarPorcoesDisponiveis, registrarSaidaParaProducao } from "./producao-porcoes.service";
 import type { Insumo } from "../types";
+
+type TenantContext = {
+  empresaId: string;
+  lojaId: string;
+};
 
 type CadastroInsumoInput = {
   categoria?: string;
@@ -36,6 +42,12 @@ function normalizarTexto(texto: string) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+async function obterContextoUsuario(uid: string): Promise<TenantContext | null> {
+  const usuario = await obterDocumento<{ empresaId?: string; lojaId?: string }>("usuarios", uid);
+  if (!usuario?.empresaId || !usuario?.lojaId) return null;
+  return { empresaId: usuario.empresaId, lojaId: usuario.lojaId };
 }
 
 function parseNumero(valor?: string) {
@@ -206,7 +218,7 @@ function montarInsumoParaCadastro(input: CadastroInsumoInput, uid: string): Omit
   };
 }
 
-async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string) {
+async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string, context: TenantContext | null) {
   const dados = extrairCadastroInsumo(pergunta);
 
   if (!dados) return null;
@@ -247,10 +259,20 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string) {
     };
   }
 
-  const novoInsumo = montarInsumoParaCadastro(dados, uid);
+  if (!context) {
+    return { resposta: "Nao consegui identificar empresa e loja para cadastrar esse insumo com seguranca." };
+  }
+
+  const novoInsumo = {
+    ...montarInsumoParaCadastro(dados, uid),
+    empresaId: context.empresaId,
+    lojaId: context.lojaId,
+  };
   const id = await criarInsumo(novoInsumo, uid);
 
   await registrarHistorico({
+    empresaId: context.empresaId,
+    lojaId: context.lojaId,
     insumoId: id,
     insumoNome: novoInsumo.nome,
     quantidade: novoInsumo.quantidadeAtual,
@@ -272,7 +294,7 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string) {
   };
 }
 
-async function registrarProducaoViaWhatsApp(pergunta: string, uid: string) {
+async function registrarProducaoViaWhatsApp(pergunta: string, uid: string, context: TenantContext | null) {
   const dados = extrairSaidaProducao(pergunta);
 
   const somentePedidoDeFormulario = normalizarTexto(pergunta).replace(/[^\w\s]/g, "").trim();
@@ -320,9 +342,15 @@ async function registrarProducaoViaWhatsApp(pergunta: string, uid: string) {
     return { resposta: "Nao consegui interpretar os dados da producao. Envie no formato estruturado." };
   }
 
+  if (!context) {
+    return { resposta: "Nao consegui identificar empresa e loja para registrar essa producao com seguranca." };
+  }
+
   const producao = await registrarSaidaParaProducao({
     area: dados.area,
+    empresaId: context.empresaId,
     insumoNome: nome,
+    lojaId: context.lojaId,
     observacao: dados.observacao,
     porcoes,
     quantidade,
@@ -348,20 +376,21 @@ export async function processarPergunta(pergunta: string, uid: string): Promise<
   try {
     const p = pergunta.toLowerCase();
     const textoNormalizado = normalizarTexto(pergunta);
-    const cadastro = await cadastrarInsumoViaWhatsApp(pergunta, uid);
+    const context = await obterContextoUsuario(uid);
+    const cadastro = await cadastrarInsumoViaWhatsApp(pergunta, uid, context);
 
     if (cadastro) {
       return cadastro;
     }
 
-    const producao = await registrarProducaoViaWhatsApp(pergunta, uid);
+    const producao = await registrarProducaoViaWhatsApp(pergunta, uid, context);
 
     if (producao) {
       return producao;
     }
 
     if (textoNormalizado.includes("porcoes disponiveis") || textoNormalizado.includes("porcoes na area")) {
-      const porcoes = await listarPorcoesDisponiveis();
+      const porcoes = await listarPorcoesDisponiveis(context || undefined);
       if (porcoes.length === 0) return { resposta: "Nao ha porcoes disponiveis registradas na producao." };
 
       const lista = porcoes

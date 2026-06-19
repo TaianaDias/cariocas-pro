@@ -7,15 +7,15 @@ const DEFAULT_PLAN = "free";
 const DEFAULT_STORE_ID = "matriz";
 
 const DEFAULT_STOCK_CATEGORIES = [
-  { id: "carnes", nome: "Carnes", ordem: 1 },
-  { id: "paes", nome: "Paes", ordem: 2 },
-  { id: "queijos", nome: "Queijos", ordem: 3 },
-  { id: "molhos", nome: "Molhos", ordem: 4 },
-  { id: "hortifruti", nome: "Hortifruti", ordem: 5 },
-  { id: "bebidas", nome: "Bebidas", ordem: 6 },
-  { id: "embalagens", nome: "Embalagens", ordem: 7 },
-  { id: "limpeza", nome: "Limpeza", ordem: 8 },
-  { id: "producao-propria", nome: "Producao Propria", ordem: 9 },
+  { cor: "#DC2626", icone: "C", id: "carnes", nome: "Carnes", ordem: 1 },
+  { cor: "#D97706", icone: "P", id: "paes", nome: "Paes", ordem: 2 },
+  { cor: "#F59E0B", icone: "Q", id: "queijos", nome: "Queijos", ordem: 3 },
+  { cor: "#8B5CF6", icone: "M", id: "molhos", nome: "Molhos", ordem: 4 },
+  { cor: "#22C55E", icone: "H", id: "hortifruti", nome: "Hortifruti", ordem: 5 },
+  { cor: "#3B82F6", icone: "B", id: "bebidas", nome: "Bebidas", ordem: 6 },
+  { cor: "#6B7280", icone: "E", id: "embalagens", nome: "Embalagens", ordem: 7 },
+  { cor: "#EC4899", icone: "L", id: "limpeza", nome: "Limpeza", ordem: 8 },
+  { cor: "#F97316", icone: "P", id: "producao-propria", nome: "Producao Propria", ordem: 9 },
 ] as const;
 
 function getBearerToken(request: Request) {

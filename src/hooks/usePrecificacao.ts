@@ -99,7 +99,7 @@ export function usePrecificacao() {
 
     try {
       if (!canSeeMoney) {
-        const insumosData = await listarInsumos();
+        const insumosData = await listarInsumos({ empresaId, lojaId: lojaSegura });
         setInsumos(insumosData);
         setReceitas([]);
         setError(null);
@@ -108,7 +108,7 @@ export function usePrecificacao() {
 
       const [dados, insumosData] = await Promise.all([
         listarReceitasPrecificacao(empresaId, lojaSegura),
-        listarInsumos(),
+        listarInsumos({ empresaId, lojaId: lojaSegura }),
       ]);
       setReceitas(dados);
       setInsumos(insumosData);
