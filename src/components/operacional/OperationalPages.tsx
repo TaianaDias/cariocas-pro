@@ -15,13 +15,11 @@ import { listarInsumos } from "../../services/estoque.service";
 import { atualizarFornecedor, criarFornecedor, deletarFornecedor, listarFornecedores, vincularInsumoAoFornecedor } from "../../services/fornecedores.service";
 import { atualizarFuncionario, criarFuncionario, listarFuncionarios } from "../../services/funcionarios.service";
 import { criarMercado, listarMercados } from "../../services/mercados.service";
-import { atualizarProducaoPorcao, deletarProducaoPorcao, listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
+import { atualizarProducaoPorcao, deletarProducaoPorcao, estornarProducaoPorcao, listarPorcoesDisponiveis, registrarSaidaParaProducao } from "../../services/producao-porcoes.service";
 import { criarFichaTecnica, listarFichasTecnicas, listarOrdensProducao } from "../../services/producao.service";
 import type { Desperdicio, FichaTecnica, Fornecedor, Funcionario, Insumo, Mercado, OrdemProducao, PedidoCompra, PermissaoFuncionario, ProducaoPorcao } from "../../types";
 
 type Status = "idle" | "loading" | "ready" | "error";
-
-const listarTodosDesperdicios = () => listarDesperdicios();
 
 function useTenantContext() {
   const { user, userProfile } = useAuth();
@@ -861,12 +859,16 @@ export function ComprasPageClient() {
 }
 
 export function DesperdicioPageClient() {
-  const { data: desperdicios, error, loading, refetch } = useAsyncData<Desperdicio>(listarTodosDesperdicios);
+  const { empresaId, lojaId } = useTenantContext();
+  const listarDesperdiciosTenant = useCallback(() => listarDesperdicios(undefined, undefined, { empresaId, lojaId }), [empresaId, lojaId]);
+  const listarInsumosTenant = useCallback(() => listarInsumos({ empresaId, lojaId }), [empresaId, lojaId]);
+  const { data: desperdicios, error, loading, refetch } = useAsyncData<Desperdicio>(listarDesperdiciosTenant);
+  const { data: insumos, error: insumosError, loading: insumosLoading, refetch: refetchInsumos } = useAsyncData<Insumo>(listarInsumosTenant);
   const { data: funcionarios, error: funcionariosError, loading: funcionariosLoading } = useAsyncData<Funcionario>(listarFuncionarios);
   const [formAberto, setFormAberto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [form, setForm] = useState({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1, responsavel: "" });
+  const [form, setForm] = useState({ colaboradorId: "", insumoId: "", motivo: "", quantidade: 1, responsavel: "" });
   const total = desperdicios.reduce((acc, item) => acc + (item.custoEstimado || 0), 0);
   const categorias = new Set(desperdicios.map((item) => item.categoria || "Sem categoria")).size;
 
@@ -876,19 +878,23 @@ export function DesperdicioPageClient() {
     try {
       await registrarDesperdicio({
         categoria: "perda",
-        custoEstimado: Number(form.custoEstimado) || 0,
+        colaboradorId: form.colaboradorId,
+        custoEstimado: 0,
         data: new Date(),
-        insumoId: "",
-        insumoNome: form.insumoNome,
+        empresaId,
+        insumoId: form.insumoId,
+        insumoNome: insumos.find((item) => item.id === form.insumoId)?.nome || "",
+        lojaId,
         motivo: form.motivo,
         observacao: "",
         quantidade: Number(form.quantidade) || 1,
         responsavel: form.responsavel || "Responsavel nao informado",
         unidade: "un",
       });
-      setForm({ custoEstimado: 0, insumoNome: "", motivo: "", quantidade: 1, responsavel: "" });
+      setForm({ colaboradorId: "", insumoId: "", motivo: "", quantidade: 1, responsavel: "" });
       setFormAberto(false);
       refetch();
+      refetchInsumos();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
     } finally {
@@ -912,11 +918,23 @@ export function DesperdicioPageClient() {
       {formAberto ? (
         <ActionPanel title="Registrar perda" error={formError} onClose={() => setFormAberto(false)}>
           <div className="operational-form-grid">
-            <Field label="Insumo" value={form.insumoNome} onChange={(value) => setForm((current) => ({ ...current, insumoNome: value }))} />
+            <SearchableInsumoField
+              label="Insumo"
+              value={form.insumoId}
+              insumos={insumos}
+              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeUso || insumo.unidadeMedida || "un"} disponivel`}
+              onChange={(value) => setForm((current) => ({ ...current, insumoId: value }))}
+            />
             <Field label="Motivo" value={form.motivo} onChange={(value) => setForm((current) => ({ ...current, motivo: value }))} />
             <Field label="Quantidade" type="number" value={form.quantidade} onChange={(value) => setForm((current) => ({ ...current, quantidade: Number(value) }))} />
-            <Field label="Custo estimado" type="number" value={form.custoEstimado} onChange={(value) => setForm((current) => ({ ...current, custoEstimado: Number(value) }))} />
-            <SelectField label="Responsavel" value={form.responsavel} onChange={(value) => setForm((current) => ({ ...current, responsavel: value }))}>
+            <SelectField
+              label="Responsavel"
+              value={form.responsavel}
+              onChange={(value) => {
+                const funcionario = funcionarios.find((item) => item.nome === value);
+                setForm((current) => ({ ...current, colaboradorId: funcionario?.id || funcionario?.email || value, responsavel: value }));
+              }}
+            >
               <option value="">{funcionariosLoading ? "Carregando colaboradores..." : "Selecione o colaborador"}</option>
               {funcionarios.map((funcionario) => (
                 <option key={funcionario.id || funcionario.email || funcionario.nome} value={funcionario.nome}>
@@ -930,6 +948,7 @@ export function DesperdicioPageClient() {
       ) : null}
 
       {funcionariosError ? <EmptyState title="Erro ao carregar colaboradores" description={funcionariosError} /> : null}
+      {insumosError ? <EmptyState title="Erro ao carregar insumos" description={insumosError} /> : null}
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar desperdicio" description={error} /> : null}
       {!loading && !error && desperdicios.length === 0 ? (
         <EmptyState title="Nenhuma perda registrada" description="Registre desperdicios para medir impacto em CMV e margem." action={<Button onClick={() => setFormAberto(true)}>Registrar Perda</Button>} />
@@ -1378,6 +1397,7 @@ export function ProducaoPageClient() {
     area: "producao",
     formatoPorcao: "pacote",
     insumoId: "",
+    insumoPorcionadoId: "",
     porcoes: 1,
     quantidade: 1,
     quantidadePorPorcao: 1,
@@ -1395,6 +1415,7 @@ export function ProducaoPageClient() {
   const loading = fichasLoading || ordensLoading || insumosLoading || porcoesLoading;
   const error = fichasError || ordensError || insumosError || porcoesError;
   const insumoSelecionado = insumos.find((item) => item.id === porcaoForm.insumoId);
+  const insumoPorcionadoSelecionado = insumos.find((item) => item.id === porcaoForm.insumoPorcionadoId);
   const porcoesPorInsumo = porcoes.reduce<Record<string, number>>((acc, item) => {
     acc[item.insumoId] = (acc[item.insumoId] || 0) + (Number(item.porcoesDisponiveis) || 0);
     return acc;
@@ -1442,6 +1463,8 @@ export function ProducaoPageClient() {
         formatoPorcao: porcaoForm.formatoPorcao,
         insumoId: insumoSelecionado.id,
         insumoNome: insumoSelecionado.nome,
+        insumoPorcionadoId: insumoPorcionadoSelecionado?.id,
+        insumoPorcionadoNome: insumoPorcionadoSelecionado?.nome,
         lojaId,
         observacao: `Porcionado em formato ${porcaoForm.formatoPorcao}`,
         porcoes: Number(porcaoForm.porcoes) || 1,
@@ -1451,7 +1474,7 @@ export function ProducaoPageClient() {
         unidade: insumoSelecionado.unidadeMedida || "un",
         unidadePorcao: insumoSelecionado.unidadeMedida || "un",
       });
-      setPorcaoForm({ area: "producao", formatoPorcao: "pacote", insumoId: "", porcoes: 1, quantidade: 1, quantidadePorPorcao: 1 });
+      setPorcaoForm({ area: "producao", formatoPorcao: "pacote", insumoId: "", insumoPorcionadoId: "", porcoes: 1, quantidade: 1, quantidadePorPorcao: 1 });
       setPorcaoAberta(false);
       refetchPorcoes();
       refetchInsumos();
@@ -1516,6 +1539,21 @@ export function ProducaoPageClient() {
     }
   }
 
+  async function estornarPorcao(porcao: ProducaoPorcao) {
+    if (!porcao.id || !empresaId || !lojaId) return;
+    const confirmou = window.confirm(`Estornar a producao de "${porcao.insumoNome}"? O insumo bruto volta ao estoque e as porcoes serao removidas.`);
+    if (!confirmou) return;
+
+    setFormError(null);
+    try {
+      await estornarProducaoPorcao(porcao.id, { empresaId, lojaId, responsavel: "admin" });
+      refetchPorcoes();
+      refetchInsumos();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel estornar a porcao.");
+    }
+  }
+
   return (
     <PageShell
       actions={
@@ -1544,6 +1582,13 @@ export function ProducaoPageClient() {
               insumos={itensDisponiveisProducao}
               descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeMedida || insumo.unidadeCompra || "un"} disponivel`}
               onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoId: value }))}
+            />
+            <SearchableInsumoField
+              label="Item porcionado"
+              value={porcaoForm.insumoPorcionadoId}
+              insumos={insumos}
+              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeUso || insumo.unidadeMedida || "un"} em estoque`}
+              onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoPorcionadoId: value }))}
             />
             <Field label="Quantidade a baixar" type="number" value={porcaoForm.quantidade} onChange={(value) => setPorcaoForm((current) => ({ ...current, quantidade: Number(value) }))} />
             <Field label="Quantidade de porcoes" type="number" value={porcaoForm.porcoes} onChange={(value) => setPorcaoForm((current) => ({ ...current, porcoes: Number(value) }))} />
@@ -1645,6 +1690,7 @@ export function ProducaoPageClient() {
             <Card className="operational-row" key={porcao.id || `${porcao.insumoId}-${porcao.criadoEm}`}>
               <div>
                 <strong>{porcao.insumoNome}</strong>
+                {porcao.insumoPorcionadoNome ? <span>Gerou estoque em: {porcao.insumoPorcionadoNome}</span> : null}
                 <span>{porcao.porcoesDisponiveis}/{porcao.porcoesGeradas} {porcao.formatoPorcao || "porcoes"} disponiveis em {porcao.area}</span>
               </div>
               <div>
@@ -1653,6 +1699,7 @@ export function ProducaoPageClient() {
                 <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porcao.unidade} por porcao` : money(porcao.custoPorPorcao)}</small>
                 <div className="operational-row__actions">
                   <button type="button" onClick={() => abrirEdicaoPorcao(porcao)}>Editar</button>
+                  <button type="button" onClick={() => estornarPorcao(porcao)}>Estornar</button>
                   <button type="button" onClick={() => excluirPorcao(porcao)}>Excluir</button>
                 </div>
               </div>

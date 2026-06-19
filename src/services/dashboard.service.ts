@@ -1,14 +1,29 @@
-import type { CmvForaIdeal, CompraRecomendada, DashboardKpis, Insumo, ProdutoVencimento, Ruptura } from "../types";
+import type { CmvForaIdeal, CompraRecomendada, DashboardKpis, Desperdicio, Insumo, ProdutoVencimento, Ruptura } from "../types";
 import { obterTodos } from "./db";
+import { listarInsumos } from "./estoque.service";
 
-export async function getKpis(): Promise<DashboardKpis> {
+type TenantContext = {
+  empresaId?: string;
+  lojaId?: string;
+};
+
+async function listarInsumosDashboard(context?: TenantContext) {
+  if (context?.empresaId) return listarInsumos({ empresaId: context.empresaId, lojaId: context.lojaId });
+  return obterTodos<Insumo>("insumos");
+}
+
+export async function getKpis(context?: TenantContext): Promise<DashboardKpis> {
   try {
-    const todos = await obterTodos<Insumo>("insumos");
+    const todos = await listarInsumosDashboard(context);
+    const desperdicios = context?.empresaId ? await obterTodos<Desperdicio>(`empresas/${context.empresaId}/desperdicios`) : [];
     const custoDoDia = todos.reduce((acc, item) => acc + (item.quantidadeAtual > 0 ? item.custoCompra * item.quantidadeAtual : 0), 0);
     const itensCriticos = todos.filter((item) => item.quantidadeAtual <= item.estoqueMinimo).length;
     const reposicaoPendente = todos.filter((item) => item.quantidadeAtual <= 0).length;
     const itensParados = todos.filter((item) => item.status === "parado" || item.status === "pausado").length;
-    const desperdicioPercentual = todos.length > 0 ? (itensParados / todos.length) * 100 : 0;
+    const custoDesperdicio = desperdicios
+      .filter((item) => !context?.lojaId || item.lojaId === context.lojaId)
+      .reduce((acc, item) => acc + (Number(item.custoEstimado) || 0), 0);
+    const desperdicioPercentual = custoDoDia > 0 ? (custoDesperdicio / custoDoDia) * 100 : todos.length > 0 ? (itensParados / todos.length) * 100 : 0;
 
     return {
       custoDoDia: Math.round(custoDoDia * 100) / 100,
@@ -26,9 +41,9 @@ export async function getKpis(): Promise<DashboardKpis> {
 
 export const buscarDashboardKpis = getKpis;
 
-export async function getProdutosAVencer(dias = 3): Promise<ProdutoVencimento[]> {
+export async function getProdutosAVencer(dias = 3, context?: TenantContext): Promise<ProdutoVencimento[]> {
   try {
-    const todos = await obterTodos<Insumo>("insumos");
+    const todos = await listarInsumosDashboard(context);
     return todos
       .filter((item) => item.validadeOriginal > 0)
       .map((insumo) => ({ insumo, diasRestantes: insumo.validadeOriginal }))
@@ -43,9 +58,9 @@ export async function getProdutosAVencer(dias = 3): Promise<ProdutoVencimento[]>
 
 export const listarProdutosAVencer = getProdutosAVencer;
 
-export async function getPrevisaoRuptura(): Promise<Ruptura[]> {
+export async function getPrevisaoRuptura(context?: TenantContext): Promise<Ruptura[]> {
   try {
-    const todos = await obterTodos<Insumo>("insumos");
+    const todos = await listarInsumosDashboard(context);
     return todos
       .filter((item) => item.quantidadeAtual <= item.estoqueMinimo && item.quantidadeAtual > 0)
       .map((insumo) => ({
@@ -63,9 +78,9 @@ export async function getPrevisaoRuptura(): Promise<Ruptura[]> {
 
 export const listarRupturas = getPrevisaoRuptura;
 
-export async function getComprasRecomendadas(): Promise<CompraRecomendada[]> {
+export async function getComprasRecomendadas(context?: TenantContext): Promise<CompraRecomendada[]> {
   try {
-    const todos = await obterTodos<Insumo>("insumos");
+    const todos = await listarInsumosDashboard(context);
     return todos
       .filter((item) => item.quantidadeAtual <= item.estoqueMinimo && item.estoqueMinimo > 0)
       .map((insumo) => ({
@@ -84,9 +99,9 @@ export async function getComprasRecomendadas(): Promise<CompraRecomendada[]> {
 
 export const listarComprasRecomendadas = getComprasRecomendadas;
 
-export async function getCmvForaIdeal(): Promise<CmvForaIdeal[]> {
+export async function getCmvForaIdeal(context?: TenantContext): Promise<CmvForaIdeal[]> {
   try {
-    const todos = await obterTodos<Insumo>("insumos");
+    const todos = await listarInsumosDashboard(context);
     return todos
       .filter((item) => item.cmv > 0 && item.margemEstimada > 0)
       .map((insumo) => ({

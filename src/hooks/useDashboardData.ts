@@ -9,6 +9,7 @@ import {
   getPrevisaoRuptura,
   getProdutosAVencer,
 } from "../services/dashboard.service";
+import { useAuth } from "./useAuth";
 import type {
   CmvForaIdeal,
   CompraRecomendada,
@@ -28,6 +29,9 @@ interface DashboardData {
 }
 
 export function useDashboardData(): DashboardData {
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
+  const lojaId = userProfile?.lojaId || "matriz";
   const [data, setData] = useState<DashboardData>({
     kpis: null,
     produtosVencer: [],
@@ -45,11 +49,11 @@ export function useDashboardData(): DashboardData {
       try {
         const [kpis, produtosVencer, previsaoRuptura, comprasRecomendadas, cmvForaIdeal] =
           await Promise.all([
-            getKpis(),
-            getProdutosAVencer(3),
-            getPrevisaoRuptura(),
-            getComprasRecomendadas(),
-            getCmvForaIdeal(),
+            getKpis({ empresaId, lojaId }),
+            getProdutosAVencer(3, { empresaId, lojaId }),
+            getPrevisaoRuptura({ empresaId, lojaId }),
+            getComprasRecomendadas({ empresaId, lojaId }),
+            getCmvForaIdeal({ empresaId, lojaId }),
           ]);
 
         if (!mounted) return;
@@ -78,7 +82,7 @@ export function useDashboardData(): DashboardData {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [empresaId, lojaId]);
 
   return data;
 }

@@ -342,8 +342,11 @@ export interface PedidoCompraItem {
 // ===== DESPERDICIO =====
 export interface Desperdicio {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   insumoId: string;
   insumoNome: string;
+  colaboradorId?: string;
   categoria?: string;
   quantidade: number;
   unidade: string;
@@ -402,6 +405,10 @@ export interface ProducaoPorcao {
   lojaId?: string;
   insumoId: string;
   insumoNome: string;
+  insumoBrutoId?: string;
+  insumoBrutoNome?: string;
+  insumoPorcionadoId?: string;
+  insumoPorcionadoNome?: string;
   quantidadeBaixada: number;
   unidade: string;
   formatoPorcao?: string;
@@ -415,7 +422,8 @@ export interface ProducaoPorcao {
   custoPorPorcao: number;
   responsavel: string;
   observacao: string;
-  status: "disponivel" | "parcial" | "finalizado";
+  estornadoEm?: unknown;
+  status: "disponivel" | "parcial" | "finalizado" | "estornado";
   criadoEm: Date;
   atualizadoEm: Date;
 }
@@ -517,12 +525,14 @@ export interface ReceitaPrecificacao {
   ativa: boolean;
   observacoesInternas?: string;
   ingredientes: ReceitaIngrediente[];
+  fichaTecnicaIngredientes?: { insumoId: string; nome: string; quantidade: number; unidade: string }[];
   globalEmpresa?: boolean;
   canais: PrecificacaoCanal[];
   custoIngredientes: number;
   custoFixoRateado: number;
   custosVariaveis: number;
   custoTotalReal: number;
+  custoCmv?: number;
   lucro: number;
   margem: number;
   cmv: number;

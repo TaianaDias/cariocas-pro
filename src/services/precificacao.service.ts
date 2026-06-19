@@ -24,6 +24,10 @@ export const PRECIFICACAO_COLLECTIONS = {
   simulacoesPreco: "simulacoesPreco",
 } as const;
 
+function getReceitasCollectionPath(empresaId?: string) {
+  return empresaId ? `empresas/${empresaId}/receitas` : PRECIFICACAO_COLLECTIONS.receitas;
+}
+
 export const canaisPadrao: PrecificacaoCanal[] = [
   criarCanal("balcao", 0, 0, 0, 35),
   criarCanal("delivery_proprio", 0, 3.5, 1.9, 38),
@@ -80,14 +84,14 @@ export function normalizarUnidadePrecificacao(unidade?: string): UnidadeMedidaPr
   return "UN";
 }
 
-export function calcularCustoUnitarioUsoInsumo(insumo: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "metodoCusto">) {
+export function calcularCustoUnitarioUsoInsumo(insumo: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "custoUnitarioUso" | "metodoCusto">) {
   if (insumo.metodoCusto === "manual_travado") {
     return moeda(Number(insumo.custoManualTravado) || Number(insumo.custoUnitario) || 0);
   }
 
   const conversao = Math.max(Number(insumo.conversao) || 1, 1);
   const custoCompra = Number(insumo.custoCompra) || 0;
-  return moeda(Number(insumo.custoUnitario) || custoCompra / conversao);
+  return moeda(Number(insumo.custoUnitarioUso) || Number(insumo.custoUnitario) || custoCompra / conversao);
 }
 
 function criarCanal(
@@ -164,7 +168,7 @@ export function calcularCustoIngrediente(ingrediente: Pick<ReceitaIngrediente, "
 
 export function atualizarIngredientesComEstoque(
   ingredientes: ReceitaIngrediente[],
-  insumos: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "id" | "metodoCusto" | "nome" | "unidadeUso">[],
+  insumos: Pick<Insumo, "conversao" | "custoCompra" | "custoManualTravado" | "custoUnitario" | "custoUnitarioUso" | "id" | "metodoCusto" | "nome" | "unidadeUso">[],
 ) {
   const insumosPorId = new Map(insumos.filter((insumo) => insumo.id).map((insumo) => [insumo.id, insumo]));
 
@@ -184,15 +188,9 @@ export function atualizarIngredientesComEstoque(
 }
 
 export function calcularStatus(cmv: number, margem: number, lucro: number, metas: MetaFinanceiraPrecificacao): StatusFinanceiroReceita {
-  if (lucro < metas.lucroMinimo || cmv > metas.cmvMaximo + 8 || margem < metas.margemMinima - 8) {
-    return "critico";
-  }
-
-  if (cmv > metas.cmvMaximo || margem < metas.margemMinima) {
-    return "atencao";
-  }
-
-  return "saudavel";
+  if (margem > 30) return "saudavel";
+  if (margem >= 20) return "atencao";
+  return "critico";
 }
 
 export function recalcularReceita(
@@ -233,6 +231,7 @@ export function recalcularReceita(
     custoIngredientes,
     custoTotalReal,
     custosVariaveis,
+    custoCmv: custoIngredientes,
     descricao: receita.descricao || "",
     empresaId: receita.empresaId || "default",
     fracionado: receita.fracionado ?? false,
@@ -241,6 +240,12 @@ export function recalcularReceita(
     imagemUrl: receita.imagemUrl,
     ingrediente: receita.ingrediente ?? false,
     ingredientes,
+    fichaTecnicaIngredientes: ingredientes.map((ingrediente) => ({
+      insumoId: ingrediente.insumoId,
+      nome: ingrediente.insumoNome,
+      quantidade: ingrediente.quantidade,
+      unidade: ingrediente.unidade,
+    })),
     lojaId: receita.lojaId,
     lucro,
     margem,
@@ -300,10 +305,15 @@ export function simularPreco(input: Pick<SimulacaoPreco, "custo" | "desconto" | 
 }
 
 export async function listarReceitasPrecificacao(empresaId: string, lojaId?: string) {
-  const filtros = [where("empresaId", "==", empresaId)];
-  const receitasQuery = query(collection(db, PRECIFICACAO_COLLECTIONS.receitas), ...filtros);
+  const receitasQuery = query(collection(db, getReceitasCollectionPath(empresaId)));
   const snapshot = await getDocs(receitasQuery);
-  const receitas = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as ReceitaPrecificacao);
+  let receitas = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as ReceitaPrecificacao);
+
+  if (!receitas.length) {
+    const legadoQuery = query(collection(db, PRECIFICACAO_COLLECTIONS.receitas), where("empresaId", "==", empresaId));
+    const legado = await getDocs(legadoQuery);
+    receitas = legado.docs.map((item) => ({ id: item.id, ...item.data() }) as ReceitaPrecificacao);
+  }
 
   if (!lojaId) {
     return receitas.filter((receita) => receita.globalEmpresa === true || !receita.lojaId);
@@ -350,11 +360,19 @@ export async function salvarReceitaPrecificacao(receita: ReceitaPrecificacao) {
     throw new Error("lojaId e obrigatorio para receitas de loja.");
   }
 
-  const id = receita.id || doc(collection(db, PRECIFICACAO_COLLECTIONS.receitas)).id;
+  const id = receita.id || doc(collection(db, getReceitasCollectionPath(receita.empresaId))).id;
   await setDoc(
-    doc(db, PRECIFICACAO_COLLECTIONS.receitas, id),
+    doc(db, getReceitasCollectionPath(receita.empresaId), id),
     {
       ...receita,
+      custoCmv: receita.custoIngredientes,
+      fichaTecnicaIngredientes: receita.ingredientes.map((ingrediente) => ({
+        insumoId: ingrediente.insumoId,
+        nome: ingrediente.insumoNome,
+        quantidade: ingrediente.quantidade,
+        unidade: ingrediente.unidade,
+      })),
+      fichaTecnicaMigradaEm: serverTimestamp(),
       id,
       atualizadoEm: serverTimestamp(),
       criadoEm: receita.criadoEm || serverTimestamp(),
