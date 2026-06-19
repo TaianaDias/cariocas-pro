@@ -8,7 +8,7 @@ import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { useAuth } from "../../hooks/useAuth";
 import { employeePermissionOptions } from "../../lib/access-control";
-import { atualizarPedido, criarPedido, deletarPedido, listarPedidos } from "../../services/compras.service";
+import { atualizarPedido, criarPedido, deletarPedido, listarPedidos, registrarRecebimentoPedido } from "../../services/compras.service";
 import { getConfiguracao } from "../../services/configuracoes.service";
 import { listarDesperdicios, registrarDesperdicio } from "../../services/desperdicio.service";
 import { listarInsumos } from "../../services/estoque.service";
@@ -326,7 +326,8 @@ export function ComprasPageClient() {
   const empresaId = userProfile?.empresaId || user?.uid || "";
   const lojaId = userProfile?.lojaId || "matriz";
   const listarInsumosTenant = useCallback(() => listarInsumos({ empresaId, lojaId }), [empresaId, lojaId]);
-  const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidos);
+  const listarPedidosTenant = useCallback(() => listarPedidos({ empresaId, lojaId }), [empresaId, lojaId]);
+  const { data: pedidos, error, loading, refetch } = useAsyncData<PedidoCompra>(listarPedidosTenant);
   const { data: insumos, error: insumosError, loading: insumosLoading } = useAsyncData<Insumo>(listarInsumosTenant);
   const { data: fornecedores, error: fornecedoresError, loading: fornecedoresLoading } = useAsyncData<Fornecedor>(listarFornecedores);
   const { data: mercados, error: mercadosError, loading: mercadosLoading, refetch: refetchMercados } = useAsyncData<Mercado>(listarMercados);
@@ -511,7 +512,7 @@ export function ComprasPageClient() {
     setSaving(true);
     setFormError(null);
     try {
-      await deletarPedido(pedido.id);
+      await deletarPedido(pedido.id, { empresaId, lojaId });
       refetch();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir.");
@@ -580,10 +581,12 @@ export function ComprasPageClient() {
 
       const dadosPedido = {
         dataPedido: new Date(),
+        empresaId,
         fornecedorId: form.origemCompra === "fornecedor" ? form.fornecedorId : "",
         fornecedorNome: nomeDestino,
         itens,
         linkDisparo,
+        lojaId,
         mercadoId: form.origemCompra === "mercado" ? form.mercadoId : "",
         mercadoNome: form.origemCompra === "mercado" ? nomeDestino : "",
         numero: form.numero || `PED-${Date.now()}`,
@@ -596,7 +599,7 @@ export function ComprasPageClient() {
       if (pedidoEditando?.id) {
         await atualizarPedido(pedidoEditando.id, dadosPedido);
       } else {
-        await criarPedido(dadosPedido, "admin");
+        await criarPedido(dadosPedido, user?.uid || "admin");
       }
       limparFormulario();
       setFormAberto(false);
@@ -611,6 +614,23 @@ export function ComprasPageClient() {
   const previewItens = montarItensPedido();
   const previewTotal = valorTotalPedido(previewItens);
   const previewLink = buildWhatsAppLink(contatoDestino, previewItens, previewTotal, form.origemCompra);
+
+  async function receberPedido(pedido: PedidoCompra) {
+    if (!pedido.id || !empresaId || !lojaId || !user?.uid) return;
+    const confirmou = window.confirm(`Registrar recebimento do pedido ${pedido.numero || ""} e atualizar o estoque?`);
+    if (!confirmou) return;
+
+    setSaving(true);
+    setFormError(null);
+    try {
+      await registrarRecebimentoPedido(pedido.id, { empresaId, lojaId, uid: user.uid });
+      refetch();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Nao foi possivel registrar o recebimento.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <PageShell
@@ -823,6 +843,11 @@ export function ComprasPageClient() {
                   <div className="operational-row__actions">
                     <button type="button" onClick={() => editarPedidoMercado(pedido)}>Editar</button>
                     <button type="button" onClick={() => excluirPedidoMercado(pedido)}>Excluir</button>
+                  </div>
+                ) : null}
+                {pedido.status !== "recebido" ? (
+                  <div className="operational-row__actions">
+                    <button type="button" onClick={() => receberPedido(pedido)} disabled={saving}>Registrar recebimento</button>
                   </div>
                 ) : null}
                 <small>{dateLabel(pedido.dataPedido)}</small>

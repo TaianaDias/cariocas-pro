@@ -71,14 +71,18 @@ export interface Insumo {
   imagemCosmosUrl?: string;
   imagemPrincipal?: string;
   quantidadeAtual: number;
+  estoqueAtual?: number;
   estoqueMinimo: number;
   estoqueMaximo: number;
   localArmazenamento: string;
   unidadeMedida: string;
   unidadeCompra: string;
   unidadeUso: string;
+  fatorConversao?: number;
   conversao: number;
   custoCompra: number;
+  custoUnitarioCompra?: number;
+  custoUnitarioUso?: number;
   custoUnitario?: number;
   metodoCusto?: MetodoCusto;
   custoManualTravado?: number;
@@ -185,6 +189,7 @@ export interface Historico {
   empresaId?: string;
   lojaId?: string;
   tipo?: string;
+  tipoMovimentacao?: "entrada_manual" | "xml_nfe" | "compra" | string;
   insumoId: string;
   insumoNome: string;
   quantidade: number;
@@ -193,8 +198,11 @@ export interface Historico {
   custoTotal?: number;
   observacao: string;
   responsavel: string;
+  usuarioId?: string;
   fornecedorId?: string;
+  pedidoCompraId?: string;
   xmlId?: string;
+  data?: Date | unknown;
   criadoEm: Date;
 }
 
@@ -210,7 +218,10 @@ export interface XmlItem {
   unidade: string;
   valorUnitario: number;
   valorTotal: number;
+  acao?: "criar" | "vincular";
+  imagemUrl?: string;
   produtoExistenteId?: string;
+  produtoExistenteNome?: string;
 }
 
 export interface XmlImport {
@@ -298,6 +309,8 @@ export interface Alerta {
 // ===== PEDIDO DE COMPRA =====
 export interface PedidoCompra {
   id?: string;
+  empresaId?: string;
+  lojaId?: string;
   numero: string;
   status?: string;
   origemCompra?: "fornecedor" | "mercado";

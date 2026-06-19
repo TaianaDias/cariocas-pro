@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const meuDanfeApiKey = process.env.MEUDANFE_API_KEY?.trim();
   const lookupUrl = process.env.NFE_LOOKUP_URL?.trim() || "https://api.meudanfe.com.br/v2/fd/add/{chave}";
   const lookupToken = process.env.NFE_LOOKUP_TOKEN?.trim();
-  const xmlUrl = process.env.NFE_XML_URL?.trim();
+  const xmlUrl = process.env.NFE_XML_URL?.trim() || "https://api.meudanfe.com.br/v2/fd/get/xml/{chave}";
   const tokenHeader = process.env.NFE_LOOKUP_TOKEN_HEADER?.trim() || (meuDanfeApiKey ? "Api-Key" : "authorization");
   const tokenValue = meuDanfeApiKey || lookupToken;
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         [tokenHeader]: tokenHeader.toLowerCase() === "authorization" ? `Bearer ${tokenValue}` : tokenValue,
       },
       cache: "no-store",
-      method: process.env.NFE_LOOKUP_METHOD?.trim() || "PUT",
+      method: process.env.NFE_LOOKUP_METHOD?.trim() || "GET",
     });
 
     if (!response.ok) {

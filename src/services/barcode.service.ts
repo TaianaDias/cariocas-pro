@@ -2,6 +2,7 @@ import { collection, getDocs, limit, query, where } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
 import type { Insumo } from "../types";
+import { getInsumosCollectionPath } from "./estoque.service";
 
 const cache = new Map<string, Insumo>();
 
@@ -23,14 +24,13 @@ export async function buscarProdutoPorCodigo(codigo: string, context: TenantCont
   if (normalizado && cache.has(cacheKey)) return cache.get(cacheKey)!;
 
   const tenantFilters = [
-    ...(context.empresaId ? [where("empresaId", "==", context.empresaId)] : []),
     ...(context.lojaId ? [where("lojaId", "==", context.lojaId)] : []),
   ];
 
   const buscas = [
-    normalizado ? query(collection(db, "insumos"), ...tenantFilters, where("codigoBarrasNormalizado", "==", normalizado), limit(1)) : null,
-    codigoLimpo ? query(collection(db, "insumos"), ...tenantFilters, where("codigoBarras", "==", codigoLimpo), limit(1)) : null,
-    normalizado && normalizado !== codigoLimpo ? query(collection(db, "insumos"), ...tenantFilters, where("codigoBarras", "==", normalizado), limit(1)) : null,
+    normalizado ? query(collection(db, getInsumosCollectionPath(context.empresaId)), ...tenantFilters, where("codigoBarrasNormalizado", "==", normalizado), limit(1)) : null,
+    codigoLimpo ? query(collection(db, getInsumosCollectionPath(context.empresaId)), ...tenantFilters, where("codigoBarras", "==", codigoLimpo), limit(1)) : null,
+    normalizado && normalizado !== codigoLimpo ? query(collection(db, getInsumosCollectionPath(context.empresaId)), ...tenantFilters, where("codigoBarras", "==", normalizado), limit(1)) : null,
   ].filter(Boolean);
 
   for (const consulta of buscas) {
@@ -97,8 +97,7 @@ export async function validarDuplicidade(codigo: string, ignorarId?: string, con
   if (!normalizado) return false;
 
   const consulta = query(
-    collection(db, "insumos"),
-    ...(context.empresaId ? [where("empresaId", "==", context.empresaId)] : []),
+    collection(db, getInsumosCollectionPath(context.empresaId)),
     ...(context.lojaId ? [where("lojaId", "==", context.lojaId)] : []),
     where("codigoBarrasNormalizado", "==", normalizado),
     limit(2),

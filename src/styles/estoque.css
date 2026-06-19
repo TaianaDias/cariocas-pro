@@ -356,10 +356,24 @@
 
 .xml-preview article {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) minmax(220px, 0.9fr);
+  grid-template-columns: 64px minmax(180px, 1fr) minmax(220px, 1fr) minmax(220px, 0.9fr);
+  align-items: center;
   gap: var(--space-3);
   border-bottom: 1px solid rgba(229, 231, 235, 0.06);
   padding-bottom: var(--space-2);
+}
+
+.xml-preview article img,
+.xml-preview__image-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(229, 231, 235, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.xml-preview article img {
+  object-fit: cover;
 }
 
 .xml-preview article:last-child {

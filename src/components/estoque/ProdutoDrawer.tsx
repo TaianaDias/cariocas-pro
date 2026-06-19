@@ -76,6 +76,7 @@ const produtoVazio: Partial<Insumo> = {
 function prepararPayload(produto: Partial<Insumo>) {
   const conversao = Math.max(Number(produto.conversao) || 1, 1);
   const custoCompra = Number(produto.custoCompra) || 0;
+  const quantidadeAtual = Number(produto.quantidadeAtual) || 0;
   const metodoCusto = produto.metodoCusto || "ultimo_custo_compra";
   const custoManualTravado = Number(produto.custoManualTravado) || 0;
   const custoUnitario = metodoCusto === "manual_travado" ? custoManualTravado : custoCompra / conversao;
@@ -85,9 +86,13 @@ function prepararPayload(produto: Partial<Insumo>) {
     ...produto,
     codigoBarrasNormalizado: (produto.codigoBarras || "").replace(/\D/g, ""),
     conversao,
+    custoUnitarioCompra: custoCompra,
+    custoUnitarioUso: custoUnitario,
     custoCompra,
     custoManualTravado,
     custoUnitario,
+    estoqueAtual: quantidadeAtual,
+    fatorConversao: conversao,
     metodoCusto,
     nomeNormalizado: (produto.nome || "").toLowerCase(),
     origemCadastro: "manual",

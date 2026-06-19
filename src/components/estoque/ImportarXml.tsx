@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
+import { buscarExterno } from "../../services/barcode.service";
+import { listarInsumos } from "../../services/estoque.service";
 import { importarArquivoXml, parseNfeXml } from "../../services/xml.service";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -25,9 +27,44 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
   const [resultado, setResultado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  function aplicarXmlNoPreview(xmlText: string, origem: string) {
+  async function enriquecerPreview(itens: XmlItem[]) {
+    const empresaId = userProfile?.empresaId || user?.uid || "";
+    const lojaId = userProfile?.lojaId || "matriz";
+    const insumos = empresaId ? await listarInsumos({ empresaId, lojaId }) : [];
+
+    return Promise.all(
+      itens.map(async (item, index) => {
+        const codigo = (item.codigoBarrasNormalizado || item.codigoBarras || item.codigo || "").replace(/\D/g, "");
+        const nomeNormalizado = item.nome.toLowerCase().trim();
+        const existente = insumos.find((insumo) => {
+          const codigos = [insumo.codigoBarrasNormalizado, insumo.codigoBarras, insumo.codigoInterno]
+            .filter(Boolean)
+            .map((value) => String(value).replace(/\D/g, ""));
+          const nomeInsumo = insumo.nome.toLowerCase().trim();
+          return Boolean(
+            (codigo && codigos.includes(codigo)) ||
+            nomeInsumo === nomeNormalizado ||
+            nomeInsumo.includes(nomeNormalizado) ||
+            nomeNormalizado.includes(nomeInsumo),
+          );
+        });
+        const imagemExistente = existente?.imagemUrl || existente?.imagemPrincipal || "";
+        const externo = !imagemExistente && codigo && index < 20 ? await buscarExterno(codigo) : null;
+
+        return {
+          ...item,
+          acao: existente?.id ? "vincular" as const : "criar" as const,
+          imagemUrl: imagemExistente || externo?.imagemUrl || "",
+          produtoExistenteId: existente?.id || item.produtoExistenteId,
+          produtoExistenteNome: existente?.nome,
+        };
+      }),
+    );
+  }
+
+  async function aplicarXmlNoPreview(xmlText: string, origem: string) {
     const parseado = parseNfeXml(xmlText);
-    setItensPreview(parseado.itens);
+    setItensPreview(await enriquecerPreview(parseado.itens));
     setResultado(`${parseado.itens.length} itens encontrados de ${parseado.fornecedorNome}.`);
     setArquivo(new File([xmlText], origem, { type: "text/xml" }));
   }
@@ -42,7 +79,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
 
     try {
       const text = await file.text();
-      aplicarXmlNoPreview(text, file.name);
+      await aplicarXmlNoPreview(text, file.name);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Nao foi possivel ler o XML.");
     }
@@ -59,7 +96,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
     try {
       const entrada = chaveNfe.trim();
       if (entrada.includes("<")) {
-        aplicarXmlNoPreview(entrada, "nota-colada.xml");
+        await aplicarXmlNoPreview(entrada, "nota-colada.xml");
         return;
       }
 
@@ -84,7 +121,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         return;
       }
 
-      aplicarXmlNoPreview(data.xml, `nfe-${chave}.xml`);
+      await aplicarXmlNoPreview(data.xml, `nfe-${chave}.xml`);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Nao foi possivel ler a nota fiscal pelo codigo.");
     } finally {
@@ -131,6 +168,20 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
               codigo: codigoBarrasNormalizado || codigo || item.codigo,
               codigoBarras: codigo,
               codigoBarrasNormalizado,
+            }
+          : item,
+      ),
+    );
+  }
+
+  function atualizarAcaoPreview(index: number, acao: "criar" | "vincular") {
+    setItensPreview((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              acao,
+              produtoExistenteId: acao === "criar" ? undefined : item.produtoExistenteId,
             }
           : item,
       ),
@@ -194,10 +245,19 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
           <div>
             {itensPreview.slice(0, 8).map((item, index) => (
               <article key={`${item.codigo}-${item.nome}`}>
+                {item.imagemUrl ? <img src={item.imagemUrl} alt="" loading="lazy" /> : <span className="xml-preview__image-placeholder" aria-hidden="true" />}
                 <span>{item.nome}</span>
                 <small>
                   {item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)} · Cod. barras: {item.codigoBarras || "nao informado"}
                 </small>
+                <small>{item.produtoExistenteNome ? `Vinculo sugerido: ${item.produtoExistenteNome}` : "Novo insumo sugerido"}</small>
+                <label className="operational-field">
+                  <span>Acao na importacao</span>
+                  <select value={item.acao || (item.produtoExistenteId ? "vincular" : "criar")} onChange={(event) => atualizarAcaoPreview(index, event.target.value as "criar" | "vincular")}>
+                    <option value="criar">Cadastrar como novo insumo</option>
+                    <option value="vincular" disabled={!item.produtoExistenteId}>Vincular ao insumo sugerido</option>
+                  </select>
+                </label>
                 <TextInput
                   label="Codigo de barras para cadastro"
                   value={item.codigoBarras || ""}

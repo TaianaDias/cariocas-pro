@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
+import { getHistoricoEstoqueCollectionPath, getInsumosCollectionPath, normalizarInsumoFinanceiro } from "../services/estoque.service";
 import type { Categoria, Historico, Insumo } from "../types";
 import { useAuth } from "./useAuth";
 
@@ -77,17 +78,30 @@ export function useEstoque() {
       return undefined;
     }
 
-    const consulta = query(
-      collection(db, "insumos"),
-      where("empresaId", "==", empresaId),
-      where("lojaId", "==", lojaId),
-    );
+    const consulta = query(collection(db, getInsumosCollectionPath(empresaId)), where("lojaId", "==", lojaId));
 
     return onSnapshot(
       consulta,
-      (snapshot) => {
+      async (snapshot) => {
+        if (snapshot.empty) {
+          const antigos = await getDocs(query(collection(db, "insumos"), where("empresaId", "==", empresaId), where("lojaId", "==", lojaId)));
+          if (!antigos.empty) {
+            const batch = writeBatch(db);
+            antigos.docs.forEach((item) => {
+              batch.set(doc(db, getInsumosCollectionPath(empresaId), item.id), normalizarInsumoFinanceiro({
+                id: item.id,
+                ...item.data(),
+                empresaId,
+                lojaId,
+              } as Insumo));
+            });
+            await batch.commit();
+            return;
+          }
+        }
+
         const items = snapshot.docs
-          .map((item) => ({ id: item.id, ...item.data() }) as Insumo)
+          .map((item) => normalizarInsumoFinanceiro({ id: item.id, ...item.data() } as Insumo))
           .sort((a, b) => a.nome.localeCompare(b.nome));
         setInsumos(items);
         setKpis(calcularKpis(items));
@@ -116,7 +130,7 @@ export function useEstoque() {
 
   const criarInsumo = useCallback(async (dados: Partial<Insumo>, uid: string) => {
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
-    const ref = await addDoc(collection(db, "insumos"), {
+    const payload = normalizarInsumoFinanceiro({
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, "") || "",
       createdBy: uid,
@@ -126,27 +140,28 @@ export function useEstoque() {
       nomeNormalizado: dados.nome?.toLowerCase() || "",
       atualizadoEm: serverTimestamp(),
     });
+    const ref = await addDoc(collection(db, getInsumosCollectionPath(empresaId)), payload);
 
     return ref.id;
   }, [empresaId, lojaId]);
 
   const atualizarInsumo = useCallback(async (id: string, dados: Partial<Insumo>) => {
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
-    await updateDoc(doc(db, "insumos", id), {
+    await updateDoc(doc(db, getInsumosCollectionPath(empresaId), id), normalizarInsumoFinanceiro({
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, ""),
       empresaId,
       lojaId,
       nomeNormalizado: dados.nome?.toLowerCase(),
       atualizadoEm: serverTimestamp(),
-    });
+    }));
   }, [empresaId, lojaId]);
 
   const deletarInsumo = useCallback(async (id: string, nome: string, responsavel: string) => {
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     const batch = writeBatch(db);
-    batch.delete(doc(db, "insumos", id));
-    batch.set(doc(collection(db, "historico")), {
+    batch.delete(doc(db, getInsumosCollectionPath(empresaId), id));
+    batch.set(doc(collection(db, getHistoricoEstoqueCollectionPath(empresaId))), {
       empresaId,
       lojaId,
       insumoId: id,
@@ -168,10 +183,10 @@ export function useEstoque() {
 
     const custoUnitario = Math.round((dados.custoTotal / dados.quantidade) * 100) / 100;
     const batch = writeBatch(db);
-    const insumoRef = doc(collection(db, "insumos"));
+    const insumoRef = doc(collection(db, getInsumosCollectionPath(empresaId)));
     const codigoNormalizado = dados.codigoBarras?.replace(/\D/g, "") || "";
 
-    batch.set(insumoRef, {
+    batch.set(insumoRef, normalizarInsumoFinanceiro({
       categoriaId: "",
       codigoBarras: dados.codigoBarras || "",
       codigoBarrasNormalizado: codigoNormalizado,
@@ -201,6 +216,7 @@ export function useEstoque() {
       precosVenda: [],
       promocaoAtiva: false,
       quantidadeAtual: dados.quantidade,
+      estoqueAtual: dados.quantidade,
       quantidadePadraoPedido: 0,
       responsavel: dados.responsavel,
       sku: codigoNormalizado ? `BAR-${codigoNormalizado}` : `MANUAL-${Date.now()}`,
@@ -214,9 +230,9 @@ export function useEstoque() {
       validadeAposProducao: 0,
       validadeOriginal: 0,
       atualizadoEm: serverTimestamp(),
-    });
+    }));
 
-    batch.set(doc(collection(db, "historico")), {
+    batch.set(doc(collection(db, getHistoricoEstoqueCollectionPath(empresaId))), {
       criadoEm: serverTimestamp(),
       empresaId,
       lojaId,
@@ -228,6 +244,7 @@ export function useEstoque() {
       quantidade: dados.quantidade,
       responsavel: dados.responsavel,
       tipo: "entrada",
+      tipoMovimentacao: "entrada_manual",
       unidade: dados.unidade,
     });
 
@@ -258,20 +275,24 @@ export function useEstoque() {
 
       const batch = writeBatch(db);
       const imagemAtual = insumoAtual.imagemUrl || insumoAtual.imagemPrincipal || insumoAtual.imagemUploadUrl || insumoAtual.imagemCosmosUrl || "";
-      batch.update(doc(db, "insumos", dados.insumoId), {
+      batch.update(doc(db, getInsumosCollectionPath(empresaId), dados.insumoId), normalizarInsumoFinanceiro({
         atualizadoEm: serverTimestamp(),
         custoAnterior: insumoAtual.custoCompra,
         custoCompra: novoCusto,
+        custoUnitarioCompra: novoCusto,
         ...(!imagemAtual && dados.imagemUrl ? { imagemPrincipal: dados.imagemUrl, imagemUrl: dados.imagemUrl } : {}),
         quantidadeAtual: novaQuantidade,
-      });
-      batch.set(doc(collection(db, "historico")), {
+        estoqueAtual: novaQuantidade,
+      }));
+      batch.set(doc(collection(db, getHistoricoEstoqueCollectionPath(empresaId))), {
         ...dados,
         empresaId,
         lojaId,
         custoUnitario: dados.custoTotal ? dados.custoTotal / dados.quantidade : null,
         custoTotal: dados.custoTotal || null,
         criadoEm: serverTimestamp(),
+        data: serverTimestamp(),
+        tipoMovimentacao: dados.tipo === "xml" ? "xml_nfe" : dados.tipo === "entrada" ? "entrada_manual" : dados.tipo,
       });
 
       await batch.commit();
@@ -302,11 +323,12 @@ export function useEstoque() {
       const batch = writeBatch(db);
       for (const insumo of insumos) {
         if (!insumo.id || insumo.quantidadeAtual <= 0) continue;
-        batch.update(doc(db, "insumos", insumo.id), {
+        batch.update(doc(db, getInsumosCollectionPath(empresaId), insumo.id), {
           atualizadoEm: serverTimestamp(),
+          estoqueAtual: 0,
           quantidadeAtual: 0,
         });
-        batch.set(doc(collection(db, "historico")), {
+        batch.set(doc(collection(db, getHistoricoEstoqueCollectionPath(empresaId))), {
           empresaId,
           lojaId,
           insumoId: insumo.id,

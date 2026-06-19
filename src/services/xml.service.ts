@@ -1,6 +1,7 @@
 import type { Insumo, XmlImport, XmlItem } from "../types";
 import { buscarExterno } from "./barcode.service";
 import { atualizarDocumento, consultar, criarDocumento, obterDocumento } from "./db";
+import { getHistoricoEstoqueCollectionPath, getInsumosCollectionPath, normalizarInsumoFinanceiro } from "./estoque.service";
 
 const COLECAO = "importacoes_xml";
 
@@ -162,27 +163,41 @@ export async function processarLoteXml(
       let existentes: Insumo[] = [];
       for (const filtro of buscas) {
         existentes = await consultar<Insumo>(
-          "insumos",
+          getInsumosCollectionPath(contexto?.empresaId),
           [
-            ...(contexto?.empresaId ? [{ campo: "empresaId", operador: "==" as const, valor: contexto.empresaId }] : []),
             ...(contexto?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: contexto.lojaId }] : []),
             filtro,
           ],
           undefined,
           1,
         );
+        if (!existentes.length && contexto?.empresaId) {
+          existentes = await consultar<Insumo>(
+            "insumos",
+            [
+              { campo: "empresaId", operador: "==" as const, valor: contexto.empresaId },
+              ...(contexto?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: contexto.lojaId }] : []),
+              filtro,
+            ],
+            undefined,
+            1,
+          );
+        }
         if (existentes.length) break;
       }
       const produtoExistenteId = item.produtoExistenteId || existentes[0]?.id;
 
       if (item.acao === "vincular" || produtoExistenteId) {
-        const produto = produtoExistenteId ? await obterDocumento<Insumo>("insumos", produtoExistenteId) : null;
+        const produto = produtoExistenteId
+          ? (await obterDocumento<Insumo>(getInsumosCollectionPath(contexto?.empresaId), produtoExistenteId)) ||
+            (await obterDocumento<Insumo>("insumos", produtoExistenteId))
+          : null;
         if (!produto || !produtoExistenteId) {
           throw new Error("Produto existente nao encontrado para vinculo.");
         }
 
-        const quantidadeAtual = Number(produto.quantidadeAtual) || 0;
-        const custoAtual = Number(produto.custoCompra) || 0;
+        const quantidadeAtual = Number(produto.estoqueAtual ?? produto.quantidadeAtual) || 0;
+        const custoAtual = Number(produto.custoUnitarioCompra ?? produto.custoCompra ?? produto.custoUnitario) || 0;
         const novaQuantidade = quantidadeAtual + item.quantidade;
         const novoCusto = novaQuantidade > 0
           ? Math.round(((quantidadeAtual * custoAtual + item.valorTotal) / novaQuantidade) * 100) / 100
@@ -191,20 +206,22 @@ export async function processarLoteXml(
         const produtoExterno = imagemAtual ? null : await buscarExterno(item.codigo);
         const imagemUrl = produtoExterno?.imagemUrl || "";
 
-        await atualizarDocumento<Insumo>("insumos", produtoExistenteId, {
+        await criarDocumento(getInsumosCollectionPath(contexto?.empresaId), normalizarInsumoFinanceiro({
+          ...produto,
           custoAnterior: custoAtual,
-          custoCompra: novoCusto,
-          custoUnitario: novoCusto,
+          custoUnitarioCompra: novoCusto,
           empresaId: contexto?.empresaId || produto.empresaId,
           fornecedorPrincipal: contexto?.fornecedorNome || produto.fornecedorPrincipal,
           ...(imagemUrl ? { imagemPrincipal: imagemUrl, imagemUrl } : {}),
           lojaId: contexto?.lojaId || produto.lojaId,
+          estoqueAtual: novaQuantidade,
           quantidadeAtual: novaQuantidade,
-        });
+        }), produtoExistenteId);
 
-        await criarDocumento("historico", {
+        await criarDocumento(getHistoricoEstoqueCollectionPath(contexto?.empresaId), {
           custoTotal: item.valorTotal,
           custoUnitario: item.valorUnitario,
+          data: new Date(),
           empresaId: contexto?.empresaId,
           fornecedorId: contexto?.fornecedorCnpj || "",
           insumoId: produtoExistenteId,
@@ -213,7 +230,9 @@ export async function processarLoteXml(
           quantidade: item.quantidade,
           responsavel: uid,
           tipo: "xml",
+          tipoMovimentacao: "xml_nfe",
           unidade: item.unidade,
+          usuarioId: uid,
           lojaId: contexto?.lojaId,
           xmlId: importacaoId,
         });
@@ -236,6 +255,7 @@ export async function processarLoteXml(
           custoUnitario: item.valorUnitario,
           status: "ativo",
           statusProduto: "ativo",
+          estoqueAtual: item.quantidade,
           quantidadeAtual: item.quantidade,
           estoqueMinimo: 0,
           estoqueMaximo: 0,
@@ -244,7 +264,10 @@ export async function processarLoteXml(
           unidadeCompra: item.unidade,
           unidadeUso: item.unidade,
           conversao: 1,
+          fatorConversao: 1,
           custoCompra: item.valorUnitario,
+          custoUnitarioCompra: item.valorUnitario,
+          custoUnitarioUso: item.valorUnitario,
           promocaoAtiva: false,
           validadeOriginal: 0,
           validadeAposAberto: 0,
@@ -268,10 +291,11 @@ export async function processarLoteXml(
           lojaId: contexto?.lojaId,
         };
 
-        const insumoId = await criarDocumento("insumos", novoInsumo);
-        await criarDocumento("historico", {
+        const insumoId = await criarDocumento(getInsumosCollectionPath(contexto?.empresaId), normalizarInsumoFinanceiro(novoInsumo));
+        await criarDocumento(getHistoricoEstoqueCollectionPath(contexto?.empresaId), {
           custoTotal: item.valorTotal,
           custoUnitario: item.valorUnitario,
+          data: new Date(),
           empresaId: contexto?.empresaId,
           fornecedorId: contexto?.fornecedorCnpj || "",
           insumoId,
@@ -280,7 +304,9 @@ export async function processarLoteXml(
           quantidade: item.quantidade,
           responsavel: uid,
           tipo: "xml",
+          tipoMovimentacao: "xml_nfe",
           unidade: item.unidade,
+          usuarioId: uid,
           lojaId: contexto?.lojaId,
           xmlId: importacaoId,
         });
@@ -297,7 +323,10 @@ export async function processarLoteXml(
 export async function importarArquivoXml(xmlText: string, options: ImportarArquivoXmlOptions) {
   const parseado = parseNfeXml(xmlText);
   const itens = options.itens?.length ? options.itens : parseado.itens;
-  const itensProcessamento = itens.map((item) => ({ ...item, acao: "criar" as const }));
+  const itensProcessamento = itens.map((item) => ({
+    ...item,
+    acao: item.acao || (item.produtoExistenteId ? "vincular" as const : "criar" as const),
+  }));
 
   const importacaoId = await criarImportacao(
     {

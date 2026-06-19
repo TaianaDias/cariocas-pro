@@ -4,6 +4,8 @@ import { collection, onSnapshot, orderBy, query, where } from "firebase/firestor
 import { useEffect, useState } from "react";
 
 import { db } from "../../lib/firebase";
+import { getHistoricoEstoqueCollectionPath } from "../../services/estoque.service";
+import { useAuth } from "../../hooks/useAuth";
 import type { Historico } from "../../types";
 import { EmptyState } from "../ui/EmptyState";
 import { Spinner } from "../ui/Spinner";
@@ -13,6 +15,8 @@ type Props = {
 };
 
 export function ProdutoAbaHistorico({ produtoId }: Props) {
+  const { user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || user?.uid || "";
   const [movimentos, setMovimentos] = useState<Historico[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +26,7 @@ export function ProdutoAbaHistorico({ produtoId }: Props) {
       return;
     }
 
-    const consulta = query(collection(db, "historico"), where("insumoId", "==", produtoId), orderBy("criadoEm", "desc"));
+    const consulta = query(collection(db, getHistoricoEstoqueCollectionPath(empresaId)), where("insumoId", "==", produtoId), orderBy("criadoEm", "desc"));
     return onSnapshot(
       consulta,
       (snapshot) => {
@@ -31,7 +35,7 @@ export function ProdutoAbaHistorico({ produtoId }: Props) {
       },
       () => setLoading(false),
     );
-  }, [produtoId]);
+  }, [empresaId, produtoId]);
 
   if (loading) return <Spinner />;
   if (!produtoId) return <EmptyState title="Selecione um produto" description="Salve o produto primeiro para ver o historico." />;

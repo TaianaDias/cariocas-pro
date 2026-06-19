@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
+import { getInsumosCollectionPath, normalizarInsumoFinanceiro } from "../services/estoque.service";
 import type { Insumo } from "../types";
 import { useAuth } from "./useAuth";
 
@@ -24,9 +25,9 @@ export function useProduto(produtoId: string | null) {
 
     setLoading(true);
     return onSnapshot(
-      doc(db, "insumos", produtoId),
+      doc(db, getInsumosCollectionPath(empresaId), produtoId),
       (snapshot) => {
-        const data = snapshot.exists() ? ({ id: snapshot.id, ...snapshot.data() } as Insumo) : null;
+        const data = snapshot.exists() ? normalizarInsumoFinanceiro({ id: snapshot.id, ...snapshot.data() } as Insumo) : null;
         if (data && data.empresaId && data.empresaId !== empresaId) {
           setProduto(null);
           setError("Produto nao pertence a esta empresa.");
