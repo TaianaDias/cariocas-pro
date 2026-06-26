@@ -106,6 +106,10 @@ async function runOnboarding(currentUser: User, profile: UserProfile | null) {
   }
 }
 
+function hasRequiredTenantContext(profile: UserProfile | null) {
+  return Boolean(profile?.empresaId && profile?.lojaId && profile?.role);
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +120,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthCookies(currentUser, null);
     const existingProfile = await getUserProfile(currentUser.uid);
     const profile = existingProfile ?? (await ensureUserProfile(currentUser));
-    await runOnboarding(currentUser, profile);
+    try {
+      await runOnboarding(currentUser, profile);
+    } catch (error) {
+      if (!hasRequiredTenantContext(profile)) {
+        throw error;
+      }
+
+      console.warn("Onboarding indisponivel para perfil ja configurado.", error);
+    }
     const onboardedProfile = await getUserProfile(currentUser.uid);
     const nextProfile = onboardedProfile ?? profile;
     setUserProfile(nextProfile);
