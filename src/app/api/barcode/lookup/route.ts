@@ -14,6 +14,10 @@ function buildProduto(data: Record<string, unknown>) {
   };
 }
 
+function getTimeoutSignal(ms = 5000) {
+  return AbortSignal.timeout(ms);
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const codigo = normalizarCodigo(searchParams.get("codigo") || "");
@@ -29,6 +33,7 @@ export async function GET(request: Request) {
       const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${codigo}.json`, {
         headers: { "X-Cosmos-Token": cosmosApiKey },
         next: { revalidate: 60 * 60 * 24 * 7 },
+        signal: getTimeoutSignal(),
       });
 
       if (response.ok) {
@@ -47,7 +52,7 @@ export async function GET(request: Request) {
   try {
     const response = await fetch(
       `https://world.openfoodfacts.org/api/v2/product/${codigo}.json?fields=product_name,brands,generic_name,image_url,image_front_url`,
-      { next: { revalidate: 60 * 60 * 24 * 7 } },
+      { next: { revalidate: 60 * 60 * 24 * 7 }, signal: getTimeoutSignal() },
     );
 
     if (!response.ok) {

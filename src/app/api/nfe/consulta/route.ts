@@ -35,6 +35,10 @@ function extrairXml(data: Record<string, unknown>) {
   return String(data.xml || data.xmlNfe || data.nfeXml || data.conteudoXml || data.XML || data.data || "");
 }
 
+function getTimeoutSignal(ms = 12000) {
+  return AbortSignal.timeout(ms);
+}
+
 async function fetchMeuDanfe(url: string, tokenHeader: string, tokenValue: string, method = "GET") {
   const headers = {
     accept: "application/json, application/xml, text/xml, text/plain",
@@ -45,6 +49,7 @@ async function fetchMeuDanfe(url: string, tokenHeader: string, tokenValue: strin
     headers,
     cache: "no-store",
     method,
+    signal: getTimeoutSignal(),
   });
 
   if (response.status !== 405 || method.toUpperCase() === "POST") {
@@ -55,6 +60,7 @@ async function fetchMeuDanfe(url: string, tokenHeader: string, tokenValue: strin
     headers,
     cache: "no-store",
     method: "POST",
+    signal: getTimeoutSignal(),
   });
 }
 
