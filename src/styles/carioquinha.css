@@ -397,9 +397,48 @@
   padding-left: var(--space-3);
 }
 
+.carioquinha-page__feedback {
+  margin: 0;
+  border: 1px solid rgba(212, 32, 32, 0.3);
+  border-radius: var(--radius-md);
+  background: rgba(212, 32, 32, 0.1);
+  color: #ffb4b4;
+  font-weight: 800;
+  padding: var(--space-4);
+}
+
+.carioquinha-page__loading {
+  display: grid;
+  place-items: center;
+  min-height: 112px;
+  padding: var(--space-5);
+}
+
+.carioquinha-page__qr {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-5);
+}
+
+.carioquinha-page__qr img {
+  width: 176px;
+  height: 176px;
+  border: 8px solid #ffffff;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+}
+
+.carioquinha-page__qr p {
+  color: rgba(229, 231, 235, 0.7);
+  line-height: 1.55;
+}
+
 @media (max-width: 980px) {
   .carioquinha-page__hero-grid,
-  .carioquinha-page__content {
+  .carioquinha-page__content,
+  .carioquinha-page__qr {
     grid-template-columns: 1fr;
   }
 

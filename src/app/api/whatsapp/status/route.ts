@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { getQrCode, getStatusInstancia } from "../../../../services/whatsapp.service";
+import { getQrCode, getStatusInstancia, verificarWebhook } from "../../../../services/whatsapp.service";
 
 export async function GET() {
   const instancia = await getStatusInstancia();
+  const webhookAtivo = await verificarWebhook();
 
   if (!instancia) {
-    return NextResponse.json({ status: "offline" });
+    return NextResponse.json({ status: "offline", webhookAtivo });
   }
 
   if (instancia.status === "qrcode") {
@@ -17,6 +18,7 @@ export async function GET() {
       qrcode,
       owner: null,
       profileName: null,
+      webhookAtivo,
     });
   }
 
@@ -24,5 +26,6 @@ export async function GET() {
     status: instancia.status,
     owner: instancia.owner || null,
     profileName: instancia.profileName || null,
+    webhookAtivo,
   });
 }

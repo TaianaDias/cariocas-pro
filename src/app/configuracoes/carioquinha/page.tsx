@@ -1,6 +1,20 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+
+import { Badge } from "../../../components/ui/Badge";
+import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
+import { Spinner } from "../../../components/ui/Spinner";
+
+type StatusInstancia = {
+  owner?: string | null;
+  profileName?: string | null;
+  qrcode?: string | null;
+  status: "offline" | "qrcode" | "connecting" | "open" | "close" | "error";
+  webhookAtivo?: boolean;
+};
 
 const capacidades = [
   {
@@ -37,7 +51,76 @@ const regras = [
   "Acoes criticas continuam dependendo de confirmacao no sistema.",
 ];
 
+const statusInfo = {
+  close: { label: "Desconectado", tone: "danger" as const },
+  connecting: { label: "Conectando", tone: "warning" as const },
+  error: { label: "Erro", tone: "danger" as const },
+  offline: { label: "Desconectado", tone: "danger" as const },
+  open: { label: "Conectado", tone: "success" as const },
+  qrcode: { label: "Aguardando QR Code", tone: "warning" as const },
+};
+
 export default function CarioquinhaConfigPage() {
+  const [status, setStatus] = useState<StatusInstancia>({ status: "offline" });
+  const [loading, setLoading] = useState(true);
+  const [criando, setCriando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const verificarStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/whatsapp/status", { cache: "no-store" });
+      const data = await response.json();
+      setStatus(data);
+    } catch {
+      setStatus({ status: "offline" });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    verificarStatus();
+    const interval = window.setInterval(verificarStatus, 5000);
+    return () => window.clearInterval(interval);
+  }, [verificarStatus]);
+
+  async function conectarWhatsApp() {
+    setCriando(true);
+    setErro(null);
+
+    try {
+      const response = await fetch("/api/whatsapp/connect", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || data.status === "error") {
+        throw new Error(data.message || "Nao foi possivel conectar o WhatsApp.");
+      }
+
+      setStatus({
+        qrcode: data.qrcode || null,
+        status: data.status || "connecting",
+        webhookAtivo: true,
+      });
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Nao foi possivel conectar o WhatsApp.");
+    } finally {
+      setCriando(false);
+    }
+  }
+
+  async function desconectarWhatsApp() {
+    const confirmou = window.confirm("Desconectar o WhatsApp da IA Carioquinha?");
+    if (!confirmou) return;
+
+    setErro(null);
+    await fetch("/api/whatsapp/disconnect", { method: "POST" });
+    setStatus({ status: "offline", webhookAtivo: false });
+  }
+
+  const info = statusInfo[status.status] || statusInfo.offline;
+  const conectado = status.status === "open";
+  const aguardandoQr = status.status === "qrcode" && status.qrcode;
+
   return (
     <main className="carioquinha-page">
       <section className="carioquinha-page__hero">
@@ -47,13 +130,19 @@ export default function CarioquinhaConfigPage() {
             <h1>IA Carioquinha</h1>
             <p>
               Sua assistente para acompanhar estoque, compras, producao e desperdicio com respostas
-              diretas para a rotina da hamburgueria.
+              diretas pelo painel e pelo WhatsApp da hamburgueria.
             </p>
           </div>
           <div className="carioquinha-page__actions">
-            <Link className="button button--primary" href="/configuracoes/whatsapp">
-              Conectar WhatsApp
-            </Link>
+            {conectado ? (
+              <Button variant="secondary" onClick={desconectarWhatsApp}>
+                Desconectar WhatsApp
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={conectarWhatsApp} disabled={criando}>
+                {criando ? "Conectando..." : "Conectar WhatsApp"}
+              </Button>
+            )}
             <Link className="button button--secondary" href="/estoque">
               Ver estoque
             </Link>
@@ -64,20 +153,42 @@ export default function CarioquinhaConfigPage() {
       <section className="carioquinha-page__metrics" aria-label="Status da IA">
         <Card className="carioquinha-page__metric">
           <span>Status</span>
-          <strong>Pronta para configurar</strong>
-          <small>Conecte o WhatsApp para operar por mensagem.</small>
+          <strong>{info.label}</strong>
+          <Badge tone={info.tone}>{info.label}</Badge>
         </Card>
         <Card className="carioquinha-page__metric">
-          <span>Canais</span>
-          <strong>Painel + WhatsApp</strong>
-          <small>Uso interno no sistema e atendimento operacional.</small>
+          <span>WhatsApp</span>
+          <strong>{status.owner ? status.profileName || status.owner : "Nao conectado"}</strong>
+          <small>{conectado ? "Pronto para receber mensagens." : "Escaneie o QR Code para ativar."}</small>
         </Card>
         <Card className="carioquinha-page__metric">
-          <span>Contexto</span>
-          <strong>Empresa e loja</strong>
-          <small>Respostas baseadas no ambiente logado.</small>
+          <span>Webhook</span>
+          <strong>{status.webhookAtivo ? "Ativo" : "Pendente"}</strong>
+          <small>Canal que entrega as mensagens do WhatsApp para a IA.</small>
         </Card>
       </section>
+
+      {loading ? (
+        <Card className="carioquinha-page__panel carioquinha-page__loading">
+          <Spinner label="Verificando WhatsApp" />
+        </Card>
+      ) : null}
+
+      {erro ? <p className="carioquinha-page__feedback">{erro}</p> : null}
+
+      {aguardandoQr ? (
+        <Card className="carioquinha-page__qr">
+          <div className="carioquinha-page__section-heading">
+            <span>Ligacao com WhatsApp</span>
+            <h2>Escaneie o QR Code</h2>
+          </div>
+          <img src={`data:image/png;base64,${status.qrcode}`} alt="QR Code para conectar WhatsApp" />
+          <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a camera para este codigo.</p>
+          <Button variant="secondary" onClick={conectarWhatsApp} disabled={criando}>
+            {criando ? "Gerando..." : "Gerar novo QR Code"}
+          </Button>
+        </Card>
+      ) : null}
 
       <section className="carioquinha-page__content">
         <Card className="carioquinha-page__panel carioquinha-page__panel--large">
