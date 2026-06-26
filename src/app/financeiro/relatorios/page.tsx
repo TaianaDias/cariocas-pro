@@ -22,6 +22,27 @@ export default function RelatoriosFinanceirosPage() {
     gerarRelatorio(dataInicio, dataFim);
   }
 
+  function exportarCsv() {
+    const linhas = [
+      ["tipo", "nome", "quantidade", "valor", "observacao"],
+      ...compras.map((item) => ["compra", item.fornecedor, String(item.totalPedidos), item.valorTotal.toFixed(2), "pedidos por fornecedor"]),
+      ...produtos.map((item) => ["produto", item.nome, String(item.quantidadeComprada), item.valorTotal.toFixed(2), item.sku || ""]),
+      ...(resumo ? [
+        ["resumo", "custo_compras", "", resumo.custoCompras.toFixed(2), ""],
+        ["resumo", "custo_desperdicio", "", resumo.custoDesperdicio.toFixed(2), ""],
+        ["resumo", "movimentacoes", String(resumo.totalMovimentacoes), "", ""],
+      ] : []),
+    ];
+    const csv = linhas.map((linha) => linha.map((valor) => `"${String(valor).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `relatorio-cariocas-pro-${dataInicio.toISOString().slice(0, 10)}-${dataFim.toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="financeiro-page">
       <FinanceiroHeader />
@@ -30,6 +51,9 @@ export default function RelatoriosFinanceirosPage() {
         <FiltroPeriodo dataFim={dataFim} dataInicio={dataInicio} onChangeFim={setDataFim} onChangeInicio={setDataInicio} />
         <Button disabled={loading} onClick={handleGerar}>
           {loading ? "Gerando..." : "Gerar Relatorio"}
+        </Button>
+        <Button disabled={!gerado || loading || !resumo} variant="secondary" onClick={exportarCsv}>
+          Exportar CSV
         </Button>
       </section>
 

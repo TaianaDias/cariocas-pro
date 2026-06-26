@@ -364,6 +364,92 @@
   gap: var(--space-4);
 }
 
+.precificacao-side {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.precificacao-ficha {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.precificacao-ficha header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.precificacao-ficha header div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.precificacao-ficha header span,
+.precificacao-ficha dt {
+  color: rgba(229, 231, 235, 0.58);
+  font-size: var(--font-size-xs);
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.precificacao-ficha header strong,
+.precificacao-ficha__ingredients > strong {
+  color: #ffffff;
+  font-size: var(--font-size-lg);
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.precificacao-ficha dl,
+.precificacao-ficha__ingredients {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.precificacao-ficha dl {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
+  margin: 0;
+}
+
+.precificacao-ficha dl > div,
+.precificacao-ficha__ingredients div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(229, 231, 235, 0.07);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 9px 10px;
+}
+
+.precificacao-ficha dd {
+  margin: 0;
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.precificacao-ficha__ingredients span,
+.precificacao-ficha__ingredients b {
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.precificacao-ficha__ingredients small,
+.precificacao-ficha__prep,
+.precificacao-ficha__ingredients p {
+  margin: 0;
+  color: rgba(229, 231, 235, 0.68);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .receita-card {
   display: grid;
   grid-template-columns: 136px minmax(0, 1fr);

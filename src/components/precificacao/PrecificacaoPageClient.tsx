@@ -7,6 +7,7 @@ import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
 import { usePrecificacao } from "../../hooks/usePrecificacao";
 import { canAccessPrecificacao } from "../../lib/permissions";
+import { registrarAuditoria } from "../../services/auditoria.service";
 import { calcularCustoUnitarioUsoInsumo, normalizarUnidadePrecificacao, simularPreco } from "../../services/precificacao.service";
 import type { Insumo, ReceitaIngrediente, ReceitaPrecificacao, StatusFinanceiroReceita, UnidadeMedidaPrecificacao } from "../../types";
 
@@ -31,6 +32,7 @@ export function PrecificacaoPageClient() {
   const precificacao = usePrecificacao();
   const [abaAtiva, setAbaAtiva] = useState(abas[0]);
   const [form, setForm] = useState<Partial<ReceitaPrecificacao>>(receitaInicial);
+  const [fichaAberta, setFichaAberta] = useState<ReceitaPrecificacao | null>(null);
   const [ingrediente, setIngrediente] = useState<Partial<ReceitaIngrediente>>({
     custoUnitarioConvertido: 0,
     insumoNome: "",
@@ -136,6 +138,53 @@ export function PrecificacaoPageClient() {
   async function salvarReceita() {
     await precificacao.salvarReceita(form);
     setForm(receitaInicial);
+    setFichaAberta(null);
+  }
+
+  function editarReceita(receita: ReceitaPrecificacao) {
+    setForm({
+      ...receita,
+      ingredientes: receita.ingredientes || [],
+    });
+    setFichaAberta(null);
+    setAbaAtiva("Fichas Tecnicas");
+    setActionError(null);
+  }
+
+  async function recalcularReceitaIndividual(receita: ReceitaPrecificacao) {
+    setActionError(null);
+    try {
+      await precificacao.salvarReceita(receita);
+      await registrarAuditoria({
+        acao: "recalcular_receita",
+        empresaId: precificacao.empresaId,
+        lojaId: precificacao.lojaId,
+        modulo: "precificacao",
+        recursoId: receita.id,
+        recursoNome: receita.nome,
+      });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Nao foi possivel recalcular a receita.");
+    }
+  }
+
+  async function aplicarPrecoSugerido(receita: ReceitaPrecificacao, tipo: "recomendado" | "premium") {
+    setActionError(null);
+    try {
+      const novoPreco = tipo === "premium" ? receita.precoPremium : receita.precoSugerido;
+      await precificacao.salvarReceita({ ...receita, precoVenda: novoPreco });
+      await registrarAuditoria({
+        acao: "aplicar_preco_sugerido",
+        detalhes: { precoAnterior: receita.precoVenda, precoNovo: novoPreco, tipo },
+        empresaId: precificacao.empresaId,
+        lojaId: precificacao.lojaId,
+        modulo: "precificacao",
+        recursoId: receita.id,
+        recursoNome: receita.nome,
+      });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Nao foi possivel aplicar o preco sugerido.");
+    }
   }
 
   async function recalcularTudo() {
@@ -275,7 +324,24 @@ export function PrecificacaoPageClient() {
             </Button>
           </Card>
 
-          <ReceitasGrid receitas={precificacao.receitas} canSeeMoney={precificacao.canSeeMoney} />
+          <div className="precificacao-side">
+            {fichaAberta ? (
+              <FichaTecnicaVisual
+                canSeeMoney={precificacao.canSeeMoney}
+                onClose={() => setFichaAberta(null)}
+                receita={fichaAberta}
+              />
+            ) : null}
+            <ReceitasGrid
+              canApplyPrice={precificacao.canConfigure}
+              canSeeMoney={precificacao.canSeeMoney}
+              onAplicarPreco={aplicarPrecoSugerido}
+              onEditar={editarReceita}
+              onRecalcular={recalcularReceitaIndividual}
+              onVerFicha={setFichaAberta}
+              receitas={precificacao.receitas}
+            />
+          </div>
         </section>
       ) : null}
 
@@ -413,7 +479,65 @@ function ListaIngredientes({ canSeeMoney, ingredientes }: { ingredientes: Receit
   );
 }
 
-function ReceitasGrid({ canSeeMoney, receitas }: { receitas: ReceitaPrecificacao[]; canSeeMoney: boolean }) {
+function FichaTecnicaVisual({
+  canSeeMoney,
+  onClose,
+  receita,
+}: {
+  canSeeMoney: boolean;
+  onClose: () => void;
+  receita: ReceitaPrecificacao;
+}) {
+  return (
+    <Card className="precificacao-ficha">
+      <header>
+        <div>
+          <span>Ficha tecnica</span>
+          <strong>{receita.nome}</strong>
+        </div>
+        <Button variant="ghost" onClick={onClose}>Fechar</Button>
+      </header>
+      <dl>
+        <div><dt>Preco</dt><dd>{money(receita.precoVenda)}</dd></div>
+        <div><dt>Custo CMV</dt><dd>{canSeeMoney ? money(receita.custoCmv ?? receita.custoIngredientes) : "Bloqueado"}</dd></div>
+        <div><dt>CMV</dt><dd>{canSeeMoney ? `${receita.cmv.toFixed(1)}%` : "Bloqueado"}</dd></div>
+        <div><dt>Margem</dt><dd>{canSeeMoney ? `${receita.margem.toFixed(1)}%` : "Bloqueado"}</dd></div>
+        <div><dt>Lucro</dt><dd>{canSeeMoney ? money(receita.lucro) : "Bloqueado"}</dd></div>
+      </dl>
+      <div className="precificacao-ficha__ingredients">
+        <strong>Ingredientes</strong>
+        {receita.ingredientes.length ? receita.ingredientes.map((item) => (
+          <div key={`${item.insumoId}-${item.insumoNome}`}>
+            <span>{item.insumoNome}</span>
+            <small>{item.quantidade} {item.unidade}</small>
+            <b>{canSeeMoney ? money(item.custoTotal) : "Custo bloqueado"}</b>
+          </div>
+        )) : <p>Nenhum ingrediente vinculado.</p>}
+      </div>
+      {receita.modoPreparo ? (
+        <p className="precificacao-ficha__prep">{receita.modoPreparo}</p>
+      ) : null}
+    </Card>
+  );
+}
+
+function ReceitasGrid({
+  canApplyPrice,
+  canSeeMoney,
+  onAplicarPreco,
+  onEditar,
+  onRecalcular,
+  onVerFicha,
+  receitas,
+}: {
+  canApplyPrice: boolean;
+  canSeeMoney: boolean;
+  onAplicarPreco: (receita: ReceitaPrecificacao, tipo: "recomendado" | "premium") => void;
+  onEditar: (receita: ReceitaPrecificacao) => void;
+  onRecalcular: (receita: ReceitaPrecificacao) => void;
+  onVerFicha: (receita: ReceitaPrecificacao) => void;
+  receitas: ReceitaPrecificacao[];
+}) {
   if (!receitas.length) {
     return <EmptyState title="Nenhuma receita cadastrada" description="Cadastre a primeira ficha tecnica para calcular CMV e preco sugerido." />;
   }
@@ -441,9 +565,15 @@ function ReceitasGrid({ canSeeMoney, receitas }: { receitas: ReceitaPrecificacao
               </div>
             ) : null}
             <div className="receita-card__actions">
-              <Button variant="secondary">Editar</Button>
-              <Button variant="ghost">Ver Ficha</Button>
-              <Button variant="ghost">Recalcular CMV</Button>
+              <Button variant="secondary" onClick={() => onEditar(receita)}>Editar</Button>
+              <Button variant="ghost" onClick={() => onVerFicha(receita)}>Ver Ficha</Button>
+              <Button variant="ghost" onClick={() => onRecalcular(receita)}>Recalcular CMV</Button>
+              {canSeeMoney && canApplyPrice ? (
+                <>
+                  <Button variant="ghost" onClick={() => onAplicarPreco(receita, "recomendado")}>Aplicar recomendado</Button>
+                  <Button variant="ghost" onClick={() => onAplicarPreco(receita, "premium")}>Aplicar premium</Button>
+                </>
+              ) : null}
             </div>
           </div>
         </Card>

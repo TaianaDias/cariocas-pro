@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
 import type {
@@ -26,6 +26,10 @@ export const PRECIFICACAO_COLLECTIONS = {
 
 function getReceitasCollectionPath(empresaId?: string) {
   return empresaId ? `empresas/${empresaId}/receitas` : PRECIFICACAO_COLLECTIONS.receitas;
+}
+
+function getHistoricoReceitasCollectionPath(empresaId?: string) {
+  return empresaId ? `empresas/${empresaId}/historicoReceitas` : "historicoReceitas";
 }
 
 export const canaisPadrao: PrecificacaoCanal[] = [
@@ -361,8 +365,30 @@ export async function salvarReceitaPrecificacao(receita: ReceitaPrecificacao) {
   }
 
   const id = receita.id || doc(collection(db, getReceitasCollectionPath(receita.empresaId))).id;
+  const receitaRef = doc(db, getReceitasCollectionPath(receita.empresaId), id);
+  const existenteSnap = await getDoc(receitaRef);
+  const existente = existenteSnap.exists() ? ({ id: existenteSnap.id, ...existenteSnap.data() } as ReceitaPrecificacao) : null;
+
+  if (existente) {
+    const historicoId = doc(collection(db, getHistoricoReceitasCollectionPath(receita.empresaId))).id;
+    await setDoc(doc(db, getHistoricoReceitasCollectionPath(receita.empresaId), historicoId), {
+      alteradoEm: serverTimestamp(),
+      custoAnterior: existente.custoCmv ?? existente.custoIngredientes ?? 0,
+      custoNovo: receita.custoCmv ?? receita.custoIngredientes ?? 0,
+      empresaId: receita.empresaId,
+      ingredientesAntigos: existente.ingredientes || [],
+      ingredientesNovos: receita.ingredientes || [],
+      lojaId: receita.lojaId || null,
+      precoAnterior: existente.precoVenda || 0,
+      precoNovo: receita.precoVenda || 0,
+      receitaId: id,
+      receitaNome: receita.nome,
+      usuario: receita.createdBy || "sistema",
+    });
+  }
+
   await setDoc(
-    doc(db, getReceitasCollectionPath(receita.empresaId), id),
+    receitaRef,
     {
       ...receita,
       custoCmv: receita.custoIngredientes,
