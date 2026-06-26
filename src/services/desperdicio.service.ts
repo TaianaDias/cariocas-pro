@@ -13,14 +13,37 @@ function getDesperdiciosCollectionPath(empresaId?: string) {
   return empresaId ? `empresas/${empresaId}/desperdicios` : COLECAO;
 }
 
+function getTimestampMillis(value: unknown) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().getTime();
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    return new Date(value).getTime() || 0;
+  }
+  return 0;
+}
+
+function filtrarEOrdenarDesperdicios(items: Desperdicio[], dataInicio?: Date, dataFim?: Date) {
+  const inicio = dataInicio?.getTime() ?? Number.NEGATIVE_INFINITY;
+  const fim = dataFim?.getTime() ?? Number.POSITIVE_INFINITY;
+
+  return items
+    .filter((item) => {
+      const data = getTimestampMillis(item.data);
+      return data >= inicio && data <= fim;
+    })
+    .sort((a, b) => getTimestampMillis(b.data) - getTimestampMillis(a.data));
+}
+
 export async function listarDesperdicios(dataInicio?: Date, dataFim?: Date, context?: TenantContext): Promise<Desperdicio[]> {
   try {
     const filtros = [
       ...(context?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: context.lojaId }] : []),
-      ...(dataInicio ? [{ campo: "data", operador: ">=" as const, valor: dataInicio }] : []),
-      ...(dataFim ? [{ campo: "data", operador: "<=" as const, valor: dataFim }] : []),
     ];
-    return consultar<Desperdicio>(getDesperdiciosCollectionPath(context?.empresaId), filtros, { campo: "data", direcao: "desc" });
+    const items = await consultar<Desperdicio>(getDesperdiciosCollectionPath(context?.empresaId), filtros);
+    return filtrarEOrdenarDesperdicios(items, dataInicio, dataFim);
   } catch (error) {
     console.error("Erro ao listar desperdicios", error);
     return [];
