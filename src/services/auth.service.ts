@@ -93,9 +93,7 @@ export function listenUserProfile(uid: string, callback: (profile: UserProfile |
 }
 
 export async function loginWithEmail(email: string, password: string): Promise<UserCredential> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
-  await ensureUserProfile(credential.user);
-  return credential;
+  return signInWithEmailAndPassword(auth, email, password);
 }
 
 export async function registerWithEmail(

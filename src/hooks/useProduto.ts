@@ -23,6 +23,13 @@ export function useProduto(produtoId: string | null) {
       return;
     }
 
+    if (!empresaId) {
+      setProduto(null);
+      setError("Contexto de empresa nao encontrado.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     return onSnapshot(
       doc(db, getInsumosCollectionPath(empresaId), produtoId),

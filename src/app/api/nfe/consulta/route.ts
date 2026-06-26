@@ -35,6 +35,29 @@ function extrairXml(data: Record<string, unknown>) {
   return String(data.xml || data.xmlNfe || data.nfeXml || data.conteudoXml || data.XML || data.data || "");
 }
 
+async function fetchMeuDanfe(url: string, tokenHeader: string, tokenValue: string, method = "GET") {
+  const headers = {
+    accept: "application/json, application/xml, text/xml, text/plain",
+    [tokenHeader]: tokenHeader.toLowerCase() === "authorization" ? `Bearer ${tokenValue}` : tokenValue,
+  };
+
+  const response = await fetch(url, {
+    headers,
+    cache: "no-store",
+    method,
+  });
+
+  if (response.status !== 405 || method.toUpperCase() === "POST") {
+    return response;
+  }
+
+  return fetch(url, {
+    headers,
+    cache: "no-store",
+    method: "POST",
+  });
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const chave = normalizarChave(String(body?.chave || ""));
@@ -61,14 +84,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch(montarUrl(lookupUrl, chave), {
-      headers: {
-        accept: "application/json, application/xml, text/xml, text/plain",
-        [tokenHeader]: tokenHeader.toLowerCase() === "authorization" ? `Bearer ${tokenValue}` : tokenValue,
-      },
-      cache: "no-store",
-      method: process.env.NFE_LOOKUP_METHOD?.trim() || "GET",
-    });
+    const response = await fetchMeuDanfe(
+      montarUrl(lookupUrl, chave),
+      tokenHeader,
+      tokenValue,
+      process.env.NFE_LOOKUP_METHOD?.trim() || "GET",
+    );
 
     if (!response.ok) {
       return NextResponse.json({ error: `Nao foi possivel consultar a NF-e. Codigo ${response.status}.` }, { status: response.status });
@@ -105,13 +126,7 @@ export async function POST(request: Request) {
     }
 
     if (status === "OK" && xmlUrl) {
-      const xmlResponse = await fetch(montarUrl(xmlUrl, chave), {
-        headers: {
-          accept: "application/xml, text/xml, application/json, text/plain",
-          [tokenHeader]: tokenHeader.toLowerCase() === "authorization" ? `Bearer ${tokenValue}` : tokenValue,
-        },
-        cache: "no-store",
-      });
+      const xmlResponse = await fetchMeuDanfe(montarUrl(xmlUrl, chave), tokenHeader, tokenValue);
       const xmlData = await parseResponse(xmlResponse);
       const xmlContent = extrairXml(xmlData);
 

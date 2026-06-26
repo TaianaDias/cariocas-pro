@@ -110,6 +110,12 @@ function hasRequiredTenantContext(profile: UserProfile | null) {
   return Boolean(profile?.empresaId && profile?.lojaId && profile?.role);
 }
 
+function refreshOnboardingInBackground(currentUser: User, profile: UserProfile | null) {
+  void runOnboarding(currentUser, profile).catch((error) => {
+    console.warn("Onboarding em segundo plano indisponivel.", error);
+  });
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,15 +126,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthCookies(currentUser, null);
     const existingProfile = await getUserProfile(currentUser.uid);
     const profile = existingProfile ?? (await ensureUserProfile(currentUser));
+
+    if (hasRequiredTenantContext(profile)) {
+      setUserProfile(profile);
+      setAuthCookies(currentUser, profile);
+      refreshOnboardingInBackground(currentUser, profile);
+      return profile;
+    }
+
     try {
       await runOnboarding(currentUser, profile);
     } catch (error) {
-      if (!hasRequiredTenantContext(profile)) {
-        throw error;
-      }
-
-      console.warn("Onboarding indisponivel para perfil ja configurado.", error);
+      throw error;
     }
+
     const onboardedProfile = await getUserProfile(currentUser.uid);
     const nextProfile = onboardedProfile ?? profile;
     setUserProfile(nextProfile);

@@ -57,6 +57,18 @@ export async function buscarExterno(codigo: string): Promise<ProdutoExterno | nu
   if (!normalizado) return null;
 
   try {
+    if (typeof window !== "undefined") {
+      const response = await fetch(`/api/barcode/lookup?codigo=${encodeURIComponent(normalizado)}`);
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return {
+        imagemUrl: data?.imagemUrl || "",
+        marca: data?.marca || "",
+        nome: data?.nome || "",
+      };
+    }
+
     const apiKey = process.env.NEXT_PUBLIC_COSMOS_API_KEY;
     if (apiKey) {
       const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${normalizado}.json`, {
