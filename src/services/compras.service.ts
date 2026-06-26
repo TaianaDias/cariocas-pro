@@ -15,13 +15,29 @@ function getPedidosCollectionPath(empresaId?: string) {
   return empresaId ? `empresas/${empresaId}/pedidosCompra` : COLECAO;
 }
 
+function getTimestampMillis(value: unknown) {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().getTime();
+  }
+  if (typeof value === "string" || typeof value === "number") {
+    return new Date(value).getTime() || 0;
+  }
+  return 0;
+}
+
+function ordenarPedidosRecentes(pedidos: PedidoCompra[]) {
+  return [...pedidos].sort((a, b) => getTimestampMillis(b.criadoEm) - getTimestampMillis(a.criadoEm));
+}
+
 export async function listarPedidos(context?: TenantContext): Promise<PedidoCompra[]> {
   try {
-    return consultar<PedidoCompra>(
+    const pedidos = await consultar<PedidoCompra>(
       getPedidosCollectionPath(context?.empresaId),
       [...(context?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: context.lojaId }] : [])],
-      { campo: "criadoEm", direcao: "desc" },
     );
+    return ordenarPedidosRecentes(pedidos);
   } catch (error) {
     console.error("Erro ao listar pedidos", error);
     return [];
@@ -79,7 +95,8 @@ export const removerPedidoCompra = deletarPedido;
 
 export async function getPedidosPorFornecedor(fornecedorId: string): Promise<PedidoCompra[]> {
   try {
-    return consultar<PedidoCompra>(COLECAO, [{ campo: "fornecedorId", operador: "==" as const, valor: fornecedorId }], { campo: "criadoEm", direcao: "desc" });
+    const pedidos = await consultar<PedidoCompra>(COLECAO, [{ campo: "fornecedorId", operador: "==" as const, valor: fornecedorId }]);
+    return ordenarPedidosRecentes(pedidos);
   } catch (error) {
     console.error("Erro ao listar pedidos por fornecedor", error);
     return [];
