@@ -1,10 +1,29 @@
 version: "3.8"
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   evolution-api:
     image: atendai/evolution-api:v2.2.3
     container_name: evolution-api
     restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -12,8 +31,8 @@ services:
       AUTHENTICATION_API_KEY: cariocas-pro-evolution-key-2026
 
       DATABASE_ENABLED: "true"
-      DATABASE_PROVIDER: sqlite
-      DATABASE_CONNECTION_URI: /evolution/data/database.sqlite
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:evolution@postgres:5432/evolution?schema=public
       DATABASE_SAVE_DATA_INSTANCE: "true"
       DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
       DATABASE_SAVE_MESSAGE_UPDATE: "true"
@@ -34,7 +53,6 @@ services:
       CACHE_REDIS_DISABLED: "true"
 
     volumes:
-      - ./evolution-data:/evolution/data
       - ./evolution-instances:/evolution/instances
 
     extra_hosts:
