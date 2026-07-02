@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apiKey,
+        apikey: apiKey,
       },
       body: JSON.stringify({
         number: numero.replace(/\D/g, ""),

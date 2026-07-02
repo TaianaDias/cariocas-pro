@@ -20,7 +20,7 @@ async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
   try {
     const response = await fetch(`${EVOLUTION_API_URL}/message/sendText/${INSTANCE_NAME}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", apiKey: EVOLUTION_API_KEY },
+      headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY },
       body: JSON.stringify({
         number: numero.replace(/\D/g, ""),
         options: { delay: 1200, linkPreview: false },

@@ -11,10 +11,31 @@ async function evolutionFetch(endpoint: string, options?: RequestInit): Promise<
     ...options,
     headers: {
       "Content-Type": "application/json",
-      apiKey: EVOLUTION_API_KEY,
+      apikey: EVOLUTION_API_KEY,
       ...options?.headers,
     },
   });
+}
+
+async function readEvolutionResponse(response: Response): Promise<any> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function extractEvolutionError(data: any, fallback: string): string {
+  const message = data?.response?.message || data?.message || data?.error || data?.statusMessage;
+  return Array.isArray(message) ? message.join(", ") : message || fallback;
+}
+
+function extractQrCode(data: any): string | undefined {
+  return data?.qrcode?.base64 || data?.qrcode || data?.instance?.qrcode || data?.instance?.qrcode?.base64 || data?.base64;
 }
 
 export async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
@@ -68,13 +89,22 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
       }),
     });
 
-    const data = await response.json();
+    const data = await readEvolutionResponse(response);
 
-    if (data?.instance?.qrcode) {
-      return { success: true, qrcode: data.instance.qrcode };
+    if (!response.ok) {
+      return {
+        success: false,
+        error: extractEvolutionError(data, `Evolution API retornou ${response.status}`),
+      };
     }
 
-    return { success: response.ok };
+    const qrcode = extractQrCode(data);
+
+    if (qrcode) {
+      return { success: true, qrcode };
+    }
+
+    return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Erro ao criar instancia" };
   }
@@ -83,7 +113,7 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
 export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["instance"] | null> {
   try {
     const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`);
-    const data = await response.json();
+    const data = await readEvolutionResponse(response);
     const instance = data?.instance || null;
 
     if (!instance) return null;
@@ -99,9 +129,9 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
 
 export async function getQrCode(): Promise<string | null> {
   try {
-    const response = await evolutionFetch(`/instance/qrcode/${INSTANCE_NAME}?base64=true`);
-    const data = await response.json();
-    return data?.base64 || data?.qrcode || null;
+    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`);
+    const data = await readEvolutionResponse(response);
+    return extractQrCode(data) || null;
   } catch {
     return null;
   }
@@ -128,7 +158,7 @@ export async function deletarInstancia(): Promise<boolean> {
 export async function verificarWebhook(): Promise<boolean> {
   try {
     const response = await evolutionFetch(`/webhook/find/${INSTANCE_NAME}`);
-    const data = await response.json();
+    const data = await readEvolutionResponse(response);
     return data?.webhook?.url?.includes("api/whatsapp/webhook") || false;
   } catch {
     return false;

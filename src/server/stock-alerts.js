@@ -203,7 +203,7 @@ async function enviarWhatsApp(numero, texto) {
 
   await fetch(`${apiUrl}/message/sendText/${instanceName}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", apiKey },
+    headers: { "Content-Type": "application/json", apikey: apiKey },
     body: JSON.stringify({
       number: String(numero || "").replace(/\D/g, ""),
       options: { delay: 1200, linkPreview: false },
