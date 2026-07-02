@@ -1,3 +1,4 @@
+import type { Viewport } from "next";
 import type { ReactNode } from "react";
 
 import "../styles/tokens.css";
@@ -20,6 +21,12 @@ import { AuthProvider } from "../contexts/AuthContext";
 export const metadata = {
   title: "Carioca's Pro 2026",
   description: "Dashboard operacional premium para hamburguerias.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 type RootLayoutProps = {
