@@ -76,7 +76,6 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
         instanceName: INSTANCE_NAME,
         token: EVOLUTION_API_KEY,
         qrcode: true,
-        number: "",
         integration: "WHATSAPP-BAILEYS",
         reject_call: true,
         groups_ignore: true,
