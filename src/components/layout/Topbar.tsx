@@ -10,6 +10,7 @@ import { useAlertas } from "../../hooks/useAlertas";
 export function Topbar() {
   const [open, setOpen] = useState(false);
   const [painelAberto, setPainelAberto] = useState(false);
+  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
   const { logout, user, userProfile } = useAuth();
   const { contagemNaoLidos } = useAlertas();
   const displayName = userProfile?.nome || user?.displayName || "Usuario";
@@ -17,11 +18,20 @@ export function Topbar() {
 
   return (
     <header className="topbar">
-      <label className="topbar__search">
+      <label className="topbar__search topbar__search--desktop">
         <span>Busca</span>
         <span className="topbar__search-icon" aria-hidden="true" />
         <input type="search" placeholder="Buscar modulo, produto ou alerta" />
       </label>
+
+      <button
+        className="topbar__search-trigger"
+        type="button"
+        aria-label="Abrir busca"
+        onClick={() => setBuscaMobileAberta(true)}
+      >
+        <span className="topbar__search-icon" aria-hidden="true" />
+      </button>
 
       <div className="topbar__actions">
         <button
@@ -57,6 +67,30 @@ export function Topbar() {
           ) : null}
         </div>
       </div>
+
+      {buscaMobileAberta ? (
+        <div className="mobile-search" role="dialog" aria-label="Busca mobile">
+          <div className="mobile-search__panel">
+            <header>
+              <strong>Buscar</strong>
+              <button type="button" onClick={() => setBuscaMobileAberta(false)}>
+                Fechar
+              </button>
+            </header>
+            <label className="topbar__search mobile-search__field">
+              <span>Busca</span>
+              <span className="topbar__search-icon" aria-hidden="true" />
+              <input autoFocus type="search" placeholder="Buscar modulo, produto ou alerta" />
+            </label>
+            <div className="mobile-search__quick-links" aria-label="Acessos rapidos">
+              <a href="/estoque">Estoque</a>
+              <a href="/compras">Compras</a>
+              <a href="/producao">Producao</a>
+              <a href="/precificacao">Precificacao</a>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
