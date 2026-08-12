@@ -44,8 +44,43 @@ function normalizarTexto(texto: string) {
     .toLowerCase();
 }
 
+function montarMenuInicial() {
+  return (
+    "Oi, eu sou a Carioquinha.\n\n" +
+    "Me diga o que voce precisa:\n\n" +
+    "1. Reposicao de estoque\n" +
+    "2. Itens criticos\n" +
+    "3. Resumo do dia\n" +
+    "4. Cadastrar insumo\n" +
+    "5. Saida para producao\n" +
+    "6. Porcoes disponiveis\n" +
+    "7. CMV\n\n" +
+    "Pode responder com o numero ou escrever o pedido. Exemplo: \"1\" ou \"o que devo repor hoje?\""
+  );
+}
+
+function querMenuInicial(textoNormalizado: string) {
+  const limpo = textoNormalizado.replace(/[^\w\s]/g, "").trim();
+  return [
+    "",
+    "0",
+    "oi",
+    "ola",
+    "bom dia",
+    "boa tarde",
+    "boa noite",
+    "menu",
+    "inicio",
+    "iniciar",
+    "opcoes",
+    "opcoes disponiveis",
+    "ajuda",
+    "comandos",
+  ].includes(limpo);
+}
+
 async function obterContextoUsuario(uid: string): Promise<TenantContext | null> {
-  const usuario = await obterDocumento<{ empresaId?: string; lojaId?: string }>("usuarios", uid);
+  const usuario = await obterDocumento<{ empresaId?: string; lojaId?: string }>("usuários", uid);
   if (!usuario?.empresaId || !usuario?.lojaId) return null;
   return { empresaId: usuario.empresaId, lojaId: usuario.lojaId };
 }
@@ -96,20 +131,20 @@ function extrairSaidaProducao(pergunta: string): SaidaProducaoInput | null {
   const temIntencao =
     (textoNormalizado.includes("saiu") || textoNormalizado.includes("saida") || textoNormalizado.includes("baixar")) &&
     textoNormalizado.includes("producao") &&
-    (textoNormalizado.includes("porcao") || textoNormalizado.includes("porcoes"));
+    (textoNormalizado.includes("porcao") || textoNormalizado.includes("porções"));
 
   if (!temIntencao) return null;
 
   const nomeEstruturado = extrairCampo(pergunta, ["nome", "produto", "insumo", "item"]);
   const quantidadeEstruturada = parseNumero(extrairCampo(pergunta, ["quantidade", "qtd", "baixa", "saiu"]));
   const unidadeEstruturada = extrairCampo(pergunta, ["unidade", "un", "medida"]);
-  const porcoesEstruturadas = parseNumero(extrairCampo(pergunta, ["porcoes", "porções", "porcao", "porção", "rendimento"]));
+  const porcoesEstruturadas = parseNumero(extrairCampo(pergunta, ["porções", "porções", "porcao", "porcao", "rendimento"]));
 
   if (nomeEstruturado || quantidadeEstruturada || porcoesEstruturadas) {
     return {
-      area: extrairCampo(pergunta, ["area", "área", "setor"]),
+      area: extrairCampo(pergunta, ["área", "área", "setor"]),
       nome: nomeEstruturado,
-      observacao: extrairCampo(pergunta, ["obs", "observacao"]),
+      observacao: extrairCampo(pergunta, ["obs", "observação"]),
       porcoes: porcoesEstruturadas,
       quantidade: quantidadeEstruturada,
       unidade: unidadeEstruturada || pergunta.match(/\b(kg|g|un|und|cx|lt|l|ml|pct|pacote|caixa)\b/i)?.[1],
@@ -139,11 +174,11 @@ function extrairCadastroInsumo(pergunta: string): CadastroInsumoInput | null {
   if (!temIntencao) return null;
 
   const pesoPorUnidade =
-    parseNumero(extrairCampo(pergunta, ["peso por unidade", "peso unidade", "peso do pacote", "peso pacote", "por unidade", "pacote", "porcao", "porção"])) ||
-    parseNumero(pergunta.match(/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|l|lt)\s*(?:cada|por unidade|por pacote|por porcao|por porção)/i)?.[1]);
+    parseNumero(extrairCampo(pergunta, ["peso por unidade", "peso unidade", "peso do pacote", "peso pacote", "por unidade", "pacote", "porcao", "porcao"])) ||
+    parseNumero(pergunta.match(/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|l|lt)\s*(?:cada|por unidade|por pacote|por porcao|por porcao)/i)?.[1]);
   const unidadePorItem =
     extrairCampo(pergunta, ["unidade por item", "unidade pacote", "unidade por unidade"]) ||
-    pergunta.match(/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|l|lt)\s*(?:cada|por unidade|por pacote|por porcao|por porção)/i)?.[2];
+    pergunta.match(/(\d+(?:[,.]\d+)?)\s*(kg|g|ml|l|lt)\s*(?:cada|por unidade|por pacote|por porcao|por porcao)/i)?.[2];
 
   const nome =
     extrairCampo(pergunta, ["nome", "produto", "insumo", "item"]) ||
@@ -157,15 +192,15 @@ function extrairCadastroInsumo(pergunta: string): CadastroInsumoInput | null {
 
   return {
     categoria: extrairCampo(pergunta, ["categoria"]),
-    codigoBarras: extrairCampo(pergunta, ["codigo", "codigo de barras", "cod", "ean"]),
+    codigoBarras: extrairCampo(pergunta, ["codigo", "código de barras", "cod", "ean"]),
     fornecedor: extrairCampo(pergunta, ["fornecedor"]),
     marca: extrairCampo(pergunta, ["marca"]),
-    maximo: parseNumero(extrairCampo(pergunta, ["maximo", "estoque maximo"])),
-    minimo: parseNumero(extrairCampo(pergunta, ["minimo", "estoque minimo", "min"])),
+    maximo: parseNumero(extrairCampo(pergunta, ["maximo", "estoque máximo"])),
+    minimo: parseNumero(extrairCampo(pergunta, ["minimo", "estoque mínimo", "min"])),
     nome,
-    observacao: extrairCampo(pergunta, ["obs", "observacao"]),
+    observacao: extrairCampo(pergunta, ["obs", "observação"]),
     pesoPorUnidade,
-    preco: parseNumero(extrairCampo(pergunta, ["preco", "preço", "custo", "valor"])),
+    preco: parseNumero(extrairCampo(pergunta, ["preço", "preço", "custo", "valor"])),
     quantidade: parseNumero(extrairCampo(pergunta, ["quantidade", "qtd", "saldo", "estoque"])),
     sku: extrairCampo(pergunta, ["sku", "codigo interno"]),
     unidade,
@@ -233,9 +268,9 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string, context
         "Compra total:\n" +
         "Cada unidade:\n" +
         "Valor total:\n" +
-        "Minimo:\n\n" +
+        "Mínimo:\n\n" +
         "Exemplo pronto:\n" +
-        "Cadastrar insumo: nome=Hamburguer 150g, quantidade=3, unidade=kg, peso por unidade=150, unidade por item=g, valor total=50,00, minimo=5\n\n" +
+        "Cadastrar insumo: nome=Hamburguer 150g, quantidade=3, unidade=kg, peso por unidade=150, unidade por item=g, valor total=50,00, mínimo=5\n\n" +
         "Eu calculo: 3kg / 150g = 20 un | R$ 2,50 cada",
     };
   }
@@ -243,7 +278,7 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string, context
   const faltando = [];
   if (!dados.nome) faltando.push("nome");
   if (dados.quantidade === undefined) faltando.push("quantidade");
-  if (dados.preco === undefined && dados.valorTotal === undefined) faltando.push("preco/custo ou valor total");
+  if (dados.preco === undefined && dados.valorTotal === undefined) faltando.push("preço/custo ou valor total");
 
   const temConversaoParcial =
     dados.valorTotal !== undefined || dados.pesoPorUnidade !== undefined || dados.unidadePorItem !== undefined;
@@ -255,12 +290,12 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string, context
       resposta:
         `Consigo cadastrar no estoque, mas faltou: ${faltando.join(", ")}.\n\n` +
         "Envie assim:\n" +
-        "Cadastrar insumo: nome=Hamburguer 150g, quantidade=3, unidade=kg, peso por unidade=150, unidade por item=g, valor total=50,00, minimo=5",
+        "Cadastrar insumo: nome=Hamburguer 150g, quantidade=3, unidade=kg, peso por unidade=150, unidade por item=g, valor total=50,00, mínimo=5",
     };
   }
 
   if (!context) {
-    return { resposta: "Nao consegui identificar empresa e loja para cadastrar esse insumo com seguranca." };
+    return { resposta: "Não consegui identificar empresa e loja para cadastrar esse insumo com segurança." };
   }
 
   const novoInsumo = {
@@ -289,7 +324,7 @@ async function cadastrarInsumoViaWhatsApp(pergunta: string, uid: string, context
       `Quantidade: ${novoInsumo.quantidadeAtual} ${novoInsumo.unidadeMedida}\n` +
       `Custo: R$ ${novoInsumo.custoCompra.toFixed(2)}\n` +
       `Minimo: ${novoInsumo.estoqueMinimo} ${novoInsumo.unidadeMedida}\n` +
-      `Fornecedor: ${novoInsumo.fornecedorPrincipal || "nao informado"}`,
+      `Fornecedor: ${novoInsumo.fornecedorPrincipal || "não informado"}`,
     dados: { id, insumo: novoInsumo },
   };
 }
@@ -299,20 +334,20 @@ async function registrarProducaoViaWhatsApp(pergunta: string, uid: string, conte
 
   const somentePedidoDeFormulario = normalizarTexto(pergunta).replace(/[^\w\s]/g, "").trim();
   if (
-    ["saida para producao", "saida producao", "saiu para producao", "registrar producao"].includes(
+    ["saida para produção", "saida produção", "saiu para produção", "registrar produção"].includes(
       somentePedidoDeFormulario,
     )
   ) {
     return {
       resposta:
-        "Saida para producao\n\n" +
+        "Saída para produção\n\n" +
         "Me envie assim:\n\n" +
         "Produto:\n" +
         "Saiu do estoque:\n" +
-        "Virou porcoes:\n" +
-        "Area:\n\n" +
+        "Virou porções:\n" +
+        "Área:\n\n" +
         "Exemplo pronto:\n" +
-        "Saida para producao: nome=Carne moida, quantidade=2, unidade=kg, porcoes=10, area=cozinha",
+        "Saída para produção: nome=Carne moida, quantidade=2, unidade=kg, porções=10, área=cozinha",
     };
   }
 
@@ -322,14 +357,14 @@ async function registrarProducaoViaWhatsApp(pergunta: string, uid: string, conte
   if (!dados.nome) faltando.push("nome do insumo");
   if (dados.quantidade === undefined) faltando.push("quantidade que saiu do estoque");
   if (!dados.unidade) faltando.push("unidade");
-  if (dados.porcoes === undefined) faltando.push("porcoes geradas");
+  if (dados.porcoes === undefined) faltando.push("porções geradas");
 
   if (faltando.length > 0) {
     return {
       resposta:
         `Consigo registrar essa producao, mas faltou: ${faltando.join(", ")}.\n\n` +
         "Envie assim:\n" +
-        "Saiu do estoque para producao: nome=Carne moida, quantidade=2, unidade=kg, porcoes=10, area=cozinha",
+        "Saiu do estoque para produção: nome=Carne moida, quantidade=2, unidade=kg, porções=10, área=cozinha",
     };
   }
 
@@ -339,11 +374,11 @@ async function registrarProducaoViaWhatsApp(pergunta: string, uid: string, conte
   const porcoes = dados.porcoes;
 
   if (!nome || quantidade === undefined || !unidade || porcoes === undefined) {
-    return { resposta: "Nao consegui interpretar os dados da producao. Envie no formato estruturado." };
+    return { resposta: "Não consegui interpretar os dados da produção. Envie no formato estruturado." };
   }
 
   if (!context) {
-    return { resposta: "Nao consegui identificar empresa e loja para registrar essa producao com seguranca." };
+    return { resposta: "Não consegui identificar empresa e loja para registrar essa produção com segurança." };
   }
 
   const producao = await registrarSaidaParaProducao({
@@ -372,11 +407,39 @@ async function registrarProducaoViaWhatsApp(pergunta: string, uid: string, conte
   };
 }
 
-export async function processarPergunta(pergunta: string, uid: string): Promise<{ resposta: string; dados?: unknown }> {
+export async function processarPergunta(
+  pergunta: string,
+  uid: string,
+  contextoForcado?: TenantContext | null,
+): Promise<{ resposta: string; dados?: unknown }> {
   try {
     const p = pergunta.toLowerCase();
     const textoNormalizado = normalizarTexto(pergunta);
-    const context = await obterContextoUsuario(uid);
+    const context = contextoForcado ?? (await obterContextoUsuario(uid));
+    const opcao = textoNormalizado.replace(/[^\d]/g, "").trim();
+
+    if (querMenuInicial(textoNormalizado)) {
+      return { resposta: montarMenuInicial() };
+    }
+
+    if (opcao === "4") {
+      return {
+        resposta:
+          "Cadastro de insumo\n\n" +
+          "Me envie assim:\n" +
+          "Cadastrar insumo: nome=Hamburguer 150g, quantidade=3, unidade=kg, peso por unidade=150, unidade por item=g, valor total=50,00, minimo=5",
+      };
+    }
+
+    if (opcao === "5") {
+      return {
+        resposta:
+          "Saida para producao\n\n" +
+          "Me envie assim:\n" +
+          "Saiu do estoque para producao: nome=Carne moida, quantidade=2, unidade=kg, porcoes=10, area=cozinha",
+      };
+    }
+
     const cadastro = await cadastrarInsumoViaWhatsApp(pergunta, uid, context);
 
     if (cadastro) {
@@ -389,9 +452,55 @@ export async function processarPergunta(pergunta: string, uid: string): Promise<
       return producao;
     }
 
-    if (textoNormalizado.includes("porcoes disponiveis") || textoNormalizado.includes("porcoes na area")) {
+    if (opcao === "1") {
+      const recomendadas = await getComprasRecomendadas(context || undefined);
+      if (recomendadas.length === 0) return { resposta: "No momento, nenhum insumo precisa de reposicao urgente." };
+      const lista = recomendadas.map((item) => `- ${item.insumo.nome}: comprar ${item.quantidadeRecomendada} ${item.insumo.unidadeCompra} (R$ ${item.custoEstimado.toFixed(2)})`).join("\n");
+      return { resposta: `Compras recomendadas:\n\n${lista}`, dados: recomendadas };
+    }
+
+    if (opcao === "2") {
+      const criticos = await getInsumosCriticos(context || undefined);
+      if (criticos.length === 0) return { resposta: "Nenhum item critico no momento." };
+      const lista = criticos.slice(0, 10).map((item) => `- ${item.nome}: ${item.quantidadeAtual} ${item.unidadeMedida} (min: ${item.estoqueMinimo})`).join("\n");
+      return { resposta: `Itens criticos (${criticos.length} total):\n\n${lista}`, dados: criticos };
+    }
+
+    if (opcao === "3") {
+      const kpis = await getKpis(context || undefined);
+      const criticos = await getInsumosCriticos(context || undefined);
+      const ruptura = await getPrevisaoRuptura(context || undefined);
+      return {
+        resposta:
+          `Resumo do dia:\n\n` +
+          `Custo do dia: R$ ${kpis.custoDoDia.toFixed(2)} (${kpis.variacaoCusto > 0 ? "subiu" : "caiu"} ${Math.abs(kpis.variacaoCusto)}%)\n` +
+          `Itens criticos: ${kpis.itensCriticos}\n` +
+          `Risco de ruptura: ${ruptura.length} itens\n` +
+          `Reposicao pendente: ${kpis.reposicaoPendente}`,
+        dados: { kpis, criticos, ruptura, uid },
+      };
+    }
+
+    if (opcao === "6") {
       const porcoes = await listarPorcoesDisponiveis(context || undefined);
       if (porcoes.length === 0) return { resposta: "Nao ha porcoes disponiveis registradas na producao." };
+      const lista = porcoes
+        .slice(0, 10)
+        .map((item) => `- ${item.insumoNome}: ${item.porcoesDisponiveis} porcoes em ${item.area} (R$ ${item.custoPorPorcao.toFixed(2)}/porcao)`)
+        .join("\n");
+      return { resposta: `Porcoes disponiveis:\n\n${lista}`, dados: porcoes };
+    }
+
+    if (opcao === "7") {
+      const cmv = await getCmvForaIdeal(context || undefined);
+      if (cmv.length === 0) return { resposta: "Todos os itens estao dentro da margem ideal de CMV." };
+      const lista = cmv.slice(0, 5).map((item) => `- ${item.insumo.nome}: atual ${item.cmvAtual.toFixed(1)}%, ideal ${item.cmvIdeal.toFixed(1)}% (${item.variacao.toFixed(1)}%)`).join("\n");
+      return { resposta: `Itens com CMV fora do ideal:\n\n${lista}`, dados: cmv };
+    }
+
+    if (textoNormalizado.includes("porções disponíveis") || textoNormalizado.includes("porções na área")) {
+      const porcoes = await listarPorcoesDisponiveis(context || undefined);
+      if (porcoes.length === 0) return { resposta: "Nao há porções disponíveis registradas na produção." };
 
       const lista = porcoes
         .slice(0, 10)
@@ -410,24 +519,24 @@ export async function processarPergunta(pergunta: string, uid: string): Promise<
         resposta:
           "Comandos:\n\n" +
           "1. Cadastrar insumo\n" +
-          "2. Saida para producao\n" +
-          "3. Porcoes disponiveis\n" +
+          "2. Saída para produção\n" +
+          "3. Porções disponíveis\n" +
           "4. Resumo do dia\n\n" +
           "Digite uma opcao pelo nome que eu abro os campos.",
       };
     }
 
     if (p.includes("repor") || p.includes("comprar") || p.includes("reposicao")) {
-      const recomendadas = await getComprasRecomendadas();
+      const recomendadas = await getComprasRecomendadas(context || undefined);
       if (recomendadas.length === 0) return { resposta: "No momento, nenhum insumo precisa de reposicao urgente." };
       const lista = recomendadas.map((item) => `- ${item.insumo.nome}: comprar ${item.quantidadeRecomendada} ${item.insumo.unidadeCompra} (R$ ${item.custoEstimado.toFixed(2)})`).join("\n");
       return { resposta: `Compras recomendadas:\n\n${lista}`, dados: recomendadas };
     }
 
     if (p.includes("resumo") || p.includes("dia")) {
-      const kpis = await getKpis();
-      const criticos = await getInsumosCriticos();
-      const ruptura = await getPrevisaoRuptura();
+      const kpis = await getKpis(context || undefined);
+      const criticos = await getInsumosCriticos(context || undefined);
+      const ruptura = await getPrevisaoRuptura(context || undefined);
       return {
         resposta:
           `Resumo do dia:\n\n` +
@@ -439,15 +548,15 @@ export async function processarPergunta(pergunta: string, uid: string): Promise<
       };
     }
 
-    if (p.includes("critico") || p.includes("crítico")) {
-      const criticos = await getInsumosCriticos();
+    if (p.includes("critico") || p.includes("critico")) {
+      const criticos = await getInsumosCriticos(context || undefined);
       if (criticos.length === 0) return { resposta: "Nenhum item critico no momento." };
       const lista = criticos.slice(0, 10).map((item) => `- ${item.nome}: ${item.quantidadeAtual} ${item.unidadeMedida} (min: ${item.estoqueMinimo})`).join("\n");
       return { resposta: `Itens criticos (${criticos.length} total):\n\n${lista}`, dados: criticos };
     }
 
     if (p.includes("cmv")) {
-      const cmv = await getCmvForaIdeal();
+      const cmv = await getCmvForaIdeal(context || undefined);
       if (cmv.length === 0) return { resposta: "Todos os itens estao dentro da margem ideal de CMV." };
       const lista = cmv.slice(0, 5).map((item) => `- ${item.insumo.nome}: atual ${item.cmvAtual.toFixed(1)}%, ideal ${item.cmvIdeal.toFixed(1)}% (${item.variacao.toFixed(1)}%)`).join("\n");
       return { resposta: `Itens com CMV fora do ideal:\n\n${lista}`, dados: cmv };
@@ -455,17 +564,23 @@ export async function processarPergunta(pergunta: string, uid: string): Promise<
 
     return {
       resposta:
+        "Nao entendi totalmente o pedido, mas posso te ajudar por aqui:\n\n" +
+        montarMenuInicial(),
+    };
+
+    return {
+      resposta:
         "Oi, sou a Carioquinha.\n\n" +
         "O que voce quer fazer?\n\n" +
         "1. Cadastrar insumo\n" +
-        "2. Saida para producao\n" +
-        "3. Porcoes disponiveis\n" +
+        "2. Saída para produção\n" +
+        "3. Porções disponíveis\n" +
         "4. Resumo do dia\n\n" +
         "Digite o nome da opcao.",
     };
   } catch (error) {
     console.error("Erro ao processar pergunta da Carioquinha", error);
-    return { resposta: "Nao consegui processar sua pergunta agora. Tente novamente em instantes." };
+    return { resposta: "Não consegui processar sua pergunta agora. Tente novamente em instantes." };
   }
 }
 
@@ -477,7 +592,7 @@ export function getSugestoesRapidas(): string[] {
     "Como esta o CMV?",
     "Como cadastrar",
     "Cadastrar insumo",
-    "Saida para producao: nome=Carne moida, quantidade=2, unidade=kg, porcoes=10, area=cozinha",
-    "Porcoes disponiveis",
+    "Saída para produção: nome=Carne moida, quantidade=2, unidade=kg, porções=10, área=cozinha",
+    "Porções disponíveis",
   ];
 }
