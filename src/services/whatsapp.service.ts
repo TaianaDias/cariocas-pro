@@ -128,25 +128,26 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
 
 export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["instance"] | null> {
   try {
-    const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`);
-    const data = await readEvolutionResponse(response);
-    const instance = data?.instance || null;
+    const instancesResponse = await evolutionFetch("/instance/fetchInstances");
+    const instancesData = await readEvolutionResponse(instancesResponse);
+    const instances = Array.isArray(instancesData) ? instancesData : [];
+    const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
 
-    if (!instance) {
-      const instancesResponse = await evolutionFetch("/instance/fetchInstances");
-      const instancesData = await readEvolutionResponse(instancesResponse);
-      const instances = Array.isArray(instancesData) ? instancesData : [];
-      const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
-
-      if (!found) return null;
-
+    if (found) {
       return {
         ...found,
         owner: found.ownerJid || found.owner,
+        profileName: found.profileName || found.name,
         qrcode: extractQrCode(found),
         status: found.connectionStatus || found.status || found.state,
       };
     }
+
+    const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`);
+    const data = await readEvolutionResponse(response);
+    const instance = data?.instance || null;
+
+    if (!instance) return null;
 
     return {
       ...instance,
@@ -190,7 +191,8 @@ export async function verificarWebhook(): Promise<boolean> {
   try {
     const response = await evolutionFetch(`/webhook/find/${INSTANCE_NAME}`);
     const data = await readEvolutionResponse(response);
-    return data?.webhook?.url?.includes("api/whatsapp/webhook") || false;
+    const url = data?.webhook?.url || data?.url;
+    return Boolean(data?.enabled !== false && url?.includes("api/whatsapp/webhook"));
   } catch {
     return false;
   }
