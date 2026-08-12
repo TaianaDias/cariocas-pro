@@ -460,7 +460,7 @@ export async function processarPergunta(
     }
 
     if (opcao === "2") {
-      const criticos = await getInsumosCriticos(context || undefined);
+      const criticos = await getInsumosCriticos();
       if (criticos.length === 0) return { resposta: "Nenhum item critico no momento." };
       const lista = criticos.slice(0, 10).map((item) => `- ${item.nome}: ${item.quantidadeAtual} ${item.unidadeMedida} (min: ${item.estoqueMinimo})`).join("\n");
       return { resposta: `Itens criticos (${criticos.length} total):\n\n${lista}`, dados: criticos };
@@ -468,7 +468,7 @@ export async function processarPergunta(
 
     if (opcao === "3") {
       const kpis = await getKpis(context || undefined);
-      const criticos = await getInsumosCriticos(context || undefined);
+      const criticos = await getInsumosCriticos();
       const ruptura = await getPrevisaoRuptura(context || undefined);
       return {
         resposta:
@@ -535,7 +535,7 @@ export async function processarPergunta(
 
     if (p.includes("resumo") || p.includes("dia")) {
       const kpis = await getKpis(context || undefined);
-      const criticos = await getInsumosCriticos(context || undefined);
+      const criticos = await getInsumosCriticos();
       const ruptura = await getPrevisaoRuptura(context || undefined);
       return {
         resposta:
@@ -549,7 +549,7 @@ export async function processarPergunta(
     }
 
     if (p.includes("critico") || p.includes("critico")) {
-      const criticos = await getInsumosCriticos(context || undefined);
+      const criticos = await getInsumosCriticos();
       if (criticos.length === 0) return { resposta: "Nenhum item critico no momento." };
       const lista = criticos.slice(0, 10).map((item) => `- ${item.nome}: ${item.quantidadeAtual} ${item.unidadeMedida} (min: ${item.estoqueMinimo})`).join("\n");
       return { resposta: `Itens criticos (${criticos.length} total):\n\n${lista}`, dados: criticos };
