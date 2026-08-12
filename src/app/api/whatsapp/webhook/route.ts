@@ -28,6 +28,46 @@ function phoneMatches(value: unknown, candidates: string[]) {
   return candidates.includes(digits) || candidates.includes(digits.startsWith("55") ? digits.slice(2) : `55${digits}`);
 }
 
+function extrairTextoMensagem(message: any): string | null {
+  if (!message) return null;
+
+  const texto =
+    message.conversation ||
+    message.extendedTextMessage?.text ||
+    message.imageMessage?.caption ||
+    message.videoMessage?.caption ||
+    message.buttonsResponseMessage?.selectedDisplayText ||
+    message.buttonsResponseMessage?.selectedButtonId ||
+    message.listResponseMessage?.title ||
+    message.listResponseMessage?.singleSelectReply?.selectedRowId ||
+    message.templateButtonReplyMessage?.selectedDisplayText ||
+    message.templateButtonReplyMessage?.selectedId ||
+    message.interactiveResponseMessage?.body?.text;
+
+  if (typeof texto === "string" && texto.trim()) {
+    return texto.trim();
+  }
+
+  return (
+    extrairTextoMensagem(message.ephemeralMessage?.message) ||
+    extrairTextoMensagem(message.viewOnceMessage?.message) ||
+    extrairTextoMensagem(message.viewOnceMessageV2?.message) ||
+    extrairTextoMensagem(message.documentWithCaptionMessage?.message) ||
+    null
+  );
+}
+
+function extrairRemetente(body: any): string | null {
+  return (
+    body?.data?.key?.remoteJid ||
+    body?.data?.remoteJid ||
+    body?.sender ||
+    body?.remoteJid ||
+    body?.key?.remoteJid ||
+    null
+  );
+}
+
 async function buscarContextoPorTelefone(remetente: string): Promise<TenantContext | null> {
   const fallbackEmpresaId = process.env.CARIOQUINHA_EMPRESA_ID || process.env.NEXT_PUBLIC_CARIOQUINHA_EMPRESA_ID;
   const fallbackLojaId = process.env.CARIOQUINHA_LOJA_ID || process.env.NEXT_PUBLIC_CARIOQUINHA_LOJA_ID;
@@ -91,11 +131,18 @@ export async function POST(request: NextRequest) {
     }
 
     const mensagem = body?.data?.message;
-    const remetente = body?.data?.key?.remoteJid;
-    const texto = mensagem?.conversation || mensagem?.extendedTextMessage?.text;
+    const remetente = extrairRemetente(body);
+    const texto = extrairTextoMensagem(mensagem);
     const nomeRemetente = body?.data?.pushName || "Cliente";
 
     if (!texto || !remetente) {
+      console.warn("[WhatsApp Webhook] Evento ignorado sem texto/remetente reconhecido.", {
+        event: body?.event,
+        instance: body?.instance,
+        messageType: body?.data?.messageType,
+        hasMessage: Boolean(mensagem),
+        hasSender: Boolean(remetente),
+      });
       return NextResponse.json({ status: "ignored", reason: "no_text_or_sender" });
     }
 
