@@ -37,7 +37,11 @@ export function getAdminApp(): App | null {
     });
   }
 
-  return initializeApp({ projectId });
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    return initializeApp({ projectId });
+  }
+
+  return null;
 }
 
 export async function getServerUserProfile(request: NextRequest): Promise<ServerUserProfile | null> {
