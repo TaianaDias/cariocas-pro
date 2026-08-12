@@ -4,17 +4,23 @@ import { db } from "../lib/firebase";
 
 type AutomacaoEvento = {
   tipo: string;
+  empresaId?: string;
   insumoId?: string;
   insumoNome?: string;
+  lojaId?: string;
   quantidade?: number;
   responsavel?: string;
   dados?: Record<string, unknown>;
 };
 
-const EVOLUTION_API_URL = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
+const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "cariocas-pro-evolution-key-2026";
-const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
+const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
 const COLECAO_LOGS = "automacaoLogs";
+
+function getAutomacaoLogsCollectionPath(empresaId?: string) {
+  return empresaId ? `empresas/${empresaId}/automacaoLogs` : COLECAO_LOGS;
+}
 
 async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
   try {
@@ -39,7 +45,7 @@ function montarMensagem(evento: AutomacaoEvento) {
     case "entrada":
       return `Entrada de Estoque\n\nProduto: ${evento.insumoNome}\nQuantidade: ${evento.quantidade}\nResponsavel: ${evento.responsavel}`;
     case "saida":
-      return `Saida de Estoque\n\nProduto: ${evento.insumoNome}\nQuantidade: ${evento.quantidade}\nResponsavel: ${evento.responsavel}`;
+      return `Saída de Estoque\n\nProduto: ${evento.insumoNome}\nQuantidade: ${evento.quantidade}\nResponsavel: ${evento.responsavel}`;
     case "estoque_baixo":
       return `Estoque Baixo\n\nProduto: ${evento.insumoNome}\nEstoque atual: ${evento.dados?.atual || 0}\nMinimo: ${evento.dados?.minimo || 0}`;
     case "vencendo":
@@ -47,7 +53,7 @@ function montarMensagem(evento: AutomacaoEvento) {
     case "vencido":
       return `Produto Vencido\n\nProduto: ${evento.insumoNome}\nLote: ${evento.dados?.lote || "-"}`;
     case "sugestao_compra":
-      return `Sugestao de Compra\n\nProduto: ${evento.insumoNome}\nQtd sugerida: ${evento.quantidade}\nFornecedor: ${evento.dados?.fornecedor || "-"}`;
+      return `Sugestão de Compra\n\nProduto: ${evento.insumoNome}\nQtd sugerida: ${evento.quantidade}\nFornecedor: ${evento.dados?.fornecedor || "-"}`;
     default:
       return `Notificacao Carioca's\n\nEvento: ${evento.tipo}\nProduto: ${evento.insumoNome || "-"}`;
   }
@@ -58,7 +64,7 @@ export async function dispararAutomacao(evento: AutomacaoEvento, numeroAdmin: st
   const destino = String(evento.dados?.whatsappNumber || numeroAdmin || "");
   const enviado = destino ? await enviarWhatsApp(destino, mensagem) : false;
 
-  await addDoc(collection(db, COLECAO_LOGS), {
+  await addDoc(collection(db, getAutomacaoLogsCollectionPath(evento.empresaId)), {
     ...evento,
     criadoEm: serverTimestamp(),
     destino,

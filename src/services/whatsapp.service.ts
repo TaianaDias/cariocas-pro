@@ -1,8 +1,8 @@
 import type { EvolutionInstanceStatus } from "./whatsapp.types";
 
-const EVOLUTION_API_URL = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
+const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "cariocas-pro-evolution-key-2026";
-const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
+const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
 
 async function evolutionFetch(endpoint: string, options?: RequestInit): Promise<Response> {
   const url = endpoint.startsWith("http") ? endpoint : `${EVOLUTION_API_URL}${endpoint}`;
@@ -34,8 +34,19 @@ function extractEvolutionError(data: any, fallback: string): string {
   return Array.isArray(message) ? message.join(", ") : message || fallback;
 }
 
+function normalizeQrCode(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  return value.replace(/^data:image\/png;base64,/, "");
+}
+
 function extractQrCode(data: any): string | undefined {
-  return data?.qrcode?.base64 || data?.qrcode || data?.instance?.qrcode || data?.instance?.qrcode?.base64 || data?.base64;
+  return normalizeQrCode(
+    data?.qrcode?.base64 || data?.qrcode || data?.instance?.qrcode?.base64 || data?.instance?.qrcode || data?.base64,
+  );
+}
+
+function isInstanceAlreadyCreated(error?: string): boolean {
+  return Boolean(error && /already|existe|exist|in use|uso/i.test(error));
 }
 
 export async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
@@ -91,9 +102,15 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
     const data = await readEvolutionResponse(response);
 
     if (!response.ok) {
+      const error = extractEvolutionError(data, `Evolution API retornou ${response.status}`);
+
+      if (isInstanceAlreadyCreated(error)) {
+        return { success: true };
+      }
+
       return {
         success: false,
-        error: extractEvolutionError(data, `Evolution API retornou ${response.status}`),
+        error,
       };
     }
 
@@ -115,11 +132,26 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
     const data = await readEvolutionResponse(response);
     const instance = data?.instance || null;
 
-    if (!instance) return null;
+    if (!instance) {
+      const instancesResponse = await evolutionFetch("/instance/fetchInstances");
+      const instancesData = await readEvolutionResponse(instancesResponse);
+      const instances = Array.isArray(instancesData) ? instancesData : [];
+      const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
+
+      if (!found) return null;
+
+      return {
+        ...found,
+        owner: found.ownerJid || found.owner,
+        qrcode: extractQrCode(found),
+        status: found.connectionStatus || found.status || found.state,
+      };
+    }
 
     return {
       ...instance,
-      status: instance.status || instance.state,
+      qrcode: extractQrCode(instance),
+      status: instance.status || instance.state || instance.connectionStatus,
     };
   } catch {
     return null;

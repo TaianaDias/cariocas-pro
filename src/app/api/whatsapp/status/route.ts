@@ -10,16 +10,18 @@ export async function GET() {
     return NextResponse.json({ status: "offline", webhookAtivo });
   }
 
-  if (instancia.status === "qrcode") {
+  if (instancia.status === "qrcode" || instancia.status === "connecting") {
     const qrcode = await getQrCode();
 
-    return NextResponse.json({
-      status: "qrcode",
-      qrcode,
-      owner: null,
-      profileName: null,
-      webhookAtivo,
-    });
+    if (qrcode) {
+      return NextResponse.json({
+        status: "qrcode",
+        qrcode,
+        owner: null,
+        profileName: null,
+        webhookAtivo,
+      });
+    }
   }
 
   return NextResponse.json({

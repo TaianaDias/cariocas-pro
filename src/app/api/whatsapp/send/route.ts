@@ -5,12 +5,12 @@ export async function POST(request: NextRequest) {
     const { mensagem, numero } = await request.json();
 
     if (!numero || !mensagem) {
-      return NextResponse.json({ error: "numero e mensagem sao obrigatorios" }, { status: 400 });
+      return NextResponse.json({ error: "número e mensagem sao obrigatorios" }, { status: 400 });
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
+    const apiUrl = process.env.EVOLUTION_API_URL || process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
     const apiKey = process.env.EVOLUTION_API_KEY || "cariocas-pro-evolution-key-2026";
-    const instanceName = process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
+    const instanceName = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
 
     const response = await fetch(`${apiUrl}/message/sendText/${instanceName}`, {
       method: "POST",
