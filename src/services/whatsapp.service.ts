@@ -42,7 +42,17 @@ async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions =
       );
     }
 
-    throw error;
+    return new Response(
+      JSON.stringify({
+        error: "connection_failed",
+        message: `Nao consegui conectar na Evolution API em ${EVOLUTION_API_URL}. Verifique se o container evolution-api esta online e se a porta 8080 responde localmente.`,
+        details: error instanceof Error ? error.message : "fetch failed",
+      }),
+      {
+        headers: { "Content-Type": "application/json" },
+        status: 502,
+      },
+    );
   } finally {
     clearTimeout(timeout);
   }
@@ -331,5 +341,52 @@ export async function configurarWebhook(url: string): Promise<boolean> {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+export async function diagnosticarWhatsApp() {
+  const startedAt = Date.now();
+  const resultado = {
+    apiUrl: EVOLUTION_API_URL,
+    instanceName: INSTANCE_NAME,
+    evolutionOnline: false,
+    evolutionStatus: 0,
+    instanceStatus: null as string | null,
+    owner: null as string | null,
+    profileName: null as string | null,
+    webhookAtivo: false,
+    erro: null as string | null,
+    duracaoMs: 0,
+  };
+
+  try {
+    const response = await evolutionFetch("/instance/fetchInstances", { timeoutMs: 5000 });
+    resultado.evolutionStatus = response.status;
+
+    const data = await readEvolutionResponse(response);
+
+    if (!response.ok) {
+      resultado.erro = extractEvolutionError(data, `Evolution API retornou ${response.status}`);
+      return { ...resultado, duracaoMs: Date.now() - startedAt };
+    }
+
+    resultado.evolutionOnline = true;
+
+    const instances = Array.isArray(data) ? data : [];
+    const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
+
+    if (found) {
+      const normalized = normalizeInstance(found);
+      resultado.instanceStatus = normalized.status || null;
+      resultado.owner = normalized.owner || null;
+      resultado.profileName = normalized.profileName || null;
+    }
+
+    resultado.webhookAtivo = await verificarWebhook();
+
+    return { ...resultado, duracaoMs: Date.now() - startedAt };
+  } catch (error) {
+    resultado.erro = error instanceof Error ? error.message : "Erro ao diagnosticar WhatsApp";
+    return { ...resultado, duracaoMs: Date.now() - startedAt };
   }
 }

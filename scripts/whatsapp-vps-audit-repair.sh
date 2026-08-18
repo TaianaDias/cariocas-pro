@@ -103,6 +103,11 @@ curl -fsS --max-time 8 "http://127.0.0.1:3000/api/whatsapp/status" || true
 echo
 echo
 
+echo "== Diagnostico final WhatsApp =="
+curl -fsS --max-time 8 "http://127.0.0.1:3000/api/whatsapp/diagnostico" || true
+echo
+echo
+
 echo "Pronto. Abra $APP_URL/configuracoes/carioquinha e clique em Conectar WhatsApp para gerar um QR novo."
 echo "Se quiser diagnosticar depois de enviar 'oi', rode:"
 echo "pm2 logs cariocas-pro --lines 120 --nostream"
