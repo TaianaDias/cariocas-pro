@@ -27,10 +27,11 @@ export default function WhatsAppConfigPage() {
   const [status, setStatus] = useState<StatusInstancia>({ status: "offline" });
   const [loading, setLoading] = useState(true);
   const [criando, setCriando] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
 
   const verificarStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/whatsapp/status");
+      const res = await fetch("/api/whatsapp/status", { cache: "no-store" });
       const data = await res.json();
       setStatus(data);
     } catch {
@@ -67,10 +68,34 @@ export default function WhatsAppConfigPage() {
   }
 
   async function handleDesconectar() {
-    if (!window.confirm("Tem certeza? Voce precisara escanear o QR Code novamente.")) return;
+    if (!window.confirm("Tem certeza? Você precisará escanear o QR Code novamente.")) return;
 
     await fetch("/api/whatsapp/disconnect", { method: "POST" });
     setStatus({ status: "offline" });
+  }
+
+  async function handleRecriarSessao() {
+    if (!window.confirm("Recriar a sessao do WhatsApp? Use quando o QR Code falhar ou a IA parar de responder.")) return;
+
+    setRecuperando(true);
+
+    try {
+      const res = await fetch("/api/whatsapp/reconnect", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok || data.status === "error") {
+        throw new Error(data.message || "Erro ao recriar sessao");
+      }
+
+      setStatus({
+        qrcode: data.qrcode || undefined,
+        status: data.status || "connecting",
+      });
+    } catch {
+      window.alert("Erro ao recriar a sessao do WhatsApp");
+    } finally {
+      setRecuperando(false);
+    }
   }
 
   if (loading) {
@@ -99,7 +124,7 @@ export default function WhatsAppConfigPage() {
             <span>
               {status.owner
                 ? `Conectado como: ${status.profileName || status.owner}`
-                : "Numero ainda nao conectado"}
+                : "Número ainda nao conectado"}
             </span>
           </div>
           <Badge tone={info.tone}>{info.label}</Badge>
@@ -131,6 +156,10 @@ export default function WhatsAppConfigPage() {
               Gerar novo QR Code
             </Button>
           ) : null}
+
+          <Button variant="secondary" onClick={handleRecriarSessao} disabled={recuperando || criando}>
+            {recuperando ? "Recriando..." : "Recriar sessao"}
+          </Button>
         </div>
       </Card>
 
@@ -140,7 +169,7 @@ export default function WhatsAppConfigPage() {
           Apos conectar, clientes e funcionarios podem enviar mensagens no WhatsApp da hamburgueria.
           A IA Carioquinha responde automaticamente com dados reais do estoque.
         </p>
-        <p>Exemplos: "O que devo repor?", "Resumo do dia", "Itens criticos".</p>
+        <p>Exemplos: "O que devo repor?", "Resumo do dia", "Itens críticos".</p>
       </Card>
 
       <Card className="whatsapp-config__card">

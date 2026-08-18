@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { configurarWebhook, criarInstancia, getQrCode } from "../../../../services/whatsapp.service";
+import { configurarWebhook, recriarInstancia } from "../../../../services/whatsapp.service";
 
 function jsonNoStore(body: unknown, init?: ResponseInit) {
   const response = NextResponse.json(body, init);
@@ -31,11 +31,11 @@ function getPublicBaseUrl(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const resultado = await criarInstancia();
+  const resultado = await recriarInstancia();
 
   if (!resultado.success) {
     return jsonNoStore(
-      { status: "error", message: resultado.error || "Erro ao conectar" },
+      { status: "error", message: resultado.error || "Erro ao recriar sessao do WhatsApp" },
       { status: 500 },
     );
   }
@@ -43,15 +43,9 @@ export async function POST(request: Request) {
   const publicBaseUrl = getPublicBaseUrl(request);
   const webhookAtivo = await configurarWebhook(`${publicBaseUrl}/api/whatsapp/webhook`);
 
-  if (resultado.qrcode) {
-    return jsonNoStore({ status: "qrcode", qrcode: resultado.qrcode, webhookAtivo });
-  }
-
-  const qrcode = await getQrCode();
-
   return jsonNoStore({
-    status: qrcode ? "qrcode" : "connecting",
-    qrcode,
+    status: resultado.qrcode ? "qrcode" : "connecting",
+    qrcode: resultado.qrcode || null,
     webhookAtivo,
   });
 }

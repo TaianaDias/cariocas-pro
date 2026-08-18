@@ -49,13 +49,34 @@ function isInstanceAlreadyCreated(error?: string): boolean {
   return Boolean(error && /already|existe|exist|in use|uso/i.test(error));
 }
 
+function normalizePhone(numero: string): string {
+  return numero.replace("@s.whatsapp.net", "").replace(/\D/g, "");
+}
+
+function normalizeStatus(status?: string | null) {
+  if (!status) return undefined;
+  if (status === "open") return "open";
+  if (status === "qrcode") return "qrcode";
+  if (["close", "closed", "disconnected"].includes(status)) return "close";
+  if (["connecting", "connection", "loading"].includes(status)) return "connecting";
+  return status;
+}
+
+function normalizeInstance(found: any): EvolutionInstanceStatus["instance"] {
+  return {
+    ...found,
+    owner: found?.ownerJid || found?.owner,
+    profileName: found?.profileName || found?.name,
+    qrcode: extractQrCode(found),
+    status: normalizeStatus(found?.connectionStatus || found?.status || found?.state) as EvolutionInstanceStatus["instance"]["status"],
+  };
+}
+
 export async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
   try {
-    const numeroLimpo = numero.replace("@s.whatsapp.net", "").replace(/\D/g, "");
-
-    const response = await evolutionFetch(`/message/sendText/${INSTANCE_NAME}`, {
-      method: "POST",
-      body: JSON.stringify({
+    const numeroLimpo = normalizePhone(numero);
+    const payloads = [
+      {
         number: numeroLimpo,
         text: texto,
         options: {
@@ -63,16 +84,35 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
           linkPreview: false,
           mentioned: [],
         },
-      }),
-    });
+      },
+      {
+        number: numeroLimpo,
+        textMessage: {
+          text: texto,
+        },
+        options: {
+          delay: 1200,
+          linkPreview: false,
+          mentioned: [],
+        },
+      },
+    ];
 
-    if (!response.ok) {
+    for (const payload of payloads) {
+      const response = await evolutionFetch(`/message/sendText/${INSTANCE_NAME}`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        return true;
+      }
+
       const erro = await response.text();
       console.error("Evolution API send error:", erro);
-      return false;
     }
 
-    return true;
+    return false;
   } catch (error) {
     console.error("Erro ao enviar WhatsApp:", error);
     return false;
@@ -81,6 +121,17 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
 
 export async function criarInstancia(): Promise<{ success: boolean; qrcode?: string; error?: string }> {
   try {
+    const existente = await getStatusInstancia();
+
+    if (existente?.status === "open") {
+      return { success: true };
+    }
+
+    if (existente) {
+      const qrcode = await getQrCode();
+      return { success: true, qrcode: qrcode || undefined };
+    }
+
     const response = await evolutionFetch("/instance/create", {
       method: "POST",
       body: JSON.stringify({
@@ -105,7 +156,8 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
       const error = extractEvolutionError(data, `Evolution API retornou ${response.status}`);
 
       if (isInstanceAlreadyCreated(error)) {
-        return { success: true };
+        const qrcode = await getQrCode();
+        return { success: true, qrcode: qrcode || undefined };
       }
 
       return {
@@ -134,13 +186,7 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
     const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
 
     if (found) {
-      return {
-        ...found,
-        owner: found.ownerJid || found.owner,
-        profileName: found.profileName || found.name,
-        qrcode: extractQrCode(found),
-        status: found.connectionStatus || found.status || found.state,
-      };
+      return normalizeInstance(found);
     }
 
     const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`);
@@ -152,7 +198,7 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
     return {
       ...instance,
       qrcode: extractQrCode(instance),
-      status: instance.status || instance.state || instance.connectionStatus,
+      status: normalizeStatus(instance.status || instance.state || instance.connectionStatus) as EvolutionInstanceStatus["instance"]["status"],
     };
   } catch {
     return null;
@@ -161,9 +207,14 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
 
 export async function getQrCode(): Promise<string | null> {
   try {
-    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`);
+    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`, { method: "GET" });
     const data = await readEvolutionResponse(response);
-    return extractQrCode(data) || null;
+    const qrcode = extractQrCode(data);
+
+    if (qrcode) return qrcode;
+
+    const instancia = await getStatusInstancia();
+    return instancia?.qrcode || null;
   } catch {
     return null;
   }
@@ -184,6 +235,24 @@ export async function deletarInstancia(): Promise<boolean> {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: string; error?: string }> {
+  try {
+    await logoutInstancia();
+    await deletarInstancia();
+
+    const criada = await criarInstancia();
+    if (!criada.success) return criada;
+
+    const qrcode = criada.qrcode || (await getQrCode()) || undefined;
+    return { success: true, qrcode };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro ao recriar sessao do WhatsApp",
+    };
   }
 }
 

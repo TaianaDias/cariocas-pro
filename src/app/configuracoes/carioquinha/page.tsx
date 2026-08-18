@@ -19,36 +19,36 @@ type StatusInstancia = {
 const capacidades = [
   {
     label: "Estoque",
-    texto: "Consulta produtos criticos, itens abaixo do minimo, entradas recentes e sugestoes de reposicao.",
+    texto: "Consulta produtos criticos, itens abaixo do mínimo, entradas recentes e sugestoes de reposicao.",
   },
   {
     label: "Compras",
-    texto: "Ajuda a montar pedidos para fornecedores ou mercado usando estoque minimo e maximo.",
+    texto: "Ajuda a montar pedidos para fornecedores ou mercado usando estoque mínimo e máximo.",
   },
   {
-    label: "Producao",
-    texto: "Orienta porcionamento, saldos brutos, porcoes disponiveis e necessidades da cozinha.",
+    label: "Produção",
+    texto: "Orienta porcionamento, saldos brutos, porções disponíveis e necessidades da cozinha.",
   },
   {
-    label: "Desperdicio",
+    label: "Desperdício",
     texto: "Resume perdas, custo estimado, motivos frequentes e impacto operacional.",
   },
 ];
 
 const comandos = [
-  "Quais itens estao abaixo do minimo?",
+  "Quais itens estao abaixo do mínimo?",
   "Monte uma lista de compras para hoje.",
   "O que preciso repor primeiro?",
   "Quanto perdi em desperdicio esta semana?",
   "Quais produtos precisam de atencao no estoque?",
-  "Como esta minha producao porcionada?",
+  "Como esta minha produção porcionada?",
 ];
 
 const regras = [
   "Usa somente dados da empresa e loja conectadas.",
-  "Respeita permissoes do usuario logado.",
-  "Nao deve expor custo, margem ou lucro para funcionario sem permissao.",
-  "Acoes criticas continuam dependendo de confirmacao no sistema.",
+  "Respeita permissoes do usuário logado.",
+  "Não deve expor custo, margem ou lucro para funcionario sem permissão.",
+  "Ações críticas continuam dependendo de confirmacao no sistema.",
 ];
 
 const statusInfo = {
@@ -64,6 +64,7 @@ export default function CarioquinhaConfigPage() {
   const [status, setStatus] = useState<StatusInstancia>({ status: "offline" });
   const [loading, setLoading] = useState(true);
   const [criando, setCriando] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const verificarStatus = useCallback(async () => {
@@ -93,7 +94,7 @@ export default function CarioquinhaConfigPage() {
       const data = await response.json();
 
       if (!response.ok || data.status === "error") {
-        throw new Error(data.message || "Nao foi possivel conectar o WhatsApp.");
+        throw new Error(data.message || "Não foi possível conectar o WhatsApp.");
       }
 
       setStatus({
@@ -102,7 +103,7 @@ export default function CarioquinhaConfigPage() {
         webhookAtivo: true,
       });
     } catch (error) {
-      setErro(error instanceof Error ? error.message : "Nao foi possivel conectar o WhatsApp.");
+      setErro(error instanceof Error ? error.message : "Não foi possível conectar o WhatsApp.");
     } finally {
       setCriando(false);
     }
@@ -115,6 +116,35 @@ export default function CarioquinhaConfigPage() {
     setErro(null);
     await fetch("/api/whatsapp/disconnect", { method: "POST" });
     setStatus({ status: "offline", webhookAtivo: false });
+  }
+
+  async function recriarSessaoWhatsApp() {
+    const confirmou = window.confirm(
+      "Recriar a sessao do WhatsApp? Use quando o QR Code expirar ou quando aparecer conectado, mas a IA nao responder.",
+    );
+    if (!confirmou) return;
+
+    setRecuperando(true);
+    setErro(null);
+
+    try {
+      const response = await fetch("/api/whatsapp/reconnect", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || data.status === "error") {
+        throw new Error(data.message || "Nao foi possivel recriar a sessao do WhatsApp.");
+      }
+
+      setStatus({
+        qrcode: data.qrcode || null,
+        status: data.status || "connecting",
+        webhookAtivo: data.webhookAtivo,
+      });
+    } catch (error) {
+      setErro(error instanceof Error ? error.message : "Nao foi possivel recriar a sessao do WhatsApp.");
+    } finally {
+      setRecuperando(false);
+    }
   }
 
   const info = statusInfo[status.status] || statusInfo.offline;
@@ -143,6 +173,9 @@ export default function CarioquinhaConfigPage() {
                 {criando ? "Conectando..." : "Conectar WhatsApp"}
               </Button>
             )}
+            <Button variant="secondary" onClick={recriarSessaoWhatsApp} disabled={recuperando || criando}>
+              {recuperando ? "Recriando..." : "Recriar sessao"}
+            </Button>
             <Link className="button button--secondary" href="/estoque">
               Ver estoque
             </Link>
@@ -158,7 +191,7 @@ export default function CarioquinhaConfigPage() {
         </Card>
         <Card className="carioquinha-page__metric">
           <span>WhatsApp</span>
-          <strong>{status.owner ? status.profileName || status.owner : "Nao conectado"}</strong>
+          <strong>{status.owner ? status.profileName || status.owner : "Não conectado"}</strong>
           <small>{conectado ? "Pronto para receber mensagens." : "Escaneie o QR Code para ativar."}</small>
         </Card>
         <Card className="carioquinha-page__metric">
@@ -186,6 +219,9 @@ export default function CarioquinhaConfigPage() {
           <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a camera para este codigo.</p>
           <Button variant="secondary" onClick={conectarWhatsApp} disabled={criando}>
             {criando ? "Gerando..." : "Gerar novo QR Code"}
+          </Button>
+          <Button variant="secondary" onClick={recriarSessaoWhatsApp} disabled={recuperando}>
+            {recuperando ? "Recriando..." : "Recriar sessao"}
           </Button>
         </Card>
       ) : null}
