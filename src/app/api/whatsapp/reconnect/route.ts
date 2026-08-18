@@ -31,21 +31,29 @@ function getPublicBaseUrl(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const resultado = await recriarInstancia();
+  try {
+    const resultado = await recriarInstancia();
 
-  if (!resultado.success) {
+    if (!resultado.success) {
+      return jsonNoStore(
+        { status: "error", message: resultado.error || "Erro ao recriar sessao do WhatsApp" },
+        { status: 500 },
+      );
+    }
+
+    const publicBaseUrl = getPublicBaseUrl(request);
+    const webhookAtivo = await configurarWebhook(`${publicBaseUrl}/api/whatsapp/webhook`);
+
+    return jsonNoStore({
+      status: resultado.qrcode ? "qrcode" : "connecting",
+      qrcode: resultado.qrcode || null,
+      webhookAtivo,
+    });
+  } catch (error) {
+    console.error("[WhatsApp Reconnect] Erro:", error);
     return jsonNoStore(
-      { status: "error", message: resultado.error || "Erro ao recriar sessao do WhatsApp" },
+      { status: "error", message: error instanceof Error ? error.message : "Erro interno ao recriar sessao" },
       { status: 500 },
     );
   }
-
-  const publicBaseUrl = getPublicBaseUrl(request);
-  const webhookAtivo = await configurarWebhook(`${publicBaseUrl}/api/whatsapp/webhook`);
-
-  return jsonNoStore({
-    status: resultado.qrcode ? "qrcode" : "connecting",
-    qrcode: resultado.qrcode || null,
-    webhookAtivo,
-  });
 }

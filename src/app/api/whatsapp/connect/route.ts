@@ -31,27 +31,35 @@ function getPublicBaseUrl(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const resultado = await criarInstancia();
+  try {
+    const resultado = await criarInstancia();
 
-  if (!resultado.success) {
+    if (!resultado.success) {
+      return jsonNoStore(
+        { status: "error", message: resultado.error || "Erro ao conectar" },
+        { status: 500 },
+      );
+    }
+
+    const publicBaseUrl = getPublicBaseUrl(request);
+    const webhookAtivo = await configurarWebhook(`${publicBaseUrl}/api/whatsapp/webhook`);
+
+    if (resultado.qrcode) {
+      return jsonNoStore({ status: "qrcode", qrcode: resultado.qrcode, webhookAtivo });
+    }
+
+    const qrcode = await getQrCode();
+
+    return jsonNoStore({
+      status: qrcode ? "qrcode" : "connecting",
+      qrcode,
+      webhookAtivo,
+    });
+  } catch (error) {
+    console.error("[WhatsApp Connect] Erro:", error);
     return jsonNoStore(
-      { status: "error", message: resultado.error || "Erro ao conectar" },
+      { status: "error", message: error instanceof Error ? error.message : "Erro interno ao conectar WhatsApp" },
       { status: 500 },
     );
   }
-
-  const publicBaseUrl = getPublicBaseUrl(request);
-  const webhookAtivo = await configurarWebhook(`${publicBaseUrl}/api/whatsapp/webhook`);
-
-  if (resultado.qrcode) {
-    return jsonNoStore({ status: "qrcode", qrcode: resultado.qrcode, webhookAtivo });
-  }
-
-  const qrcode = await getQrCode();
-
-  return jsonNoStore({
-    status: qrcode ? "qrcode" : "connecting",
-    qrcode,
-    webhookAtivo,
-  });
 }

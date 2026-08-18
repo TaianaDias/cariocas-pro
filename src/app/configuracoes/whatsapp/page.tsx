@@ -23,6 +23,21 @@ const badgeStatus = {
   open: { tone: "success" as const, label: "Conectado" },
 };
 
+async function lerRespostaJson(response: Response) {
+  const text = await response.text();
+
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const resumo = text.replace(/\s+/g, " ").slice(0, 160);
+    throw new Error(
+      `A rota retornou HTML em vez de JSON (${response.status}). Publique a versao nova na VPS ou verifique o log do servidor. Retorno: ${resumo}`,
+    );
+  }
+}
+
 export default function WhatsAppConfigPage() {
   const [status, setStatus] = useState<StatusInstancia>({ status: "offline" });
   const [loading, setLoading] = useState(true);
@@ -32,7 +47,7 @@ export default function WhatsAppConfigPage() {
   const verificarStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/whatsapp/status", { cache: "no-store" });
-      const data = await res.json();
+      const data = await lerRespostaJson(res);
       setStatus(data);
     } catch {
       setStatus({ status: "offline" });
@@ -53,7 +68,7 @@ export default function WhatsAppConfigPage() {
 
     try {
       const res = await fetch("/api/whatsapp/connect", { method: "POST" });
-      const data = await res.json();
+      const data = await lerRespostaJson(res);
 
       if (data.status === "qrcode") {
         setStatus({ status: "qrcode", qrcode: data.qrcode });
@@ -81,7 +96,7 @@ export default function WhatsAppConfigPage() {
 
     try {
       const res = await fetch("/api/whatsapp/reconnect", { method: "POST" });
-      const data = await res.json();
+      const data = await lerRespostaJson(res);
 
       if (!res.ok || data.status === "error") {
         throw new Error(data.message || "Erro ao recriar sessao");

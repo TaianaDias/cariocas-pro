@@ -60,6 +60,21 @@ const statusInfo = {
   qrcode: { label: "Aguardando QR Code", tone: "warning" as const },
 };
 
+async function lerRespostaJson(response: Response) {
+  const text = await response.text();
+
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const resumo = text.replace(/\s+/g, " ").slice(0, 160);
+    throw new Error(
+      `A rota retornou HTML em vez de JSON (${response.status}). Publique a versao nova na VPS ou verifique o log do servidor. Retorno: ${resumo}`,
+    );
+  }
+}
+
 export default function CarioquinhaConfigPage() {
   const [status, setStatus] = useState<StatusInstancia>({ status: "offline" });
   const [loading, setLoading] = useState(true);
@@ -70,7 +85,7 @@ export default function CarioquinhaConfigPage() {
   const verificarStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/whatsapp/status", { cache: "no-store" });
-      const data = await response.json();
+      const data = await lerRespostaJson(response);
       setStatus(data);
     } catch {
       setStatus({ status: "offline" });
@@ -91,7 +106,7 @@ export default function CarioquinhaConfigPage() {
 
     try {
       const response = await fetch("/api/whatsapp/connect", { method: "POST" });
-      const data = await response.json();
+      const data = await lerRespostaJson(response);
 
       if (!response.ok || data.status === "error") {
         throw new Error(data.message || "Não foi possível conectar o WhatsApp.");
@@ -129,7 +144,7 @@ export default function CarioquinhaConfigPage() {
 
     try {
       const response = await fetch("/api/whatsapp/reconnect", { method: "POST" });
-      const data = await response.json();
+      const data = await lerRespostaJson(response);
 
       if (!response.ok || data.status === "error") {
         throw new Error(data.message || "Nao foi possivel recriar a sessao do WhatsApp.");
