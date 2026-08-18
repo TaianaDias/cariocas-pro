@@ -4,17 +4,44 @@ const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || process.env.NEXT_PUBL
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "cariocas-pro-evolution-key-2026";
 const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
 
-async function evolutionFetch(endpoint: string, options?: RequestInit): Promise<Response> {
-  const url = endpoint.startsWith("http") ? endpoint : `${EVOLUTION_API_URL}${endpoint}`;
+type EvolutionFetchOptions = RequestInit & {
+  timeoutMs?: number;
+};
 
-  return fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      apikey: EVOLUTION_API_KEY,
-      ...options?.headers,
-    },
-  });
+async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions = {}): Promise<Response> {
+  const url = endpoint.startsWith("http") ? endpoint : `${EVOLUTION_API_URL}${endpoint}`;
+  const { headers, timeoutMs = 12000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: EVOLUTION_API_KEY,
+        ...headers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return new Response(
+        JSON.stringify({
+          error: "timeout",
+          message: `Evolution API demorou mais de ${Math.round(timeoutMs / 1000)}s para responder`,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 504,
+        },
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function readEvolutionResponse(response: Response): Promise<any> {
@@ -101,6 +128,7 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
     for (const payload of payloads) {
       const response = await evolutionFetch(`/message/sendText/${INSTANCE_NAME}`, {
         method: "POST",
+        timeoutMs: 10000,
         body: JSON.stringify(payload),
       });
 
@@ -119,21 +147,24 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
   }
 }
 
-export async function criarInstancia(): Promise<{ success: boolean; qrcode?: string; error?: string }> {
+export async function criarInstancia(options: { verificarExistente?: boolean } = {}): Promise<{ success: boolean; qrcode?: string; error?: string }> {
   try {
-    const existente = await getStatusInstancia();
+    if (options.verificarExistente !== false) {
+      const existente = await getStatusInstancia();
 
-    if (existente?.status === "open") {
-      return { success: true };
-    }
+      if (existente?.status === "open") {
+        return { success: true };
+      }
 
-    if (existente) {
-      const qrcode = await getQrCode();
-      return { success: true, qrcode: qrcode || undefined };
+      if (existente) {
+        const qrcode = await getQrCode();
+        return { success: true, qrcode: qrcode || undefined };
+      }
     }
 
     const response = await evolutionFetch("/instance/create", {
       method: "POST",
+      timeoutMs: 15000,
       body: JSON.stringify({
         instanceName: INSTANCE_NAME,
         token: EVOLUTION_API_KEY,
@@ -180,7 +211,7 @@ export async function criarInstancia(): Promise<{ success: boolean; qrcode?: str
 
 export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["instance"] | null> {
   try {
-    const instancesResponse = await evolutionFetch("/instance/fetchInstances");
+    const instancesResponse = await evolutionFetch("/instance/fetchInstances", { timeoutMs: 8000 });
     const instancesData = await readEvolutionResponse(instancesResponse);
     const instances = Array.isArray(instancesData) ? instancesData : [];
     const found = instances.find((item: any) => item?.name === INSTANCE_NAME || item?.instanceName === INSTANCE_NAME);
@@ -189,7 +220,7 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
       return normalizeInstance(found);
     }
 
-    const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`);
+    const response = await evolutionFetch(`/instance/connectionState/${INSTANCE_NAME}`, { timeoutMs: 8000 });
     const data = await readEvolutionResponse(response);
     const instance = data?.instance || null;
 
@@ -207,7 +238,7 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
 
 export async function getQrCode(): Promise<string | null> {
   try {
-    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`, { method: "GET" });
+    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`, { method: "GET", timeoutMs: 10000 });
     const data = await readEvolutionResponse(response);
     const qrcode = extractQrCode(data);
 
@@ -222,7 +253,7 @@ export async function getQrCode(): Promise<string | null> {
 
 export async function logoutInstancia(): Promise<boolean> {
   try {
-    const response = await evolutionFetch(`/instance/logout/${INSTANCE_NAME}`, { method: "DELETE" });
+    const response = await evolutionFetch(`/instance/logout/${INSTANCE_NAME}`, { method: "DELETE", timeoutMs: 6000 });
     return response.ok;
   } catch {
     return false;
@@ -231,7 +262,7 @@ export async function logoutInstancia(): Promise<boolean> {
 
 export async function deletarInstancia(): Promise<boolean> {
   try {
-    const response = await evolutionFetch(`/instance/delete/${INSTANCE_NAME}`, { method: "DELETE" });
+    const response = await evolutionFetch(`/instance/delete/${INSTANCE_NAME}`, { method: "DELETE", timeoutMs: 6000 });
     return response.ok;
   } catch {
     return false;
@@ -243,7 +274,7 @@ export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: s
     await logoutInstancia();
     await deletarInstancia();
 
-    const criada = await criarInstancia();
+    const criada = await criarInstancia({ verificarExistente: false });
     if (!criada.success) return criada;
 
     const qrcode = criada.qrcode || (await getQrCode()) || undefined;
@@ -258,7 +289,7 @@ export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: s
 
 export async function verificarWebhook(): Promise<boolean> {
   try {
-    const response = await evolutionFetch(`/webhook/find/${INSTANCE_NAME}`);
+    const response = await evolutionFetch(`/webhook/find/${INSTANCE_NAME}`, { timeoutMs: 8000 });
     const data = await readEvolutionResponse(response);
     const url = data?.webhook?.url || data?.url;
     return Boolean(data?.enabled !== false && url?.includes("api/whatsapp/webhook"));
@@ -271,6 +302,7 @@ export async function configurarWebhook(url: string): Promise<boolean> {
   try {
     const response = await evolutionFetch(`/webhook/set/${INSTANCE_NAME}`, {
       method: "POST",
+      timeoutMs: 8000,
       body: JSON.stringify({
         webhook: {
           enabled: true,
