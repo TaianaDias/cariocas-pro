@@ -38,6 +38,19 @@ upsert_env "EVOLUTION_INSTANCE" "$INSTANCE"
 echo ".env salvo com backup em $BACKUP_DIR/.env.backup"
 echo
 
+echo "== Aplicando Docker Compose da Evolution =="
+if [ -f "$APP_DIR/docker/docker-compose.yml" ]; then
+  if docker compose version >/dev/null 2>&1; then
+    (cd "$APP_DIR/docker" && docker compose up -d)
+  elif command -v docker-compose >/dev/null 2>&1; then
+    (cd "$APP_DIR/docker" && docker-compose up -d)
+  else
+    echo "Docker Compose nao encontrado; seguindo com containers existentes."
+  fi
+  sleep 20
+fi
+echo
+
 echo "== Containers =="
 docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | sed -n '1,12p'
 echo
@@ -81,7 +94,6 @@ sleep 20
 echo
 
 echo "== Publicando app com ambiente corrigido =="
-git pull origin master
 npm run build
 pm2 restart cariocas-pro --update-env
 echo
