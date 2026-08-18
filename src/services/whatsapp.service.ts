@@ -1,6 +1,10 @@
 import type { EvolutionInstanceStatus } from "./whatsapp.types";
 
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || process.env.NEXT_PUBLIC_EVOLUTION_API_URL || "http://localhost:8080";
+const EVOLUTION_API_URL =
+  process.env.EVOLUTION_INTERNAL_API_URL ||
+  process.env.EVOLUTION_API_URL ||
+  process.env.NEXT_PUBLIC_EVOLUTION_API_URL ||
+  "http://localhost:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "cariocas-pro-evolution-key-2026";
 const INSTANCE_NAME = process.env.EVOLUTION_INSTANCE || process.env.EVOLUTION_INSTANCE_NAME || "cariocas-pro";
 
@@ -238,11 +242,18 @@ export async function getStatusInstancia(): Promise<EvolutionInstanceStatus["ins
 
 export async function getQrCode(): Promise<string | null> {
   try {
-    const response = await evolutionFetch(`/instance/connect/${INSTANCE_NAME}`, { method: "GET", timeoutMs: 10000 });
-    const data = await readEvolutionResponse(response);
-    const qrcode = extractQrCode(data);
+    const endpoints = [
+      `/instance/connect/${INSTANCE_NAME}`,
+      `/instance/qrcode/${INSTANCE_NAME}?base64=true`,
+    ];
 
-    if (qrcode) return qrcode;
+    for (const endpoint of endpoints) {
+      const response = await evolutionFetch(endpoint, { method: "GET", timeoutMs: 7000 });
+      const data = await readEvolutionResponse(response);
+      const qrcode = extractQrCode(data);
+
+      if (qrcode) return qrcode;
+    }
 
     const instancia = await getStatusInstancia();
     return instancia?.qrcode || null;
@@ -271,7 +282,8 @@ export async function deletarInstancia(): Promise<boolean> {
 
 export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: string; error?: string }> {
   try {
-    await logoutInstancia();
+    // Em sessoes Baileys quebradas, logout pode travar em keep alive/pre-key.
+    // Delete força a limpeza da instancia e evita a rota HTTP expirar no Nginx.
     await deletarInstancia();
 
     const criada = await criarInstancia({ verificarExistente: false });
@@ -309,6 +321,8 @@ export async function configurarWebhook(url: string): Promise<boolean> {
           url,
           webhookByEvents: false,
           webhookBase64: false,
+          webhook_by_events: false,
+          webhook_base64: false,
           events: ["MESSAGES_UPSERT"],
         },
       }),

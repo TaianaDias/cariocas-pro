@@ -25,8 +25,9 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
+      SERVER_URL: http://143.95.212.87:8080
       AUTHENTICATION_TYPE: apikey
       AUTHENTICATION_API_KEY: cariocas-pro-evolution-key-2026
 
@@ -39,9 +40,13 @@ services:
       DATABASE_SAVE_DATA_CONTACTS: "true"
       DATABASE_SAVE_DATA_CHATS: "true"
 
+      WEBHOOK_GLOBAL_ENABLED: "true"
       WEBHOOK_GLOBAL_URL: http://host.docker.internal:3000/api/whatsapp/webhook
-      WEBHOOK_GLOBAL_EVENTS: messages.upsert
-      WEBHOOK_EVENTS: messages.upsert
+      WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS: "false"
+      WEBHOOK_GLOBAL_WEBHOOK_BASE64: "false"
+      WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
+      WEBHOOK_EVENTS_CONNECTION_UPDATE: "true"
+      WEBHOOK_EVENTS_QRCODE_UPDATED: "true"
 
       DEL_INSTANCE: "false"
       QRCODE_LIMIT: 60
