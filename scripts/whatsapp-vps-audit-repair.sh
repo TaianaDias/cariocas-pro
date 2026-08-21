@@ -41,9 +41,22 @@ echo
 echo "== Aplicando Docker Compose da Evolution =="
 if [ -f "$APP_DIR/docker/docker-compose.yml" ]; then
   if docker compose version >/dev/null 2>&1; then
-    (cd "$APP_DIR/docker" && docker compose up -d)
+    (cd "$APP_DIR/docker" && docker compose up -d) || {
+      echo "Docker Compose plugin falhou; recriando somente evolution-api."
+      docker rm -f evolution-api || true
+      (cd "$APP_DIR/docker" && docker compose up -d evolution-api)
+    }
   elif command -v docker-compose >/dev/null 2>&1; then
-    (cd "$APP_DIR/docker" && docker-compose up -d)
+    (cd "$APP_DIR/docker" && docker-compose up -d) || {
+      echo "docker-compose legado falhou; isso costuma ocorrer por KeyError ContainerConfig."
+      echo "Recriando somente o container evolution-api sem apagar dados do Postgres."
+      docker rm -f evolution-api || true
+      LEGACY_CONTAINER="$(docker ps -aq --filter name=evolution-api | head -n 1)"
+      if [ -n "${LEGACY_CONTAINER:-}" ]; then
+        docker rm -f "$LEGACY_CONTAINER" || true
+      fi
+      (cd "$APP_DIR/docker" && docker-compose up -d evolution-api)
+    }
   else
     echo "Docker Compose nao encontrado; seguindo com containers existentes."
   fi
