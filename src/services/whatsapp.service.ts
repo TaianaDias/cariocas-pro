@@ -170,7 +170,9 @@ export async function criarInstancia(options: { verificarExistente?: boolean } =
         return { success: true };
       }
 
-      if (existente) {
+      if (existente?.status === "close") {
+        await deletarInstancia();
+      } else if (existente) {
         const qrcode = await getQrCode();
         return { success: true, qrcode: qrcode || undefined };
       }

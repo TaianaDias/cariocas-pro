@@ -27,6 +27,29 @@ upsert_env() {
   fi
 }
 
+wait_for_http() {
+  local label="$1"
+  local url="$2"
+  local max_attempts="${3:-30}"
+  local delay_seconds="${4:-2}"
+
+  echo "Aguardando $label responder em $url ..."
+
+  for attempt in $(seq 1 "$max_attempts"); do
+    if curl -fsS --max-time 5 "$url" >/tmp/cariocas-wait-response.txt 2>/tmp/cariocas-wait-error.txt; then
+      echo "$label respondeu na tentativa $attempt."
+      return 0
+    fi
+
+    sleep "$delay_seconds"
+  done
+
+  echo "AVISO: $label nao respondeu dentro do tempo esperado."
+  echo "Ultimo erro:"
+  cat /tmp/cariocas-wait-error.txt || true
+  return 1
+}
+
 mkdir -p "$BACKUP_DIR"
 cp .env "$BACKUP_DIR/.env.backup"
 
@@ -103,12 +126,13 @@ echo
 
 echo "== Reiniciando Evolution =="
 docker restart evolution-api
-sleep 20
+wait_for_http "Evolution API" "$EVOLUTION_LOCAL_URL/instance/fetchInstances" 30 2 || true
 echo
 
 echo "== Publicando app com ambiente corrigido =="
 npm run build
 pm2 restart cariocas-pro --update-env
+wait_for_http "App Next.js" "http://127.0.0.1:3000/api/health" 45 2 || true
 echo
 
 echo "== Status final do app =="
