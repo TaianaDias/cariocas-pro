@@ -12,6 +12,12 @@ type EvolutionFetchOptions = RequestInit & {
   timeoutMs?: number;
 };
 
+type EnvioWhatsAppResultado = {
+  error?: string;
+  status?: number;
+  success: boolean;
+};
+
 async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions = {}): Promise<Response> {
   const url = endpoint.startsWith("http") ? endpoint : `${EVOLUTION_API_URL}${endpoint}`;
   const { headers, timeoutMs = 12000, ...fetchOptions } = options;
@@ -24,6 +30,7 @@ async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions =
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
+        apiKey: EVOLUTION_API_KEY,
         apikey: EVOLUTION_API_KEY,
         ...headers,
       },
@@ -114,9 +121,24 @@ function normalizeInstance(found: any): EvolutionInstanceStatus["instance"] {
 }
 
 export async function enviarWhatsApp(numero: string, texto: string): Promise<boolean> {
+  const resultado = await enviarWhatsAppDetalhado(numero, texto);
+  return resultado.success;
+}
+
+export async function enviarWhatsAppDetalhado(numero: string, texto: string): Promise<EnvioWhatsAppResultado> {
   try {
     const numeroLimpo = normalizePhone(numero);
     const payloads = [
+      {
+        number: numeroLimpo,
+        text: texto,
+      },
+      {
+        delay: 1200,
+        linkPreview: false,
+        number: numeroLimpo,
+        text: texto,
+      },
       {
         number: numeroLimpo,
         text: texto,
@@ -138,8 +160,10 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
         },
       },
     ];
+    let lastError = "Falha ao enviar";
+    let lastStatus = 0;
 
-    for (const payload of payloads) {
+    for (const [index, payload] of payloads.entries()) {
       const response = await evolutionFetch(`/message/sendText/${INSTANCE_NAME}`, {
         method: "POST",
         timeoutMs: 10000,
@@ -147,17 +171,19 @@ export async function enviarWhatsApp(numero: string, texto: string): Promise<boo
       });
 
       if (response.ok) {
-        return true;
+        return { status: response.status, success: true };
       }
 
       const erro = await response.text();
-      console.error("Evolution API send error:", erro);
+      lastError = erro;
+      lastStatus = response.status;
+      console.error(`Evolution API send error payload ${index + 1}:`, erro);
     }
 
-    return false;
+    return { error: lastError, status: lastStatus, success: false };
   } catch (error) {
     console.error("Erro ao enviar WhatsApp:", error);
-    return false;
+    return { error: error instanceof Error ? error.message : "Erro ao enviar WhatsApp", success: false };
   }
 }
 
@@ -312,22 +338,30 @@ export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: s
 }
 
 export async function verificarWebhook(): Promise<boolean> {
+  const webhook = await getWebhookInfo();
+  return webhook.ativo;
+}
+
+export async function getWebhookInfo(): Promise<{ ativo: boolean; error?: string; status?: number; url: string | null }> {
   try {
     const response = await evolutionFetch(`/webhook/find/${INSTANCE_NAME}`, { timeoutMs: 8000 });
     const data = await readEvolutionResponse(response);
     const url = data?.webhook?.url || data?.url;
-    return Boolean(data?.enabled !== false && url?.includes("api/whatsapp/webhook"));
+    return {
+      ativo: Boolean(response.ok && data?.enabled !== false && url?.includes("api/whatsapp/webhook")),
+      error: response.ok ? undefined : extractEvolutionError(data, `Evolution API retornou ${response.status}`),
+      status: response.status,
+      url: url || null,
+    };
   } catch {
-    return false;
+    return { ativo: false, error: "Nao foi possivel verificar webhook", url: null };
   }
 }
 
 export async function configurarWebhook(url: string): Promise<boolean> {
   try {
-    const response = await evolutionFetch(`/webhook/set/${INSTANCE_NAME}`, {
-      method: "POST",
-      timeoutMs: 8000,
-      body: JSON.stringify({
+    const payloads = [
+      {
         webhook: {
           enabled: true,
           url,
@@ -337,10 +371,29 @@ export async function configurarWebhook(url: string): Promise<boolean> {
           webhook_base64: false,
           events: ["MESSAGES_UPSERT"],
         },
-      }),
-    });
+      },
+      {
+        enabled: true,
+        url,
+        webhookByEvents: false,
+        webhookBase64: false,
+        webhook_by_events: false,
+        webhook_base64: false,
+        events: ["MESSAGES_UPSERT"],
+      },
+    ];
 
-    return response.ok;
+    for (const payload of payloads) {
+      const response = await evolutionFetch(`/webhook/set/${INSTANCE_NAME}`, {
+        method: "POST",
+        timeoutMs: 8000,
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -357,6 +410,7 @@ export async function diagnosticarWhatsApp() {
     owner: null as string | null,
     profileName: null as string | null,
     webhookAtivo: false,
+    webhookUrl: null as string | null,
     erro: null as string | null,
     duracaoMs: 0,
   };
@@ -384,7 +438,9 @@ export async function diagnosticarWhatsApp() {
       resultado.profileName = normalized.profileName || null;
     }
 
-    resultado.webhookAtivo = await verificarWebhook();
+    const webhook = await getWebhookInfo();
+    resultado.webhookAtivo = webhook.ativo;
+    resultado.webhookUrl = webhook.url;
 
     return { ...resultado, duracaoMs: Date.now() - startedAt };
   } catch (error) {
