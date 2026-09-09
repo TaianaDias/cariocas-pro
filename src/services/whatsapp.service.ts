@@ -30,7 +30,6 @@ async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions =
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        apiKey: EVOLUTION_API_KEY,
         apikey: EVOLUTION_API_KEY,
         ...headers,
       },

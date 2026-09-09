@@ -18,7 +18,7 @@ services:
       retries: 5
 
   evolution-api:
-    image: evoapicloud/evolution-api:v2.3.7
+    image: evoapicloud/evolution-api:2.4.0-rc2
     container_name: evolution-api
     restart: always
     depends_on:
@@ -33,6 +33,7 @@ services:
 
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_exchange
       DATABASE_CONNECTION_URI: postgresql://evolution:evolution@postgres:5432/evolution?schema=public
       DATABASE_SAVE_DATA_INSTANCE: "true"
       DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
@@ -40,7 +41,7 @@ services:
       DATABASE_SAVE_DATA_CONTACTS: "true"
       DATABASE_SAVE_DATA_CHATS: "true"
 
-      WEBHOOK_GLOBAL_ENABLED: "true"
+      WEBHOOK_GLOBAL_ENABLED: "false"
       WEBHOOK_GLOBAL_URL: http://143.95.212.87/api/whatsapp/webhook
       WEBHOOK_GLOBAL_WEBHOOK_BY_EVENTS: "false"
       WEBHOOK_GLOBAL_WEBHOOK_BASE64: "false"
@@ -50,8 +51,12 @@ services:
 
       DEL_INSTANCE: "false"
       QRCODE_LIMIT: 60
+      CONFIG_BAILEYS_VERSION: "2.3000.1047113681"
+      CACHE_REDIS_ENABLED: "false"
+      CACHE_LOCAL_ENABLED: "true"
 
-      LOG_LEVEL: info
+      LOG_LEVEL: "ERROR,WARN,DEBUG,INFO,LOG,VERBOSE"
+      LOG_BAILEYS: debug
       LOG_SAVE: "true"
 
       REDIS_ENABLED: "false"
