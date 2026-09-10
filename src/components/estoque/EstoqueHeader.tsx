@@ -34,7 +34,7 @@ export function EstoqueHeader({
   return (
     <PageHeader
       eyebrow="Estoque"
-      title="Cadastro de insumos"
+      title={administrative ? "Cadastro de insumos" : "Estoque de insumos"}
       description={
         administrative
           ? "Cadastre, localize e movimente os insumos da operação em uma única tela."
