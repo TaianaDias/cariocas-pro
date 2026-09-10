@@ -53,7 +53,7 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
 
               <div className="produto-card__identity">
                 <strong>{insumo.nome}</strong>
-                <small>{insumo.sku || "Sem SKU"} - {insumo.marca || "Sem marca"}</small>
+                <small>{insumo.sku || "Sem SKU"} · {insumo.marca || "Sem marca"}</small>
                 <div className="produto-card__badges">
                   <StatusBadge status={getStatus(insumo)} />
                   {insumo.statusProduto === "parado" ? <StatusBadge status="parado" /> : null}
@@ -64,17 +64,17 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
               <div className="produto-card__mobile-menu">
                 <button
                   type="button"
-                  aria-label={`Abrir acoes de ${insumo.nome}`}
+                  aria-label={`Abrir ações de ${insumo.nome}`}
                   aria-expanded={actionMenuOpen}
                   onClick={() => setActionMenuId(actionMenuOpen ? null : id)}
                 >
-                  ...
+                  •••
                 </button>
                 {actionMenuOpen ? (
                   <div className="produto-card__mobile-actions">
                     <button type="button" onClick={() => { closeActionMenu(); id && onEditar(id); }}>Editar</button>
                     <button type="button" onClick={() => { closeActionMenu(); id && onEntrada(id); }}>Entrada</button>
-                    <button type="button" onClick={() => { closeActionMenu(); id && onSaida(id); }}>Saida</button>
+                    <button type="button" onClick={() => { closeActionMenu(); id && onSaida(id); }}>Saída</button>
                     <button type="button" onClick={() => { closeActionMenu(); toggleExpanded(id); }}>{expandedId === id ? "Menos detalhes" : "Mais detalhes"}</button>
                     <button className="is-danger" type="button" onClick={() => { closeActionMenu(); id && onExcluir(id, insumo.nome); }}>Excluir</button>
                   </div>
@@ -87,16 +87,16 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
             </div>
 
             <div className="produto-card__metrics">
-              <span>Estoque: {insumo.quantidadeAtual} {insumo.unidadeMedida}</span>
-              <span>Minimo: {insumo.estoqueMinimo}</span>
-              <span>Custo: R$ {(insumo.custoCompra || 0).toFixed(2)}</span>
-              <span>Forn.: {insumo.fornecedores?.length || 0}</span>
+              <span><small>Estoque</small><strong>{insumo.quantidadeAtual} {insumo.unidadeMedida}</strong></span>
+              <span><small>Mínimo</small><strong>{insumo.estoqueMinimo}</strong></span>
+              <span><small>Custo</small><strong>R$ {(insumo.custoCompra || 0).toFixed(2)}</strong></span>
+              <span><small>Fornecedores</small><strong>{insumo.fornecedores?.length || 0}</strong></span>
             </div>
 
             <div className="produto-card__desktop-actions">
               <CardAction label="Editar" onClick={() => id && onEditar(id)} />
               <CardAction label="Entrada" onClick={() => id && onEntrada(id)} />
-              <CardAction label="Saida" onClick={() => id && onSaida(id)} />
+              <CardAction label="Saída" onClick={() => id && onSaida(id)} />
               <CardAction danger label="Excluir" onClick={() => id && onExcluir(id, insumo.nome)} />
               <CardAction label={expandedId === id ? "Menos" : "Mais"} onClick={() => toggleExpanded(id)} />
             </div>
@@ -111,7 +111,7 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
 
 function CardAction({ danger = false, label, onClick }: { danger?: boolean; label: string; onClick: () => void }) {
   return (
-    <button className={`action-btn ${danger ? "action-btn--danger" : ""}`.trim()} onClick={onClick}>
+    <button className={`action-btn ${danger ? "action-btn--danger" : ""}`.trim()} onClick={onClick} type="button">
       {label}
     </button>
   );
