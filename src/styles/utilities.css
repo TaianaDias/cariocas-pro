@@ -15,30 +15,31 @@
 }
 
 .glass-panel {
-  border: var(--border-subtle);
+  border: 1px solid var(--border-ui);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
-  box-shadow: var(--shadow-soft);
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  box-shadow: var(--shadow-ui);
+  backdrop-filter: blur(14px);
 }
 
 .text-muted {
-  color: var(--text-muted);
+  color: var(--text-tertiary);
 }
 
 .text-soft {
-  color: var(--text-soft);
+  color: var(--text-secondary);
 }
 
 .text-crimson {
-  color: var(--crimson);
+  color: var(--danger-ui);
 }
 
 .text-success {
-  color: var(--success);
+  color: var(--success-ui);
 }
 
 .text-warning {
-  color: var(--warning);
+  color: var(--warning-ui);
 }
 
 .stack-sm {
@@ -59,13 +60,13 @@
 .cluster {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
   align-items: center;
+  gap: var(--space-3);
 }
 
 .spread {
   display: flex;
-  gap: var(--space-4);
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-4);
 }
