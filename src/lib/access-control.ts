@@ -3,29 +3,37 @@ import type { PapelUsuario, PermissaoFuncionario } from "../types";
 
 export const employeePermissionOptions: { label: string; permission: PermissaoFuncionario; path: string; risk?: string }[] = [
   { label: "Dashboard", path: "/dashboard", permission: "dashboard.ver" },
-  { label: "Estoque", path: "/estoque", permission: "estoque.ver" },
-  { label: "Compras", path: "/compras", permission: "compras.ver" },
+  { label: "Estoque e Reposicao", path: "/estoque", permission: "estoque.ver" },
+  { label: "Compras / Movimentacoes", path: "/compras", permission: "compras.ver" },
   { label: "Producao", path: "/producao", permission: "producao.ver" },
   { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver" },
-  { label: "Fornecedores", path: "/fornecedores", permission: "fornecedores.ver" },
-  { label: "Funcionarios", path: "/funcionarios", permission: "funcionarios.gerenciar", risk: "Gerencia equipe e acessos" },
-  { label: "Financeiro", path: "/financeiro", permission: "financeiro.ver", risk: "Dados sensiveis" },
-  { label: "Precificacao", path: "/precificacao", permission: "precificacao.ver", risk: "Custos e margens" },
   { label: "Relatorios", path: "/relatorios", permission: "relatorios.ver" },
-  { label: "Configuracoes", path: "/configuracoes", permission: "configuracoes.ver" },
-  { label: "IA Carioquinha", path: "/configuracoes/carioquinha", permission: "ia.ver" },
-  { label: "WhatsApp", path: "/configuracoes/whatsapp", permission: "whatsapp.ver" },
 ];
 
-const unrestrictedRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
-const restrictedRoles: PapelUsuario[] = ["gerente", "funcionario"];
+const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
+const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
+const administrativePaths = ["/precificacao", "/financeiro", "/fornecedores", "/funcionarios", "/configuracoes"];
 
 export function normalizeRole(role?: string | null): PapelUsuario {
   if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
     return role;
   }
 
+  // Mantemos "user" como administrativo por compatibilidade com contas antigas.
+  // A migracao de papeis pode remover este fallback em uma etapa separada.
   return "user";
+}
+
+export function isAdministrativeRole(role?: PapelUsuario | string | null) {
+  return administrativeRoles.includes(normalizeRole(role));
+}
+
+export function isOperationalRole(role?: PapelUsuario | string | null) {
+  return operationalRoles.includes(normalizeRole(role));
+}
+
+export function isAdministrativePath(pathname: string) {
+  return administrativePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 export function parsePermissions(value?: string | null): PermissaoFuncionario[] {
@@ -41,6 +49,10 @@ export function serializePermissions(permissions?: readonly string[]) {
 }
 
 export function getPermissionForPath(pathname: string): PermissaoFuncionario | null {
+  if (pathname === "/reposicao" || pathname.startsWith("/reposicao/")) {
+    return "estoque.ver";
+  }
+
   const match = employeePermissionOptions
     .filter((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
     .sort((a, b) => b.path.length - a.path.length)[0];
@@ -62,11 +74,17 @@ export function canAccessAppPath({
   if (!canOpenPath(plan, path)) return false;
 
   const normalizedRole = normalizeRole(role);
-  if (unrestrictedRoles.includes(normalizedRole)) return true;
-  if (!restrictedRoles.includes(normalizedRole)) return false;
+  if (isAdministrativeRole(normalizedRole)) return true;
+  if (!isOperationalRole(normalizedRole)) return false;
+
+  // Areas administrativas nunca sao liberadas por uma permissao operacional antiga.
+  if (isAdministrativePath(path)) return false;
 
   const requiredPermission = getPermissionForPath(path);
-  if (!requiredPermission) return true;
+
+  // Para perfis operacionais adotamos deny-by-default: rota nova precisa ser
+  // explicitamente classificada antes de aparecer para a equipe.
+  if (!requiredPermission) return false;
 
   return (permissions || []).includes("*") || (permissions || []).includes(requiredPermission);
 }
