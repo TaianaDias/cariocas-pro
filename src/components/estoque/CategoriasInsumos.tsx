@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { TextInput } from "../ui/TextInput";
 
 type CategoriasInsumosProps = {
+  allowManagement?: boolean;
   categoriaAtiva: string;
   categorias: Categoria[];
   onCriarCategoria: (nome: string, cor: string, icone: string) => Promise<void>;
@@ -17,14 +18,21 @@ type CategoriasInsumosProps = {
 
 const CORES = ["#DC2626", "#D97706", "#F59E0B", "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899", "#06B6D4", "#6B7280", "#F97316"];
 
-export function CategoriasInsumos({ categoriaAtiva, categorias, onCriarCategoria, onOcultarCategoria, onSelect }: CategoriasInsumosProps) {
+export function CategoriasInsumos({
+  allowManagement = false,
+  categoriaAtiva,
+  categorias,
+  onCriarCategoria,
+  onOcultarCategoria,
+  onSelect,
+}: CategoriasInsumosProps) {
   const [modalAberto, setModalAberto] = useState(false);
   const [nome, setNome] = useState("");
   const [cor, setCor] = useState(CORES[0]);
   const [salvando, setSalvando] = useState(false);
 
   async function handleCriar() {
-    if (!nome.trim()) return;
+    if (!allowManagement || !nome.trim()) return;
     setSalvando(true);
     await onCriarCategoria(nome.trim(), cor, nome.trim().charAt(0).toUpperCase());
     setNome("");
@@ -39,7 +47,7 @@ export function CategoriasInsumos({ categoriaAtiva, categorias, onCriarCategoria
           <span className="estoque-section-eyebrow">Organização</span>
           <strong>Insumos por categoria</strong>
         </div>
-        <Button variant="ghost" onClick={() => setModalAberto(true)}>Nova categoria</Button>
+        {allowManagement ? <Button variant="ghost" onClick={() => setModalAberto(true)}>Nova categoria</Button> : null}
       </div>
 
       <div className="categorias-scroll" aria-label="Categorias de insumos">
@@ -60,7 +68,7 @@ export function CategoriasInsumos({ categoriaAtiva, categorias, onCriarCategoria
                 <span className="categoria-pill__dot" aria-hidden="true" />
                 <span>{categoria.icone} {categoria.nome}</span>
               </button>
-              {categoria.id ? (
+              {allowManagement && categoria.id ? (
                 <button className="categoria-remove-btn" onClick={() => onOcultarCategoria(categoria.id!)} title="Ocultar categoria" type="button" aria-label={`Ocultar categoria ${categoria.nome}`}>
                   ×
                 </button>
@@ -70,7 +78,7 @@ export function CategoriasInsumos({ categoriaAtiva, categorias, onCriarCategoria
         })}
       </div>
 
-      {modalAberto ? (
+      {allowManagement && modalAberto ? (
         <div className="estoque-mini-modal" role="dialog" aria-modal="true" aria-label="Nova categoria">
           <div className="estoque-mini-modal__content">
             <div>
