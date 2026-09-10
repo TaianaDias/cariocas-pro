@@ -1,8 +1,9 @@
 "use client";
 
-import { getDashboardSections, isAdministrativeRole } from "../../config/navigation";
+import { getDashboardSections } from "../../config/navigation";
 import { useAuth } from "../../hooks/useAuth";
 import { useDashboardData } from "../../hooks/useDashboardData";
+import { isAdministrativeRole } from "../../lib/access-control";
 import { ModuleSection } from "./ModuleSection";
 import { OperationalSummary } from "./OperationalSummary";
 
