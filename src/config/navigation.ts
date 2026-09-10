@@ -1,3 +1,5 @@
+import { isAdministrativeRole } from "../lib/access-control";
+
 export type NavigationIcon =
   | "dashboard"
   | "estoque"
@@ -41,13 +43,6 @@ export type NavigationSection = {
   adminOnly?: boolean;
   items: NavigationItem[];
 };
-
-const administrationRoles = new Set(["admin", "dono", "proprietario", "user"]);
-
-export function isAdministrativeRole(role?: string | null) {
-  if (!role) return false;
-  return administrationRoles.has(role);
-}
 
 export const navigationSections: NavigationSection[] = [
   {
