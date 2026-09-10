@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "../ui/Button";
+import { PageHeader } from "../ui/PageHeader";
+import { SegmentedControl } from "../ui/SegmentedControl";
 import { TextInput } from "../ui/TextInput";
 
 type EstoqueHeaderProps = {
@@ -13,6 +15,11 @@ type EstoqueHeaderProps = {
   onNovoInsumo: () => void;
 };
 
+const viewOptions = [
+  { label: "Cards", value: "cards" as const },
+  { label: "Tabela", value: "tabela" as const },
+];
+
 export function EstoqueHeader({
   busca,
   modoVisualizacao,
@@ -23,31 +30,31 @@ export function EstoqueHeader({
   onNovoInsumo,
 }: EstoqueHeaderProps) {
   return (
-    <header className="estoque-module-header">
-      <div className="estoque-module-header__top">
-        <h1>Cadastro de Insumos</h1>
-        <div className="estoque-module-header__actions">
-          <ToggleViewButton modo={modoVisualizacao} onChange={onModoChange} />
-          <Button variant="ghost" onClick={onEntradaRapida}>Entrada Rapida</Button>
+    <PageHeader
+      eyebrow="Estoque"
+      title="Cadastro de insumos"
+      description="Cadastre, localize e movimente os insumos da operação em uma única tela."
+      actions={
+        <>
+          <SegmentedControl
+            ariaLabel="Modo de visualização do estoque"
+            onChange={onModoChange}
+            options={viewOptions}
+            value={modoVisualizacao}
+          />
+          <Button variant="ghost" onClick={onEntradaRapida}>Entrada rápida</Button>
           <Button variant="secondary" onClick={onImportarXml}>Importar NF-e</Button>
-          <Button variant="primary" onClick={onNovoInsumo}>Novo Insumo</Button>
-        </div>
-      </div>
+          <Button variant="primary" onClick={onNovoInsumo}>Novo insumo</Button>
+        </>
+      }
+    >
       <TextInput
-        placeholder="Buscar por nome, SKU, marca ou codigo de barras..."
+        className="estoque-search-field"
+        aria-label="Buscar insumos"
+        placeholder="Buscar por nome, SKU, marca ou código de barras..."
         value={busca}
         onChange={(event) => onBuscaChange(event.target.value)}
-        style={{ maxWidth: 520 }}
       />
-    </header>
-  );
-}
-
-function ToggleViewButton({ modo, onChange }: { modo: "cards" | "tabela"; onChange: (modo: "cards" | "tabela") => void }) {
-  return (
-    <div className="estoque-toggle-view">
-      <button className={modo === "cards" ? "active" : ""} onClick={() => onChange("cards")} type="button">Cards</button>
-      <button className={modo === "tabela" ? "active" : ""} onClick={() => onChange("tabela")} type="button">Tabela</button>
-    </div>
+    </PageHeader>
   );
 }
