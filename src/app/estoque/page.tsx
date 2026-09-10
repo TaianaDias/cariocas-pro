@@ -14,14 +14,19 @@ import { ProdutoDrawer } from "../../components/estoque/ProdutoDrawer";
 import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Skeleton } from "../../components/ui/Skeleton";
+import { useAuth } from "../../hooks/useAuth";
 import { useCategoriasInsumos } from "../../hooks/useCategoriasInsumos";
 import { useEstoque } from "../../hooks/useEstoque";
+import { isAdministrativeRole } from "../../lib/access-control";
 
 export default function EstoquePage() {
+  const { user, userProfile } = useAuth();
   const { criarInsumoComEntrada, deletarInsumo, error, insumos, kpis, loading, refetch, registrarMovimento } = useEstoque();
   const { categoriasList, criarCategoria, ocultarCategoria } = useCategoriasInsumos();
   const searchParams = useSearchParams();
   const filtroAtencao = searchParams.get("atencao");
+  const administrative = isAdministrativeRole(userProfile?.role || "user");
+  const responsavel = user?.uid || "sistema";
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
   const [modoVisualizacao, setModoVisualizacao] = useState<"cards" | "tabela">("cards");
@@ -62,28 +67,31 @@ export default function EstoquePage() {
   const filtroAtencaoLabel = filtroAtencao === "criticos" ? "Itens críticos" : filtroAtencao === "reposicao" ? "Reposição pendente" : "";
 
   const handleNovoInsumo = useCallback(() => {
+    if (!administrative) return;
     setProdutoEditandoId(null);
     setDrawerAberto(true);
-  }, []);
+  }, [administrative]);
 
   const handleEditarInsumo = useCallback((id: string) => {
+    if (!administrative) return;
     setProdutoEditandoId(id);
     setDrawerAberto(true);
-  }, []);
+  }, [administrative]);
 
   const handleExcluirInsumo = useCallback(
     async (id: string, nome: string) => {
+      if (!administrative) return;
       const confirmou = window.confirm(`Excluir "${nome}" do estoque? Esta ação não pode ser desfeita.`);
       if (!confirmou) return;
 
-      await deletarInsumo(id, nome, "admin");
+      await deletarInsumo(id, nome, responsavel);
       if (produtoEditandoId === id) {
         setProdutoEditandoId(null);
         setDrawerAberto(false);
       }
       refetch();
     },
-    [deletarInsumo, produtoEditandoId, refetch],
+    [administrative, deletarInsumo, produtoEditandoId, refetch, responsavel],
   );
 
   const handleFecharDrawer = useCallback(() => {
@@ -109,12 +117,12 @@ export default function EstoquePage() {
     }) => {
       await registrarMovimento({
         ...dados,
-        responsavel: "admin",
+        responsavel,
       });
       setMostrarEntradaRapida(false);
       refetch();
     },
-    [refetch, registrarMovimento],
+    [refetch, registrarMovimento, responsavel],
   );
 
   const handleCriarEntradaRapida = useCallback(
@@ -127,14 +135,15 @@ export default function EstoquePage() {
       quantidade: number;
       unidade: string;
     }) => {
+      if (!administrative) return;
       await criarInsumoComEntrada({
         ...dados,
-        responsavel: "admin",
+        responsavel,
       });
       setMostrarEntradaRapida(false);
       refetch();
     },
-    [criarInsumoComEntrada, refetch],
+    [administrative, criarInsumoComEntrada, refetch, responsavel],
   );
 
   if (error) {
@@ -150,18 +159,20 @@ export default function EstoquePage() {
   return (
     <div className="estoque-module-page">
       <EstoqueHeader
+        administrative={administrative}
         busca={busca}
         modoVisualizacao={modoVisualizacao}
         onBuscaChange={setBusca}
         onEntradaRapida={() => setMostrarEntradaRapida(true)}
-        onImportarXml={() => setMostrarImportarXml(true)}
+        onImportarXml={() => administrative && setMostrarImportarXml(true)}
         onModoChange={setModoVisualizacao}
         onNovoInsumo={handleNovoInsumo}
       />
 
-      <EstoqueKpis kpis={kpis} loading={loading} />
+      <EstoqueKpis administrative={administrative} kpis={kpis} loading={loading} />
 
       <CategoriasInsumos
+        allowManagement={administrative}
         categorias={categoriasList}
         categoriaAtiva={categoriaAtiva}
         onCriarCategoria={criarCategoria}
@@ -179,14 +190,15 @@ export default function EstoquePage() {
 
       {mostrarEntradaRapida ? (
         <EntradaRapida
-          onCriarEntrada={handleCriarEntradaRapida}
+          administrative={administrative}
+          onCriarEntrada={administrative ? handleCriarEntradaRapida : undefined}
           onRegistrar={handleRegistrarEntrada}
           onFechar={() => setMostrarEntradaRapida(false)}
           focusBarcode
         />
       ) : null}
 
-      {mostrarImportarXml ? (
+      {administrative && mostrarImportarXml ? (
         <ImportarXml
           onFechar={() => setMostrarImportarXml(false)}
           onFinalizar={() => {
@@ -201,28 +213,30 @@ export default function EstoquePage() {
       ) : insumosFiltrados.length === 0 ? (
         <EmptyState
           title="Nenhum insumo encontrado"
-          description={busca ? "Tente alterar os filtros ou buscar por outro termo." : "Cadastre seu primeiro insumo para começar."}
-          action={busca ? undefined : <Button onClick={handleNovoInsumo}>Novo insumo</Button>}
+          description={busca ? "Tente alterar os filtros ou buscar por outro termo." : "Nenhum insumo está disponível para esta seleção."}
+          action={!busca && administrative ? <Button onClick={handleNovoInsumo}>Novo insumo</Button> : undefined}
         />
       ) : modoVisualizacao === "cards" ? (
         <ListaProdutosCards
+          administrative={administrative}
           insumos={insumosFiltrados}
           onEditar={handleEditarInsumo}
           onExcluir={handleExcluirInsumo}
-          onEntrada={(id) => {
-            setProdutoEditandoId(id);
-            setMostrarEntradaRapida(true);
-          }}
-          onSaida={(id) => {
-            setProdutoEditandoId(id);
-            setMostrarEntradaRapida(true);
-          }}
+          onEntrada={() => setMostrarEntradaRapida(true)}
+          onSaida={() => setMostrarEntradaRapida(true)}
         />
       ) : (
-        <ListaProdutosTabela insumos={insumosFiltrados} onEditar={handleEditarInsumo} onExcluir={handleExcluirInsumo} />
+        <ListaProdutosTabela
+          administrative={administrative}
+          insumos={insumosFiltrados}
+          onEditar={handleEditarInsumo}
+          onExcluir={handleExcluirInsumo}
+        />
       )}
 
-      <ProdutoDrawer aberto={drawerAberto} produtoId={produtoEditandoId} onFechar={handleFecharDrawer} onSalvo={handleSalvo} />
+      {administrative ? (
+        <ProdutoDrawer aberto={drawerAberto} produtoId={produtoEditandoId} onFechar={handleFecharDrawer} onSalvo={handleSalvo} />
+      ) : null}
     </div>
   );
 }
