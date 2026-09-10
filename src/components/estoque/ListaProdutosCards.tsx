@@ -91,7 +91,7 @@ export function ListaProdutosCards({ administrative, insumos, onEditar, onEntrad
               <span><small>Estoque</small><strong>{insumo.quantidadeAtual} {insumo.unidadeMedida}</strong></span>
               <span><small>Mínimo</small><strong>{insumo.estoqueMinimo}</strong></span>
               {administrative ? <span><small>Custo</small><strong>R$ {(insumo.custoCompra || 0).toFixed(2)}</strong></span> : null}
-              <span><small>Fornecedores</small><strong>{insumo.fornecedores?.length || 0}</strong></span>
+              {administrative ? <span><small>Fornecedores</small><strong>{insumo.fornecedores?.length || 0}</strong></span> : null}
             </div>
 
             <div className="produto-card__desktop-actions">
@@ -102,7 +102,7 @@ export function ListaProdutosCards({ administrative, insumos, onEditar, onEntrad
               <CardAction label={expandedId === id ? "Menos" : "Mais"} onClick={() => toggleExpanded(id)} />
             </div>
 
-            {expandedId === id ? <AcordeaoProduto insumo={insumo} showFinancial={administrative} /> : null}
+            {expandedId === id ? <AcordeaoProduto administrative={administrative} insumo={insumo} /> : null}
           </article>
         );
       })}
