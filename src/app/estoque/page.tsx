@@ -59,7 +59,7 @@ export default function EstoquePage() {
     return filtrados;
   }, [busca, categoriaAtiva, filtroAtencao, insumos]);
 
-  const filtroAtencaoLabel = filtroAtencao === "criticos" ? "Itens criticos" : filtroAtencao === "reposicao" ? "Reposicao pendente" : "";
+  const filtroAtencaoLabel = filtroAtencao === "criticos" ? "Itens críticos" : filtroAtencao === "reposicao" ? "Reposição pendente" : "";
 
   const handleNovoInsumo = useCallback(() => {
     setProdutoEditandoId(null);
@@ -73,7 +73,7 @@ export default function EstoquePage() {
 
   const handleExcluirInsumo = useCallback(
     async (id: string, nome: string) => {
-      const confirmou = window.confirm(`Excluir "${nome}" do estoque? Esta acao nao pode ser desfeita.`);
+      const confirmou = window.confirm(`Excluir "${nome}" do estoque? Esta ação não pode ser desfeita.`);
       if (!confirmou) return;
 
       await deletarInsumo(id, nome, "admin");
@@ -172,7 +172,7 @@ export default function EstoquePage() {
       {filtroAtencaoLabel ? (
         <div className="estoque-attention-filter">
           <span>{filtroAtencaoLabel}</span>
-          <strong>{insumosFiltrados.length} itens precisam de atencao</strong>
+          <strong>{insumosFiltrados.length} itens precisam de atenção</strong>
           <a href="/estoque">Limpar filtro</a>
         </div>
       ) : null}
@@ -201,8 +201,8 @@ export default function EstoquePage() {
       ) : insumosFiltrados.length === 0 ? (
         <EmptyState
           title="Nenhum insumo encontrado"
-          description={busca ? "Tente alterar os filtros ou buscar por outro termo." : "Cadastre seu primeiro insumo para comecar."}
-          action={busca ? undefined : <Button onClick={handleNovoInsumo}>Novo Insumo</Button>}
+          description={busca ? "Tente alterar os filtros ou buscar por outro termo." : "Cadastre seu primeiro insumo para começar."}
+          action={busca ? undefined : <Button onClick={handleNovoInsumo}>Novo insumo</Button>}
         />
       ) : modoVisualizacao === "cards" ? (
         <ListaProdutosCards
@@ -231,7 +231,7 @@ function EstoqueSkeleton() {
   return (
     <div className="produtos-grid">
       {Array.from({ length: 6 }).map((_, index) => (
-        <article className="produto-card" key={index} style={{ padding: "var(--space-4)" }}>
+        <article className="produto-card produto-card--skeleton" key={index}>
           <Skeleton lines={4} />
         </article>
       ))}
