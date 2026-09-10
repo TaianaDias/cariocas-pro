@@ -6,22 +6,20 @@
 
 html {
   min-height: 100%;
-  background: var(--coal-950);
-  color-scheme: dark;
+  background: var(--surface-app);
   scroll-behavior: smooth;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(212, 32, 32, 0.12), transparent 34rem),
-    linear-gradient(135deg, var(--coal-950), var(--coal-900));
-  color: var(--text-base);
+  background: var(--surface-app);
+  color: var(--text-primary);
   font-family: var(--font-family-base);
   font-size: var(--font-size-md);
   line-height: 1.5;
   text-rendering: geometricPrecision;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body,
@@ -63,8 +61,8 @@ canvas {
 }
 
 ::selection {
-  background: rgba(212, 32, 32, 0.36);
-  color: #ffffff;
+  background: var(--accent-soft);
+  color: var(--text-primary);
 }
 
 ::-webkit-scrollbar {
@@ -73,19 +71,19 @@ canvas {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.025);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   border-radius: var(--radius-full);
-  background: rgba(229, 231, 235, 0.18);
+  background: color-mix(in srgb, var(--text-tertiary) 44%, transparent);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 32, 32, 0.5);
+  background: color-mix(in srgb, var(--accent) 58%, transparent);
 }
 
 * {
-  scrollbar-color: rgba(229, 231, 235, 0.18) rgba(255, 255, 255, 0.025);
+  scrollbar-color: color-mix(in srgb, var(--text-tertiary) 44%, transparent) transparent;
   scrollbar-width: thin;
 }

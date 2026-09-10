@@ -2,92 +2,94 @@
 
 import { useState } from "react";
 
+import { isAdministrativeRole } from "../../config/navigation";
+import { useAlertas } from "../../hooks/useAlertas";
+import { useAuth } from "../../hooks/useAuth";
 import { BadgeAlerta } from "../alertas/BadgeAlerta";
 import { PainelAlertas } from "../alertas/PainelAlertas";
-import { useAuth } from "../../hooks/useAuth";
-import { useAlertas } from "../../hooks/useAlertas";
+import { ThemeToggle } from "./ThemeToggle";
 
-export function Topbar() {
-  const [open, setOpen] = useState(false);
-  const [painelAberto, setPainelAberto] = useState(false);
-  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
+type TopbarProps = {
+  onOpenNavigation: () => void;
+};
+
+export function Topbar({ onOpenNavigation }: TopbarProps) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const { logout, user, userProfile } = useAuth();
   const { contagemNaoLidos } = useAlertas();
-  const displayName = userProfile?.nome || user?.displayName || "Usuario";
+  const displayName = userProfile?.nome || user?.displayName || "Usuário";
   const initial = displayName.trim().charAt(0).toUpperCase() || "U";
+  const administrative = isAdministrativeRole(userProfile?.role);
 
   return (
     <header className="topbar">
-      <label className="topbar__search topbar__search--desktop">
-        <span>Busca</span>
-        <span className="topbar__search-icon" aria-hidden="true" />
-        <input type="search" placeholder="Buscar modulo, produto ou alerta" />
-      </label>
+      <div className="topbar__leading">
+        <button className="topbar__menu-button" type="button" onClick={onOpenNavigation} aria-label="Abrir navegação">
+          <span />
+          <span />
+          <span />
+        </button>
 
-      <button
-        className="topbar__search-trigger"
-        type="button"
-        aria-label="Abrir busca"
-        onClick={() => setBuscaMobileAberta(true)}
-      >
-        <span className="topbar__search-icon" aria-hidden="true" />
-      </button>
+        <label className="topbar__search topbar__search--desktop">
+          <span className="sr-only">Buscar</span>
+          <span className="topbar__search-icon" aria-hidden="true" />
+          <input type="search" placeholder="Buscar módulo, produto ou alerta" />
+        </label>
+
+        <button className="topbar__mobile-search-button" type="button" onClick={() => setMobileSearchOpen(true)} aria-label="Abrir busca">
+          <span className="topbar__search-icon" aria-hidden="true" />
+        </button>
+      </div>
 
       <div className="topbar__actions">
-        <button
-          className="topbar__notification"
-          type="button"
-          aria-label="Abrir alertas"
-          onClick={() => setPainelAberto(true)}
-        >
+        <ThemeToggle />
+
+        <button className="topbar__notification" type="button" aria-label="Abrir alertas" onClick={() => setAlertsOpen(true)}>
           {contagemNaoLidos > 0 ? <span className="topbar__notification-dot" /> : null}
           <BadgeAlerta count={contagemNaoLidos} />
         </button>
-        <PainelAlertas aberto={painelAberto} onFechar={() => setPainelAberto(false)} />
+        <PainelAlertas aberto={alertsOpen} onFechar={() => setAlertsOpen(false)} />
 
         <div className="topbar__user">
           <button
             className="topbar__user-button"
             type="button"
-            aria-expanded={open}
-            aria-label="Menu do usuario"
-            onClick={() => setOpen((current) => !current)}
+            aria-expanded={profileOpen}
+            aria-label="Menu do usuário"
+            onClick={() => setProfileOpen((current) => !current)}
           >
             <span className="topbar__avatar">{initial}</span>
-            <span className="topbar__user-name">{displayName}</span>
+            <span className="topbar__user-copy">
+              <strong>{displayName}</strong>
+              <small>{administrative ? "Gestão" : "Operação"}</small>
+            </span>
           </button>
 
-          {open ? (
+          {profileOpen ? (
             <div className="topbar__dropdown">
-              <a href="/configuracoes">Configuracoes</a>
-              <button type="button" onClick={logout}>
-                Sair
-              </button>
+              {administrative ? <a href="/configuracoes">Configurações</a> : null}
+              {administrative ? <a href="/planos">Plano e assinatura</a> : null}
+              <button type="button" onClick={logout}>Sair</button>
             </div>
           ) : null}
         </div>
       </div>
 
-      {buscaMobileAberta ? (
-        <div className="mobile-search" role="dialog" aria-label="Busca mobile">
+      {mobileSearchOpen ? (
+        <div className="mobile-search" role="dialog" aria-modal="true" aria-label="Busca">
+          <button className="mobile-search__backdrop" type="button" onClick={() => setMobileSearchOpen(false)} aria-label="Fechar busca" />
           <div className="mobile-search__panel">
             <header>
               <strong>Buscar</strong>
-              <button type="button" onClick={() => setBuscaMobileAberta(false)}>
-                Fechar
-              </button>
+              <button type="button" onClick={() => setMobileSearchOpen(false)}>Fechar</button>
             </header>
             <label className="topbar__search mobile-search__field">
-              <span>Busca</span>
+              <span className="sr-only">Buscar</span>
               <span className="topbar__search-icon" aria-hidden="true" />
-              <input autoFocus type="search" placeholder="Buscar modulo, produto ou alerta" />
+              <input autoFocus type="search" placeholder="Buscar módulo, produto ou alerta" />
             </label>
-            <div className="mobile-search__quick-links" aria-label="Acessos rapidos">
-              <a href="/estoque">Estoque</a>
-              <a href="/compras">Compras</a>
-              <a href="/producao">Producao</a>
-              <a href="/precificacao">Precificacao</a>
-            </div>
           </div>
         </div>
       ) : null}

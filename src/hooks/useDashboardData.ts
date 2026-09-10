@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 import {
-  getCmvForaIdeal,
   getComprasRecomendadas,
   getKpis,
   getPrevisaoRuptura,
@@ -11,7 +10,6 @@ import {
 } from "../services/dashboard.service";
 import { useAuth } from "./useAuth";
 import type {
-  CmvForaIdeal,
   CompraRecomendada,
   DashboardKpis,
   ProdutoVencimento,
@@ -23,7 +21,6 @@ interface DashboardData {
   produtosVencer: ProdutoVencimento[];
   previsaoRuptura: Ruptura[];
   comprasRecomendadas: CompraRecomendada[];
-  cmvForaIdeal: CmvForaIdeal[];
   loading: boolean;
   error: string | null;
 }
@@ -37,7 +34,6 @@ export function useDashboardData(): DashboardData {
     produtosVencer: [],
     previsaoRuptura: [],
     comprasRecomendadas: [],
-    cmvForaIdeal: [],
     loading: true,
     error: null,
   });
@@ -47,14 +43,12 @@ export function useDashboardData(): DashboardData {
 
     async function carregar() {
       try {
-        const [kpis, produtosVencer, previsaoRuptura, comprasRecomendadas, cmvForaIdeal] =
-          await Promise.all([
-            getKpis({ empresaId, lojaId }),
-            getProdutosAVencer(3, { empresaId, lojaId }),
-            getPrevisaoRuptura({ empresaId, lojaId }),
-            getComprasRecomendadas({ empresaId, lojaId }),
-            getCmvForaIdeal({ empresaId, lojaId }),
-          ]);
+        const [kpis, produtosVencer, previsaoRuptura, comprasRecomendadas] = await Promise.all([
+          getKpis({ empresaId, lojaId }),
+          getProdutosAVencer(3, { empresaId, lojaId }),
+          getPrevisaoRuptura({ empresaId, lojaId }),
+          getComprasRecomendadas({ empresaId, lojaId }),
+        ]);
 
         if (!mounted) return;
 
@@ -63,7 +57,6 @@ export function useDashboardData(): DashboardData {
           produtosVencer,
           previsaoRuptura,
           comprasRecomendadas,
-          cmvForaIdeal,
           loading: false,
           error: null,
         });

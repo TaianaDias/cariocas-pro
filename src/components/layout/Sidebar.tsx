@@ -1,55 +1,74 @@
-import { getRequiredPlanForPath, planCatalog } from "../../lib/plan";
-import { canAccessAppPath } from "../../lib/access-control";
+"use client";
+
+import { usePathname } from "next/navigation";
+
+import { navigationSections, isAdministrativeRole } from "../../config/navigation";
 import { useAuth } from "../../hooks/useAuth";
+import { canAccessAppPath } from "../../lib/access-control";
+import { ModuleIcon } from "../dashboard/ModuleIcon";
 
-const navigationItems = [
-  { label: "Dashboard", href: "/dashboard", icon: "D" },
-  { label: "Estoque", href: "/estoque", icon: "E" },
-  { label: "Compras", href: "/compras", icon: "C" },
-  { label: "Producao", href: "/producao", icon: "P" },
-  { label: "Desperdicio", href: "/desperdicio", icon: "D" },
-  { label: "Fornecedores", href: "/fornecedores", icon: "F" },
-  { label: "Funcionarios", href: "/funcionarios", icon: "F" },
-  { label: "Financeiro", href: "/financeiro", icon: "$" },
-  { label: "Precificacao Inteligente", href: "/precificacao", icon: "P+", badge: "PLUS", premium: true },
-  { label: "Relatorios", href: "/relatorios", icon: "R" },
-  { label: "Configuracoes", href: "/configuracoes", icon: "C" },
-  { label: "IA Carioquinha", href: "/configuracoes/carioquinha", icon: "IA" },
-  { label: "WhatsApp", href: "/configuracoes/whatsapp", icon: "W" },
-];
+type SidebarProps = {
+  open: boolean;
+  onClose: () => void;
+};
 
-export function Sidebar() {
+export function Sidebar({ open, onClose }: SidebarProps) {
+  const pathname = usePathname();
   const { userProfile } = useAuth();
-  const planoAtual = userProfile?.plano || userProfile?.plan || "free";
-  const roleAtual = userProfile?.role || "user";
-  const permissoes = userProfile?.permissoes || [];
+  const plan = userProfile?.plano || userProfile?.plan || "free";
+  const role = userProfile?.role || "user";
+  const permissions = userProfile?.permissoes || [];
+
+  function canOpen(path: string) {
+    return canAccessAppPath({ path, permissions, plan, role });
+  }
 
   return (
-    <aside className="sidebar" aria-label="Navegacao principal">
-      <a className="sidebar__brand" href="/dashboard" aria-label="Carioca's Pro">
-        <span className="sidebar__brand-mark">CP</span>
-        <span>Carioca's Pro</span>
-      </a>
+    <aside className={`sidebar ${open ? "is-open" : ""}`.trim()} aria-label="Navegação principal">
+      <div className="sidebar__header">
+        <a className="sidebar__brand" href="/dashboard" onClick={onClose} aria-label="Carioca's Pro">
+          <span className="sidebar__brand-mark">CP</span>
+          <span className="sidebar__brand-copy">
+            <strong>Carioca&apos;s Pro</strong>
+            <small>Central de operação</small>
+          </span>
+        </a>
+        <button className="sidebar__close" type="button" onClick={onClose} aria-label="Fechar navegação">
+          ×
+        </button>
+      </div>
 
       <nav className="sidebar__nav" aria-label="Menu principal">
-        {navigationItems.map((item) => {
-          const liberado = canAccessAppPath({ path: item.href, permissions: permissoes, plan: planoAtual, role: roleAtual });
-          const requiredPlan = getRequiredPlanForPath(item.href);
+        {navigationSections.map((section) => {
+          if (section.adminOnly && !isAdministrativeRole(role)) return null;
+
+          const items = section.items.filter(
+            (item) => item.showInSidebar && !item.planned && canOpen(item.href),
+          );
+
+          if (!items.length) return null;
 
           return (
-          <a
-            className={`sidebar__link ${item.premium ? "sidebar__link--premium" : ""} ${!liberado ? "sidebar__link--locked" : ""}`.trim()}
-            href={liberado ? item.href : "/dashboard"}
-            key={item.href}
-            title={liberado ? item.label : `Disponivel no plano ${planCatalog[requiredPlan].name}`}
-          >
-            <span className="sidebar__icon" aria-hidden="true">
-              {liberado ? item.icon : "L"}
-            </span>
-            <span className="sidebar__label">{item.label}</span>
-            {item.badge ? <span className="sidebar__badge">{item.badge}</span> : null}
-            {!liberado ? <span className="sidebar__badge">{planCatalog[requiredPlan].name}</span> : null}
-          </a>
+            <section className="sidebar__section" key={section.id}>
+              <span className="sidebar__section-label">{section.label}</span>
+              <div className="sidebar__section-links">
+                {items.map((item) => {
+                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <a
+                      className={`sidebar__link ${active ? "is-active" : ""}`.trim()}
+                      href={item.href}
+                      key={item.id}
+                      onClick={onClose}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <span className="sidebar__icon"><ModuleIcon name={item.icon} /></span>
+                      <span className="sidebar__label">{item.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
           );
         })}
       </nav>

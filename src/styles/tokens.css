@@ -1,5 +1,5 @@
 :root {
-  /* Tema A - Dark Coal + Crimson */
+  /* Brand e compatibilidade dos modulos ainda nao migrados para tokens semanticos. */
   --coal-950: #0d0d0f;
   --coal-900: #121214;
   --coal-850: #18181b;
@@ -13,7 +13,6 @@
   --success: #3ccb78;
   --warning: #f5b942;
 
-  /* Aliases usados pelos componentes atuais */
   --color-coal-950: var(--coal-950);
   --color-coal-900: var(--coal-900);
   --color-coal-850: var(--coal-850);
@@ -37,7 +36,7 @@
   --font-size-2xl: 2rem;
   --font-size-3xl: 2.5rem;
 
-  /* Espacamentos */
+  /* Espacamento */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -56,7 +55,7 @@
   --radius-xl: 16px;
   --radius-full: 999px;
 
-  /* Sombras e superficies */
+  /* Sombras legadas */
   --shadow-soft: 0 18px 50px rgba(0, 0, 0, 0.26);
   --shadow-panel: 0 24px 70px rgba(0, 0, 0, 0.34);
   --shadow-crimson: 0 0 32px rgba(212, 32, 32, 0.12);
@@ -64,6 +63,6 @@
   --glass-subtle: rgba(255, 255, 255, 0.035);
 
   /* Layout */
-  --sidebar-width: 190px;
+  --sidebar-width: 244px;
   --topbar-height: 72px;
 }

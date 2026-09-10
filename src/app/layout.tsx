@@ -2,6 +2,7 @@ import type { Viewport } from "next";
 import type { ReactNode } from "react";
 
 import "../styles/tokens.css";
+import "../styles/theme.css";
 import "../styles/global.css";
 import "../styles/layout.css";
 import "../styles/components.css";
@@ -20,7 +21,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 
 export const metadata = {
   title: "Carioca's Pro 2026",
-  description: "Dashboard operacional premium para hamburguerias.",
+  description: "Central de operacao e gestao para food service.",
 };
 
 export const viewport: Viewport = {
@@ -29,13 +30,29 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const themeBootstrap = `
+(function () {
+  try {
+    var stored = localStorage.getItem('cariocas-pro-theme');
+    var theme = stored === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  } catch (_) {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.style.colorScheme = 'light';
+  }
+})();`;
+
 type RootLayoutProps = {
   children: ReactNode;
 };
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body>
         <AuthProvider>
           <AppShell>{children}</AppShell>
