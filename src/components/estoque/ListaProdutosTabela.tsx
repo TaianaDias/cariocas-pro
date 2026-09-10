@@ -4,12 +4,13 @@ import type { Insumo } from "../../types";
 import { StatusBadge } from "./StatusBadge";
 
 type ListaProdutosTabelaProps = {
+  administrative: boolean;
   insumos: Insumo[];
   onEditar: (id: string) => void;
   onExcluir: (id: string, nome: string) => void;
 };
 
-export function ListaProdutosTabela({ insumos, onEditar, onExcluir }: ListaProdutosTabelaProps) {
+export function ListaProdutosTabela({ administrative, insumos, onEditar, onExcluir }: ListaProdutosTabelaProps) {
   return (
     <div className="produto-table-wrap">
       <table className="produto-table">
@@ -19,10 +20,10 @@ export function ListaProdutosTabela({ insumos, onEditar, onExcluir }: ListaProdu
             <th>SKU</th>
             <th>Marca</th>
             <th>Estoque</th>
-            <th>Minimo</th>
-            <th>Custo</th>
+            <th>Mínimo</th>
+            {administrative ? <th>Custo</th> : null}
             <th>Status</th>
-            <th>Acoes</th>
+            {administrative ? <th>Ações</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -35,14 +36,16 @@ export function ListaProdutosTabela({ insumos, onEditar, onExcluir }: ListaProdu
                 <td>{insumo.marca || "-"}</td>
                 <td>{insumo.quantidadeAtual} {insumo.unidadeMedida}</td>
                 <td>{insumo.estoqueMinimo}</td>
-                <td>R$ {(insumo.custoCompra || 0).toFixed(2)}</td>
+                {administrative ? <td>R$ {(insumo.custoCompra || 0).toFixed(2)}</td> : null}
                 <td><StatusBadge status={status} /></td>
-                <td>
-                  <div className="produto-table-actions">
-                    <button type="button" onClick={() => insumo.id && onEditar(insumo.id)}>Editar</button>
-                    <button type="button" className="produto-table-actions__danger" onClick={() => insumo.id && onExcluir(insumo.id, insumo.nome)}>Excluir</button>
-                  </div>
-                </td>
+                {administrative ? (
+                  <td>
+                    <div className="produto-table-actions">
+                      <button type="button" onClick={() => insumo.id && onEditar(insumo.id)}>Editar</button>
+                      <button type="button" className="produto-table-actions__danger" onClick={() => insumo.id && onExcluir(insumo.id, insumo.nome)}>Excluir</button>
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             );
           })}
