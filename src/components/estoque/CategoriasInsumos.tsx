@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 
 import type { Categoria } from "../../types";
 import { Button } from "../ui/Button";
@@ -34,52 +35,64 @@ export function CategoriasInsumos({ categoriaAtiva, categorias, onCriarCategoria
   return (
     <section className="estoque-categorias-panel">
       <div className="estoque-categorias-panel__header">
-        <strong>Insumos por Categoria</strong>
-        <Button variant="ghost" onClick={() => setModalAberto(true)}>Nova Categoria</Button>
+        <div>
+          <span className="estoque-section-eyebrow">Organização</span>
+          <strong>Insumos por categoria</strong>
+        </div>
+        <Button variant="ghost" onClick={() => setModalAberto(true)}>Nova categoria</Button>
       </div>
 
-      <div className="categorias-scroll">
+      <div className="categorias-scroll" aria-label="Categorias de insumos">
         <button className={`categoria-pill ${categoriaAtiva === "todas" ? "ativa" : ""}`} onClick={() => onSelect("todas")} type="button">
           Todos
         </button>
-        {categorias.map((categoria) => (
-          <span className="categoria-pill-wrap" key={categoria.id || categoria.nome}>
-            <button
-              className={`categoria-pill ${categoriaAtiva === categoria.id ? "ativa" : ""}`}
-              onClick={() => categoria.id && onSelect(categoria.id)}
-              style={{ background: categoriaAtiva === categoria.id ? categoria.cor : undefined }}
-              type="button"
-            >
-              {categoria.icone} {categoria.nome}
-            </button>
-            {categoria.id ? (
-              <button className="categoria-remove-btn" onClick={() => onOcultarCategoria(categoria.id!)} title="Ocultar categoria" type="button">
-                x
+        {categorias.map((categoria) => {
+          const ativa = categoriaAtiva === categoria.id;
+          const categoryStyle = { "--category-accent": categoria.cor } as CSSProperties;
+
+          return (
+            <span className="categoria-pill-wrap" key={categoria.id || categoria.nome} style={categoryStyle}>
+              <button
+                className={`categoria-pill ${ativa ? "ativa" : ""}`}
+                onClick={() => categoria.id && onSelect(categoria.id)}
+                type="button"
+              >
+                <span className="categoria-pill__dot" aria-hidden="true" />
+                <span>{categoria.icone} {categoria.nome}</span>
               </button>
-            ) : null}
-          </span>
-        ))}
+              {categoria.id ? (
+                <button className="categoria-remove-btn" onClick={() => onOcultarCategoria(categoria.id!)} title="Ocultar categoria" type="button" aria-label={`Ocultar categoria ${categoria.nome}`}>
+                  ×
+                </button>
+              ) : null}
+            </span>
+          );
+        })}
       </div>
 
       {modalAberto ? (
-        <div className="estoque-mini-modal">
+        <div className="estoque-mini-modal" role="dialog" aria-modal="true" aria-label="Nova categoria">
           <div className="estoque-mini-modal__content">
-            <strong>Nova Categoria</strong>
+            <div>
+              <span className="estoque-section-eyebrow">Estoque</span>
+              <strong>Nova categoria</strong>
+            </div>
             <TextInput label="Nome da categoria" value={nome} onChange={(event) => setNome(event.target.value)} />
-            <div className="estoque-color-row">
+            <div className="estoque-color-row" aria-label="Cor da categoria">
               {CORES.map((item) => (
                 <button
                   aria-label={`Cor ${item}`}
+                  className={cor === item ? "is-selected" : ""}
                   key={item}
                   onClick={() => setCor(item)}
-                  style={{ background: item, borderColor: cor === item ? "#fff" : "transparent" }}
+                  style={{ background: item }}
                   type="button"
                 />
               ))}
             </div>
             <div className="estoque-mini-modal__actions">
               <Button variant="ghost" onClick={() => setModalAberto(false)}>Cancelar</Button>
-              <Button variant="primary" disabled={salvando || !nome.trim()} onClick={handleCriar}>{salvando ? "Criando..." : "Criar"}</Button>
+              <Button variant="primary" disabled={salvando || !nome.trim()} onClick={handleCriar}>{salvando ? "Criando..." : "Criar categoria"}</Button>
             </div>
           </div>
         </div>
