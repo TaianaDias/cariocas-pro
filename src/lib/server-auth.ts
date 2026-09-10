@@ -3,7 +3,8 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import type { NextRequest } from "next/server";
 
-import { canAccessPrecificacao, hasPrecificacaoPermission, normalizePlan, normalizeRole } from "./permissions";
+import { normalizeRole } from "./access-control";
+import { canAccessPrecificacao, hasPrecificacaoPermission, normalizePlan } from "./permissions";
 import type { PrecificacaoPermission } from "./permissions";
 
 type ServerUserProfile = {
