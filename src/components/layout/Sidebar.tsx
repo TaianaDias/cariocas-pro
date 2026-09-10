@@ -2,9 +2,9 @@
 
 import { usePathname } from "next/navigation";
 
-import { navigationSections, isAdministrativeRole } from "../../config/navigation";
+import { navigationSections } from "../../config/navigation";
 import { useAuth } from "../../hooks/useAuth";
-import { canAccessAppPath } from "../../lib/access-control";
+import { canAccessAppPath, isAdministrativeRole } from "../../lib/access-control";
 import { ModuleIcon } from "../dashboard/ModuleIcon";
 
 type SidebarProps = {
