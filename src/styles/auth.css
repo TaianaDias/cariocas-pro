@@ -1,30 +1,28 @@
 .auth-screen,
 .auth-page {
   display: grid;
-  min-height: 100vh;
+  min-height: 100dvh;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 0%, rgba(212, 32, 32, 0.13), transparent 32rem),
-    var(--coal-950);
-  padding: var(--space-6);
+    radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 34rem),
+    var(--surface-app);
+  padding: clamp(18px, 5vw, 48px);
 }
 
 .auth-card {
   display: grid;
-  width: min(90vw, 460px);
+  width: min(100%, 460px);
   gap: var(--space-4);
-  border: 1px solid var(--coal-800);
-  border-radius: var(--radius-xl);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
-    var(--coal-850);
-  box-shadow: var(--shadow-panel), var(--shadow-crimson);
-  padding: var(--space-6);
+  border: 1px solid var(--border-ui);
+  border-radius: 22px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: clamp(22px, 5vw, 34px);
 }
 
 .auth-card__header {
   display: grid;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .auth-card__header--center {
@@ -34,33 +32,38 @@
 
 .auth-card__header span,
 .auth-card__header strong {
-  color: var(--crimson);
-  font-size: var(--font-size-xs);
+  color: var(--accent);
+  font-size: 0.72rem;
   font-weight: 850;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 .auth-card__header h1 {
   margin: 0;
-  color: #ffffff;
-  font-size: var(--font-size-2xl);
+  color: var(--text-primary);
+  font-size: clamp(1.75rem, 6vw, 2.15rem);
+  line-height: 1.08;
 }
 
 .auth-card__header p,
 .auth-card__feedback {
   margin: 0;
-  color: rgba(229, 231, 235, 0.66);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 .auth-card__error {
   margin: 0;
-  border: 1px solid rgba(212, 32, 32, 0.28);
-  border-radius: var(--radius-md);
-  background: rgba(212, 32, 32, 0.1);
-  color: var(--crimson);
-  font-size: var(--font-size-sm);
-  font-weight: 750;
-  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--danger-ui) 22%, var(--border-ui));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger-ui) 8%, var(--surface-card));
+  color: var(--danger-ui);
+  font-size: 0.8rem;
+  font-weight: 740;
+  line-height: 1.45;
+  padding: 11px 13px;
 }
 
 .auth-form {
@@ -71,46 +74,64 @@
 .auth-card__switcher {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 8px;
+}
+
+.auth-card__switcher button {
+  min-height: 34px;
+  border: 1px solid var(--border-ui);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 780;
+  padding: 7px 10px;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.auth-card__switcher button:hover,
+.auth-card__switcher button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  outline: none;
 }
 
 .auth-links {
   display: grid;
   justify-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .auth-links a,
 .auth-links button {
   border: 0;
   background: transparent;
-  color: rgba(229, 231, 235, 0.72);
-  font-size: var(--font-size-sm);
-  font-weight: 750;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 740;
   padding: 0;
+  text-decoration: none;
 }
 
 .auth-links a:hover,
 .auth-links a:focus-visible,
 .auth-links button:hover,
 .auth-links button:focus-visible {
-  color: var(--crimson);
+  color: var(--accent);
   outline: none;
 }
 
-.auth-card__switcher button {
-  border: 1px solid rgba(229, 231, 235, 0.08);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(229, 231, 235, 0.72);
-  font-size: var(--font-size-xs);
-  font-weight: 800;
-  padding: 8px 10px;
-}
+@media (max-width: 480px) {
+  .auth-screen,
+  .auth-page {
+    padding: 14px;
+  }
 
-.auth-card__switcher button:hover,
-.auth-card__switcher button:focus-visible {
-  border-color: rgba(212, 32, 32, 0.48);
-  color: #ffffff;
-  outline: none;
+  .auth-card {
+    border-radius: 18px;
+    padding: 22px 18px;
+  }
 }
