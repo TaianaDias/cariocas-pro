@@ -1,31 +1,33 @@
 .audit-page {
-  min-height: 100vh;
-  padding: 32px;
+  min-height: 100dvh;
   background:
-    radial-gradient(circle at top left, rgba(214, 34, 34, 0.18), transparent 30%),
-    #09090b;
-  color: #fff;
+    radial-gradient(circle at 8% 2%, var(--brand-soft), transparent 30rem),
+    var(--surface-app);
+  color: var(--text-primary);
+  padding: clamp(18px, 4vw, 40px);
 }
 
 .audit-hero,
 .audit-preview {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
-  gap: 24px;
   align-items: stretch;
   width: min(1180px, 100%);
+  gap: 24px;
   margin: 0 auto 24px;
 }
 
 .audit-hero h1,
 .audit-preview h2 {
-  margin: 14px 0 12px;
-  font-size: clamp(2.2rem, 5vw, 4.75rem);
-  line-height: 0.95;
+  margin: 12px 0 10px;
+  color: var(--text-primary);
+  font-size: clamp(2.1rem, 5vw, 4.3rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
 }
 
 .audit-preview h2 {
-  font-size: clamp(1.75rem, 3vw, 3rem);
+  font-size: clamp(1.65rem, 3vw, 2.7rem);
 }
 
 .audit-hero p,
@@ -33,20 +35,22 @@
 .audit-card p,
 .audit-strip span,
 .audit-guard span {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--text-secondary);
+  line-height: 1.55;
 }
 
 .audit-pill,
 .audit-card header span {
   display: inline-flex;
   width: fit-content;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border-ui));
   border-radius: 999px;
-  padding: 7px 11px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffb4b4;
-  font-size: 0.78rem;
-  font-weight: 800;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 820;
+  letter-spacing: 0.04em;
+  padding: 7px 10px;
   text-transform: uppercase;
 }
 
@@ -54,104 +58,120 @@
 .audit-card,
 .audit-strip,
 .audit-preview {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-ui);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
 }
 
 .audit-guard {
   display: grid;
-  gap: 12px;
-  padding: 22px;
+  gap: 10px;
+  padding: 20px;
 }
 
 .audit-guard strong {
-  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
 }
 
 .audit-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
   width: min(1180px, 100%);
-  margin: 0 auto 24px;
   overflow: hidden;
+  gap: 1px;
+  margin: 0 auto 24px;
 }
 
 .audit-strip div {
   display: grid;
-  gap: 6px;
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.035);
+  gap: 5px;
+  background: var(--surface-muted);
+  padding: 16px;
+}
+
+.audit-strip strong {
+  color: var(--text-primary);
 }
 
 .audit-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
   width: min(1180px, 100%);
+  gap: 16px;
   margin: 0 auto 24px;
 }
 
 .audit-card {
   display: grid;
-  gap: 16px;
-  padding: 22px;
+  gap: 14px;
+  padding: 20px;
 }
 
 .audit-card header {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .audit-card h2 {
   margin: 0;
-  font-size: 1.35rem;
+  color: var(--text-primary);
+  font-size: 1.2rem;
 }
 
 .audit-card div {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .audit-card small {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-ui);
   border-radius: 999px;
-  padding: 7px 9px;
-  color: rgba(255, 255, 255, 0.76);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  padding: 6px 9px;
 }
 
 .audit-card button {
   width: fit-content;
-  border: 0;
-  border-radius: 12px;
-  padding: 11px 14px;
-  background: rgba(214, 34, 34, 0.34);
-  color: #fff;
-  font-weight: 800;
+  border: 1px solid var(--border-ui);
+  border-radius: 11px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-weight: 780;
+  padding: 10px 13px;
   cursor: not-allowed;
 }
 
 .audit-preview {
-  padding: 24px;
+  padding: 22px;
 }
 
 .audit-table {
   display: grid;
   align-content: start;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-ui);
   border-radius: 14px;
+  background: var(--surface-card);
 }
 
 .audit-table > div {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr;
   gap: 12px;
-  padding: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-ui);
+  color: var(--text-secondary);
+  padding: 13px 14px;
+}
+
+.audit-table > div:first-child {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-weight: 800;
 }
 
 .audit-table > div:last-child {
@@ -159,10 +179,6 @@
 }
 
 @media (max-width: 900px) {
-  .audit-page {
-    padding: 18px;
-  }
-
   .audit-hero,
   .audit-preview,
   .audit-grid,
@@ -172,5 +188,15 @@
 
   .audit-table > div {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .audit-page {
+    padding: 14px;
+  }
+
+  .audit-hero h1 {
+    font-size: clamp(1.8rem, 11vw, 2.6rem);
   }
 }
