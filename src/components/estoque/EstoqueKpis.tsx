@@ -1,4 +1,4 @@
-import { Skeleton } from "../ui/Skeleton";
+import { StatCard } from "../ui/StatCard";
 
 type EstoqueKpisProps = {
   kpis: {
@@ -12,32 +12,30 @@ type EstoqueKpisProps = {
   loading: boolean;
 };
 
+type KpiTone = "danger" | "warning" | "info";
+
 export function EstoqueKpis({ kpis, loading }: EstoqueKpisProps) {
-  const items = [
-    { label: "Abaixo do minimo", value: kpis.abaixoMinimo, tone: "critical" },
-    { label: "Prox. vencimento", value: kpis.proxVencimento, tone: "warning" },
-    { label: "Sem fornecedor", value: kpis.semFornecedor, tone: "critical" },
-    { label: "Precisa etiqueta", value: kpis.precisaEtiqueta, tone: "warning" },
-    { label: "Aumento de custo", value: kpis.aumentoCusto, tone: "warning" },
-    { label: "Margem baixa", value: kpis.margemBaixa, tone: "critical" },
+  const items: { hint: string; label: string; tone: KpiTone; value: number }[] = [
+    { label: "Abaixo do mínimo", value: kpis.abaixoMinimo, tone: "danger", hint: "Requer reposição" },
+    { label: "Próx. vencimento", value: kpis.proxVencimento, tone: "warning", hint: "Validade próxima" },
+    { label: "Sem fornecedor", value: kpis.semFornecedor, tone: "warning", hint: "Cadastro incompleto" },
+    { label: "Precisa etiqueta", value: kpis.precisaEtiqueta, tone: "info", hint: "Ação operacional" },
+    { label: "Aumento de custo", value: kpis.aumentoCusto, tone: "warning", hint: "Custo alterado" },
+    { label: "Margem baixa", value: kpis.margemBaixa, tone: "danger", hint: "Revisar precificação" },
   ];
-  const tudoOk = items.every((item) => item.value === 0);
 
   return (
     <section className="estoque-kpis" aria-label="Indicadores de estoque">
-      {loading
-        ? Array.from({ length: 6 }).map((_, index) => (
-            <article className="estoque-kpi" key={index}>
-              <Skeleton lines={2} />
-            </article>
-          ))
-        : items.map((kpi) => (
-        <article className={`estoque-kpi estoque-kpi--${tudoOk ? "success" : kpi.tone}`} key={kpi.label}>
-          <span>{kpi.label}</span>
-          <strong>{kpi.value}</strong>
-          {tudoOk ? <em>Tudo ok</em> : null}
-        </article>
-          ))}
+      {items.map((item) => (
+        <StatCard
+          hint={item.value === 0 ? "Tudo certo" : item.hint}
+          key={item.label}
+          label={item.label}
+          loading={loading}
+          tone={item.value === 0 ? "neutral" : item.tone}
+          value={item.value}
+        />
+      ))}
     </section>
   );
 }
