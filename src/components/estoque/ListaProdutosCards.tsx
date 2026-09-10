@@ -8,6 +8,7 @@ import { FaixaEstoque } from "./FaixaEstoque";
 import { StatusBadge } from "./StatusBadge";
 
 type ListaProdutosCardsProps = {
+  administrative: boolean;
   insumos: Insumo[];
   onEditar: (id: string) => void;
   onEntrada: (id: string) => void;
@@ -25,7 +26,7 @@ function getImagemProduto(insumo: Insumo) {
   return insumo.imagemUrl || insumo.imagemPrincipal || insumo.imagemUploadUrl || insumo.imagemCosmosUrl || "";
 }
 
-export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, onSaida }: ListaProdutosCardsProps) {
+export function ListaProdutosCards({ administrative, insumos, onEditar, onEntrada, onExcluir, onSaida }: ListaProdutosCardsProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
@@ -57,7 +58,7 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
                 <div className="produto-card__badges">
                   <StatusBadge status={getStatus(insumo)} />
                   {insumo.statusProduto === "parado" ? <StatusBadge status="parado" /> : null}
-                  {insumo.margemEstimada > 0 && insumo.margemEstimada < 30 ? <StatusBadge status="margem_baixa" /> : null}
+                  {administrative && insumo.margemEstimada > 0 && insumo.margemEstimada < 30 ? <StatusBadge status="margem_baixa" /> : null}
                 </div>
               </div>
 
@@ -72,11 +73,11 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
                 </button>
                 {actionMenuOpen ? (
                   <div className="produto-card__mobile-actions">
-                    <button type="button" onClick={() => { closeActionMenu(); id && onEditar(id); }}>Editar</button>
+                    {administrative ? <button type="button" onClick={() => { closeActionMenu(); id && onEditar(id); }}>Editar</button> : null}
                     <button type="button" onClick={() => { closeActionMenu(); id && onEntrada(id); }}>Entrada</button>
                     <button type="button" onClick={() => { closeActionMenu(); id && onSaida(id); }}>Saída</button>
                     <button type="button" onClick={() => { closeActionMenu(); toggleExpanded(id); }}>{expandedId === id ? "Menos detalhes" : "Mais detalhes"}</button>
-                    <button className="is-danger" type="button" onClick={() => { closeActionMenu(); id && onExcluir(id, insumo.nome); }}>Excluir</button>
+                    {administrative ? <button className="is-danger" type="button" onClick={() => { closeActionMenu(); id && onExcluir(id, insumo.nome); }}>Excluir</button> : null}
                   </div>
                 ) : null}
               </div>
@@ -89,19 +90,19 @@ export function ListaProdutosCards({ insumos, onEditar, onEntrada, onExcluir, on
             <div className="produto-card__metrics">
               <span><small>Estoque</small><strong>{insumo.quantidadeAtual} {insumo.unidadeMedida}</strong></span>
               <span><small>Mínimo</small><strong>{insumo.estoqueMinimo}</strong></span>
-              <span><small>Custo</small><strong>R$ {(insumo.custoCompra || 0).toFixed(2)}</strong></span>
+              {administrative ? <span><small>Custo</small><strong>R$ {(insumo.custoCompra || 0).toFixed(2)}</strong></span> : null}
               <span><small>Fornecedores</small><strong>{insumo.fornecedores?.length || 0}</strong></span>
             </div>
 
             <div className="produto-card__desktop-actions">
-              <CardAction label="Editar" onClick={() => id && onEditar(id)} />
+              {administrative ? <CardAction label="Editar" onClick={() => id && onEditar(id)} /> : null}
               <CardAction label="Entrada" onClick={() => id && onEntrada(id)} />
               <CardAction label="Saída" onClick={() => id && onSaida(id)} />
-              <CardAction danger label="Excluir" onClick={() => id && onExcluir(id, insumo.nome)} />
+              {administrative ? <CardAction danger label="Excluir" onClick={() => id && onExcluir(id, insumo.nome)} /> : null}
               <CardAction label={expandedId === id ? "Menos" : "Mais"} onClick={() => toggleExpanded(id)} />
             </div>
 
-            {expandedId === id ? <AcordeaoProduto insumo={insumo} /> : null}
+            {expandedId === id ? <AcordeaoProduto insumo={insumo} showFinancial={administrative} /> : null}
           </article>
         );
       })}
