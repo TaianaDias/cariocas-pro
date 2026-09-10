@@ -98,23 +98,6 @@
   outline: none;
 }
 
-.auth-splash {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  align-content: center;
-  gap: var(--space-4);
-  background: var(--coal-950);
-  color: #ffffff;
-}
-
-.auth-splash strong {
-  color: var(--crimson);
-  font-size: var(--font-size-sm);
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
 .auth-card__switcher button {
   border: 1px solid rgba(229, 231, 235, 0.08);
   border-radius: var(--radius-full);

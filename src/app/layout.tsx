@@ -5,6 +5,7 @@ import "../styles/tokens.css";
 import "../styles/theme.css";
 import "../styles/global.css";
 import "../styles/layout.css";
+import "../styles/loading.css";
 import "../styles/components.css";
 import "../styles/utilities.css";
 import "../styles/dashboard.css";

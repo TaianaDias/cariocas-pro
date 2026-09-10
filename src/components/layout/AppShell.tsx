@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
 import { canAccessAppPath } from "../../lib/access-control";
-import { Spinner } from "../ui/Spinner";
+import { AppLoading } from "./AppLoading";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
@@ -42,12 +42,7 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   if (loading) {
-    return (
-      <main className="auth-splash">
-        <strong>CARIOCA&apos;S PRO</strong>
-        <Spinner label="Carregando sessão" />
-      </main>
-    );
+    return <AppLoading />;
   }
 
   if (!user || !canOpenCurrentPath) {

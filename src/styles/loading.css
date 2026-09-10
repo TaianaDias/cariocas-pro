@@ -1,0 +1,133 @@
+.app-loading {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 0%, var(--accent-soft), transparent 34rem),
+    var(--surface-app);
+  color: var(--text-primary);
+  padding: clamp(20px, 5vw, 48px);
+}
+
+.app-loading__card {
+  display: grid;
+  width: min(100%, 520px);
+  gap: clamp(24px, 4vw, 34px);
+  border: 1px solid var(--border-ui);
+  border-radius: 24px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.app-loading__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-loading__brand-mark {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  place-items: center;
+  border-radius: 15px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  box-shadow: 0 12px 28px var(--brand-soft);
+}
+
+.app-loading__brand div,
+.app-loading__content {
+  display: grid;
+}
+
+.app-loading__brand div {
+  gap: 2px;
+}
+
+.app-loading__brand strong {
+  color: var(--text-primary);
+  font-size: 0.98rem;
+}
+
+.app-loading__brand small {
+  color: var(--text-tertiary);
+  font-size: 0.76rem;
+}
+
+.app-loading__content {
+  gap: 8px;
+}
+
+.app-loading__eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-loading__content h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.55rem, 5vw, 2.2rem);
+  line-height: 1.08;
+}
+
+.app-loading__content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.app-loading__progress {
+  position: relative;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.app-loading__progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--brand));
+  animation: app-loading-progress 1.15s ease-in-out infinite;
+}
+
+@keyframes app-loading-progress {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(340%);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-loading {
+    place-items: stretch;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .app-loading__card {
+    border-radius: 20px;
+    padding: 24px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading__progress span {
+    width: 60%;
+    animation: none;
+  }
+}
