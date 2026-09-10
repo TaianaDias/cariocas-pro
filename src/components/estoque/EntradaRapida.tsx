@@ -21,6 +21,7 @@ type MovimentoRapido = {
 };
 
 type EntradaRapidaProps = {
+  administrative: boolean;
   focusBarcode?: boolean;
   onFechar?: () => void;
   onCriarEntrada?: (dados: {
@@ -32,7 +33,7 @@ type EntradaRapidaProps = {
     quantidade: number;
     unidade: string;
   }) => void | Promise<void>;
-  onRegistrar: (dados: MovimentoRapido) => void;
+  onRegistrar: (dados: MovimentoRapido) => void | Promise<void>;
 };
 
 const UNIDADES = [
@@ -46,7 +47,7 @@ const UNIDADES = [
   { label: "Litros", value: "l" },
 ];
 
-export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, onRegistrar }: EntradaRapidaProps) {
+export function EntradaRapida({ administrative, focusBarcode = false, onCriarEntrada, onFechar, onRegistrar }: EntradaRapidaProps) {
   const [codigo, setCodigo] = useState("");
   const [produto, setProduto] = useState<Insumo | null>(null);
   const [marcaExterna, setMarcaExterna] = useState("");
@@ -60,7 +61,7 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
 
   useEffect(() => {
     if (focusBarcode) {
-      setFeedback("Campo pronto para leitura de codigo de barras.");
+      setFeedback("Campo pronto para leitura de código de barras.");
     }
   }, [focusBarcode]);
 
@@ -71,33 +72,44 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     if (local) {
       setProduto(local);
       const imagemLocal = local.imagemUrl || local.imagemPrincipal || local.imagemUploadUrl || local.imagemCosmosUrl || "";
+      setMarcaExterna("");
+      setProdutoNome(local.nome);
+
       if (imagemLocal) {
         setImagemExterna(imagemLocal);
       } else {
         const externo = await buscarExterno(codigo);
         setImagemExterna(externo?.imagemUrl || "");
       }
-      setMarcaExterna("");
-      setProdutoNome(local.nome);
+
       setFeedback("Produto localizado no estoque.");
+      return;
+    }
+
+    setProduto(null);
+    setImagemExterna("");
+    setMarcaExterna("");
+    setProdutoNome("");
+
+    if (!administrative) {
+      setFeedback("Produto não encontrado no estoque. Solicite o cadastro ao responsável administrativo.");
       return;
     }
 
     const externo = await buscarExterno(codigo);
     if (externo) {
-      setProduto(null);
       setImagemExterna(externo.imagemUrl || "");
       setMarcaExterna(externo.marca);
       setProdutoNome(externo.nome);
-      setFeedback("Produto encontrado em base externa. Confira e clique em Registrar Entrada para cadastrar e dar entrada.");
+      setFeedback("Produto encontrado em base externa. Confira os dados antes de cadastrar e registrar a entrada.");
       return;
     }
 
-    setFeedback("Produto nao encontrado. Use Novo Insumo para cadastrar.");
+    setFeedback("Produto não encontrado. Cadastre um novo insumo para continuar.");
   }
 
   async function registrar(tipo: "entrada" | "saida") {
-    if (tipo === "entrada" && !produto?.id && produtoNome.trim() && onCriarEntrada) {
+    if (administrative && tipo === "entrada" && !produto?.id && produtoNome.trim() && onCriarEntrada) {
       await onCriarEntrada({
         codigoBarras: codigo,
         custoTotal,
@@ -112,55 +124,69 @@ export function EntradaRapida({ focusBarcode = false, onCriarEntrada, onFechar, 
     }
 
     if (!produto?.id) {
-      setFeedback("Selecione um produto existente antes de registrar movimento.");
+      setFeedback("Selecione um produto existente antes de registrar o movimento.");
       return;
     }
 
-    onRegistrar({
-      custoTotal: tipo === "entrada" ? custoTotal : undefined,
+    await onRegistrar({
+      custoTotal: administrative && tipo === "entrada" ? custoTotal : undefined,
       fornecedorId: produto.fornecedorPrincipal,
       imagemUrl: imagemExterna,
       insumoId: produto.id,
       insumoNome: produto.nome,
-      observacao: `Movimento rapido em ${unidade}`,
+      observacao: `Movimento rápido em ${unidade}`,
       quantidade,
       tipo,
     });
   }
 
   const custoUnitario = custoTotal > 0 && quantidade > 0 ? (custoTotal / quantidade).toFixed(2) : "--";
+  const entradaDisabled = administrative
+    ? (!produto && !produtoNome.trim()) || custoTotal <= 0
+    : !produto;
 
   return (
     <Card className="estoque-quick-entry">
       <div className="estoque-panel__header">
         <div>
-          <span>Operacao rapida</span>
-          <h2>Entrada / Saida Rapida</h2>
+          <span>Operação rápida</span>
+          <h2>Entrada / saída</h2>
         </div>
         {onFechar ? <Button variant="ghost" onClick={onFechar}>Fechar</Button> : null}
       </div>
 
       <div className="estoque-form-grid">
-        <TextInput label="Codigo de Barras" value={codigo} onChange={(event) => {
+        <TextInput label="Código de barras" value={codigo} onChange={(event) => {
           setCodigo(event.target.value);
           setProduto(null);
           setImagemExterna("");
           setMarcaExterna("");
+          if (!administrative) setProdutoNome("");
         }} placeholder="Digite ou escaneie" />
-        <TextInput label="Produto" value={produtoNome} onChange={(event) => setProdutoNome(event.target.value)} placeholder="Produto localizado" />
+        <TextInput
+          label="Produto"
+          value={produtoNome}
+          readOnly={!administrative}
+          onChange={(event) => administrative && setProdutoNome(event.target.value)}
+          placeholder={administrative ? "Produto localizado ou novo cadastro" : "Produto localizado"}
+        />
         <Select label="Unidade" options={UNIDADES} value={unidade} onChange={(event) => setUnidade(event.target.value)} />
         <TextInput label="Quantidade" min={0} type="number" value={quantidade} onChange={(event) => setQuantidade(Number(event.target.value))} />
-        <TextInput label="Custo Total (R$)" min={0} step={0.01} type="number" value={custoTotal} onChange={(event) => setCustoTotal(Number(event.target.value))} />
-        <div className="estoque-cost-preview">
-          <span>Custo unitario</span>
-          <strong>R$ {custoUnitario}</strong>
-        </div>
+        {administrative ? (
+          <>
+            <TextInput label="Custo total (R$)" min={0} step={0.01} type="number" value={custoTotal} onChange={(event) => setCustoTotal(Number(event.target.value))} />
+            <div className="estoque-cost-preview">
+              <span>Custo unitário</span>
+              <strong>R$ {custoUnitario}</strong>
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="estoque-row-actions">
-        <Button variant="secondary" onClick={handleBuscar} disabled={!codigo}>Buscar Codigo</Button>
-        <Button variant="primary" onClick={() => registrar("entrada")} disabled={(!produto && !produtoNome.trim()) || custoTotal <= 0}>Registrar Entrada</Button>
-        <Button variant="secondary" onClick={() => registrar("saida")} disabled={!produto}>Registrar Saida</Button>
+        <Button variant="secondary" onClick={handleBuscar} disabled={!codigo}>Buscar código</Button>
+        <Button variant="primary" onClick={() => registrar("entrada")} disabled={entradaDisabled}>Registrar entrada</Button>
+        <Button variant="secondary" onClick={() => registrar("saida")} disabled={!produto}>Registrar saída</Button>
       </div>
 
       {feedback ? <p className="estoque-feedback">{feedback}</p> : null}
