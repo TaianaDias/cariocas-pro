@@ -153,9 +153,17 @@ export function usePrecificacao() {
   }
 
   async function recalcularAgora() {
+    if (!user) {
+      throw new Error("Sessao nao encontrada. Entre novamente para recalcular a precificacao.");
+    }
+
+    const token = await user.getIdToken();
     const response = await fetch("/api/precificacao/recalcular", {
       body: JSON.stringify({ empresaId, lojaId: lojaSegura }),
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       method: "POST",
     });
 
