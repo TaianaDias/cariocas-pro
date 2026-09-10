@@ -1,4 +1,5 @@
 import type { PapelUsuario, PlanoSaas } from "../types";
+import { isAdministrativeRole, normalizeRole } from "./access-control";
 
 export type PrecificacaoPermission =
   | "precificacao.ver"
@@ -8,15 +9,6 @@ export type PrecificacaoPermission =
   | "precificacao.aplicarPreco"
   | "precificacao.relatorio";
 
-const fullAccessRoles: PapelUsuario[] = ["admin", "dono", "proprietario"];
-const financialPermissions: PrecificacaoPermission[] = [
-  "precificacao.configurar",
-  "precificacao.verCustos",
-  "precificacao.recalcular",
-  "precificacao.aplicarPreco",
-  "precificacao.relatorio",
-];
-
 export function normalizePlan(plan?: string): PlanoSaas {
   if (plan === "essencial" || plan === "pro" || plan === "plus" || plan === "full") {
     return plan;
@@ -25,16 +17,11 @@ export function normalizePlan(plan?: string): PlanoSaas {
   return "free";
 }
 
-export function normalizeRole(role?: string): PapelUsuario {
-  if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
-    return role;
-  }
-
-  return "user";
-}
-
 export function canAccessPrecificacao(plan?: string, role?: string) {
   const normalizedPlan = normalizePlan(plan);
+  const normalizedRole = normalizeRole(role);
+
+  if (!isAdministrativeRole(normalizedRole)) return false;
 
   return normalizedPlan === "pro" || normalizedPlan === "plus" || normalizedPlan === "full";
 }
@@ -43,9 +30,7 @@ export function canUsePrecificacaoCompleta(plan?: string, role?: string) {
   const normalizedPlan = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
 
-  if (normalizedRole === "funcionario") {
-    return false;
-  }
+  if (!isAdministrativeRole(normalizedRole)) return false;
 
   return normalizedPlan === "plus" || normalizedPlan === "full";
 }
@@ -59,15 +44,10 @@ export function hasPrecificacaoPermission(permission: PrecificacaoPermission, pl
   const normalizedPlan = normalizePlan(plan);
   const normalizedRole = normalizeRole(role);
 
-  if (!canAccessPrecificacao(normalizedPlan, normalizedRole)) {
-    return false;
-  }
+  if (!canAccessPrecificacao(normalizedPlan, normalizedRole)) return false;
+  if (!isAdministrativeRole(normalizedRole)) return false;
 
-  if (normalizedRole === "funcionario" && financialPermissions.includes(permission)) {
-    return false;
-  }
-
-  if ((normalizedPlan === "plus" || normalizedPlan === "full") && normalizedRole !== "funcionario") {
+  if (normalizedPlan === "plus" || normalizedPlan === "full") {
     return true;
   }
 
@@ -76,4 +56,8 @@ export function hasPrecificacaoPermission(permission: PrecificacaoPermission, pl
 
 export function canSeePrecificacaoMoney(plan?: string, role?: string) {
   return hasPrecificacaoPermission("precificacao.verCustos", plan, role);
+}
+
+export function isPrecificacaoAdministrativeRole(role?: PapelUsuario | string | null) {
+  return isAdministrativeRole(role);
 }
