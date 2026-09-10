@@ -19,10 +19,10 @@ export function EstoqueKpis({ administrative, kpis, loading }: EstoqueKpisProps)
   const operationalItems: { hint: string; label: string; tone: KpiTone; value: number }[] = [
     { label: "Abaixo do mínimo", value: kpis.abaixoMinimo, tone: "danger", hint: "Requer reposição" },
     { label: "Próx. vencimento", value: kpis.proxVencimento, tone: "warning", hint: "Validade próxima" },
-    { label: "Sem fornecedor", value: kpis.semFornecedor, tone: "warning", hint: "Cadastro incompleto" },
     { label: "Precisa etiqueta", value: kpis.precisaEtiqueta, tone: "info", hint: "Ação operacional" },
   ];
   const administrativeItems: { hint: string; label: string; tone: KpiTone; value: number }[] = [
+    { label: "Sem fornecedor", value: kpis.semFornecedor, tone: "warning", hint: "Cadastro incompleto" },
     { label: "Aumento de custo", value: kpis.aumentoCusto, tone: "warning", hint: "Custo alterado" },
     { label: "Margem baixa", value: kpis.margemBaixa, tone: "danger", hint: "Revisar precificação" },
   ];
