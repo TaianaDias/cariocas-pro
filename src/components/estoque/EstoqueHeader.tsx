@@ -6,6 +6,7 @@ import { SegmentedControl } from "../ui/SegmentedControl";
 import { TextInput } from "../ui/TextInput";
 
 type EstoqueHeaderProps = {
+  administrative: boolean;
   busca: string;
   modoVisualizacao: "cards" | "tabela";
   onBuscaChange: (value: string) => void;
@@ -21,6 +22,7 @@ const viewOptions = [
 ];
 
 export function EstoqueHeader({
+  administrative,
   busca,
   modoVisualizacao,
   onBuscaChange,
@@ -33,7 +35,11 @@ export function EstoqueHeader({
     <PageHeader
       eyebrow="Estoque"
       title="Cadastro de insumos"
-      description="Cadastre, localize e movimente os insumos da operação em uma única tela."
+      description={
+        administrative
+          ? "Cadastre, localize e movimente os insumos da operação em uma única tela."
+          : "Consulte saldos e registre movimentações da operação sem exibir custos administrativos."
+      }
       actions={
         <>
           <SegmentedControl
@@ -42,9 +48,9 @@ export function EstoqueHeader({
             options={viewOptions}
             value={modoVisualizacao}
           />
-          <Button variant="ghost" onClick={onEntradaRapida}>Entrada rápida</Button>
-          <Button variant="secondary" onClick={onImportarXml}>Importar NF-e</Button>
-          <Button variant="primary" onClick={onNovoInsumo}>Novo insumo</Button>
+          <Button variant="secondary" onClick={onEntradaRapida}>Entrada / saída</Button>
+          {administrative ? <Button variant="secondary" onClick={onImportarXml}>Importar NF-e</Button> : null}
+          {administrative ? <Button variant="primary" onClick={onNovoInsumo}>Novo insumo</Button> : null}
         </>
       }
     >
