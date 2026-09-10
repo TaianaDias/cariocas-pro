@@ -1,12 +1,9 @@
 .precificacao-page {
   display: grid;
-  gap: var(--space-6);
-  width: 100%;
-  max-width: 1180px;
+  width: min(100%, 1240px);
   min-width: 0;
+  gap: clamp(22px, 3vw, 32px);
   margin: 0 auto;
-  overflow: hidden;
-  padding-inline: clamp(12px, 1.8vw, 24px);
 }
 
 .precificacao-hero {
@@ -14,13 +11,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: var(--space-5);
-  border: var(--border-subtle);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-ui);
+  border-radius: 22px;
   background:
-    linear-gradient(135deg, rgba(212, 32, 32, 0.18), rgba(255, 255, 255, 0.035)),
-    rgba(18, 18, 20, 0.88);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-panel);
+    radial-gradient(circle at 0 0, var(--brand-soft), transparent 28rem),
+    var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: clamp(22px, 4vw, 34px);
 }
 
 .precificacao-hero > div:first-child,
@@ -35,26 +32,27 @@
 
 .precificacao-eyebrow,
 .receita-card__body > span {
-  color: var(--crimson);
-  font-size: var(--font-size-xs);
-  font-weight: 900;
-  letter-spacing: 0;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 .precificacao-hero h1 {
-  margin: var(--space-2) 0;
-  color: #ffffff;
-  font-size: var(--font-size-3xl);
-  line-height: 1.05;
+  margin: 7px 0 9px;
+  color: var(--text-primary);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
 }
 
 .precificacao-hero p {
   max-width: 760px;
   margin: 0;
-  color: rgba(229, 231, 235, 0.74);
-  font-size: var(--font-size-sm);
-  line-height: 1.55;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 
 .precificacao-hero__actions,
@@ -62,7 +60,7 @@
 .precificacao-switches {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .precificacao-hero__actions {
@@ -71,30 +69,41 @@
 
 .precificacao-tabs {
   display: flex;
-  gap: var(--space-2);
+  gap: 6px;
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  padding: 3px 2px 8px;
+  scrollbar-color: var(--border-strong) transparent;
   scrollbar-width: thin;
 }
 
 .precificacao-tabs button {
-  min-height: 40px;
+  min-height: 38px;
   flex: 0 0 auto;
-  border: var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(229, 231, 235, 0.74);
-  font-size: var(--font-size-sm);
-  font-weight: 850;
+  border: 1px solid var(--border-ui);
+  border-radius: 999px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 780;
+  padding: 8px 13px;
   white-space: nowrap;
-  padding: 0 var(--space-4);
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.precificacao-tabs button.is-active,
-.precificacao-tabs button:hover {
-  border-color: rgba(212, 32, 32, 0.48);
-  background: rgba(212, 32, 32, 0.16);
-  color: #ffffff;
+.precificacao-tabs button:hover,
+.precificacao-tabs button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.precificacao-tabs button.is-active {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border-ui));
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
 .precificacao-kpis,
@@ -104,29 +113,19 @@
 }
 
 .precificacao-kpis {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .precificacao-kpi {
   display: grid;
-  gap: var(--space-2);
-  min-height: 112px;
+  min-height: 126px;
   align-content: space-between;
-  padding: var(--space-5);
-}
-
-.precificacao-simple-mode {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.precificacao-simple-mode strong {
-  color: #ffffff;
-}
-
-.precificacao-simple-mode p {
-  margin: 0;
-  color: rgba(229, 231, 235, 0.72);
+  gap: 9px;
+  border: 1px solid var(--border-ui);
+  border-radius: 18px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: 18px;
 }
 
 .precificacao-kpi span,
@@ -134,58 +133,91 @@
 .precificacao-form header span,
 .precificacao-costs header span,
 .precificacao-result span {
-  color: rgba(229, 231, 235, 0.62);
-  font-size: var(--font-size-sm);
-  font-weight: 750;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 720;
 }
 
 .precificacao-kpi strong,
 .precificacao-result strong {
   min-width: 0;
-  color: #ffffff;
-  font-size: var(--font-size-xl);
-  line-height: 1.12;
+  color: var(--text-primary);
+  font-size: clamp(1.55rem, 3vw, 2.05rem);
+  line-height: 1.08;
   overflow-wrap: anywhere;
 }
 
+.precificacao-kpi--success {
+  border-color: color-mix(in srgb, var(--success-ui) 24%, var(--border-ui));
+}
+
 .precificacao-kpi--success strong {
-  color: var(--success);
+  color: var(--success-ui);
+}
+
+.precificacao-kpi--danger {
+  border-color: color-mix(in srgb, var(--danger-ui) 24%, var(--border-ui));
 }
 
 .precificacao-kpi--danger strong {
-  color: var(--crimson);
+  color: var(--danger-ui);
+}
+
+.precificacao-simple-mode {
+  display: grid;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border-ui));
+  border-radius: 16px;
+  background: var(--accent-soft);
+  padding: 16px;
+}
+
+.precificacao-simple-mode strong {
+  color: var(--text-primary);
+}
+
+.precificacao-simple-mode p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .precificacao-grid {
-  grid-template-columns: minmax(min(100%, 420px), 0.82fr) minmax(min(100%, 420px), 1.18fr);
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
   align-items: start;
 }
 
 .precificacao-grid--simulator {
-  grid-template-columns: minmax(min(100%, 420px), 1fr) minmax(min(100%, 320px), 0.7fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.68fr);
 }
 
 .precificacao-form,
 .precificacao-costs,
 .precificacao-list,
-.precificacao-result {
+.precificacao-result,
+.precificacao-ficha {
   display: grid;
-  gap: var(--space-5);
-  padding: var(--space-5);
+  gap: var(--space-4);
+  border: 1px solid var(--border-ui);
+  border-radius: 18px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: clamp(18px, 3vw, 24px);
 }
 
 .precificacao-form header,
 .precificacao-costs header {
   display: grid;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .precificacao-form header strong,
 .precificacao-costs header strong,
 .precificacao-list > strong {
-  color: #ffffff;
-  font-size: var(--font-size-lg);
-  line-height: 1.25;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
@@ -197,34 +229,49 @@
 
 .precificacao-field {
   display: grid;
-  gap: var(--space-2);
   min-width: 0;
+  gap: 7px;
 }
 
 .precificacao-field input,
 .precificacao-field select,
 .precificacao-field textarea {
   width: 100%;
-  border: var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: rgba(13, 13, 15, 0.82);
-  color: var(--text-base);
-  font-size: var(--font-size-sm);
-  line-height: 1.35;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border-ui);
+  border-radius: 12px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.4;
   outline: none;
-  padding: 12px 13px;
+  padding: 11px 12px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .precificacao-field textarea {
-  min-height: 84px;
+  min-height: 92px;
   resize: vertical;
+}
+
+.precificacao-field input::placeholder,
+.precificacao-field textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.precificacao-field input:hover,
+.precificacao-field select:hover,
+.precificacao-field textarea:hover {
+  border-color: var(--border-strong);
 }
 
 .precificacao-field input:focus,
 .precificacao-field select:focus,
 .precificacao-field textarea:focus {
-  border-color: rgba(212, 32, 32, 0.58);
-  box-shadow: 0 0 0 3px rgba(212, 32, 32, 0.12);
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border-ui));
+  box-shadow: var(--focus-ring);
 }
 
 .precificacao-stock-search {
@@ -233,13 +280,14 @@
 
 .precificacao-stock-search__list {
   display: grid;
-  gap: var(--space-2);
+  gap: 6px;
   max-height: 220px;
   overflow-y: auto;
-  border: var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: rgba(10, 10, 12, 0.86);
-  padding: var(--space-2);
+  border: 1px solid var(--border-ui);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  padding: 7px;
+  scrollbar-color: var(--border-strong) transparent;
   scrollbar-width: thin;
 }
 
@@ -249,18 +297,24 @@
   width: 100%;
   min-width: 0;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.025);
-  color: #ffffff;
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 10px 11px;
+  padding: 9px 10px;
   text-align: left;
 }
 
 .precificacao-stock-search__list button:hover,
+.precificacao-stock-search__list button:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  outline: none;
+}
+
 .precificacao-stock-search__list button.is-selected {
-  border-color: rgba(212, 32, 32, 0.42);
-  background: rgba(212, 32, 32, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border-ui));
+  background: var(--accent-soft);
 }
 
 .precificacao-stock-search__list strong,
@@ -271,16 +325,16 @@
 }
 
 .precificacao-stock-search__list strong {
-  color: #ffffff;
-  font-size: var(--font-size-sm);
-  line-height: 1.25;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  line-height: 1.3;
 }
 
 .precificacao-stock-search__list span,
 .precificacao-stock-search__list small {
-  color: rgba(229, 231, 235, 0.62);
-  font-size: var(--font-size-xs);
-  font-weight: 750;
+  color: var(--text-tertiary);
+  font-size: 0.69rem;
+  font-weight: 680;
 }
 
 .precificacao-field--full {
@@ -289,16 +343,20 @@
 
 .precificacao-switch {
   display: flex;
+  min-height: 40px;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 42px;
-  border: var(--border-subtle);
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.025);
-  color: rgba(229, 231, 235, 0.76);
-  font-size: var(--font-size-sm);
-  font-weight: 800;
-  padding: 9px 12px;
+  gap: 8px;
+  border: 1px solid var(--border-ui);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 760;
+  padding: 8px 11px;
+}
+
+.precificacao-switch input {
+  accent-color: var(--accent);
 }
 
 .precificacao-switch span {
@@ -308,43 +366,48 @@
 .precificacao-ingredient {
   display: grid;
   gap: var(--space-3);
-  border-top: var(--border-subtle);
+  border-top: 1px solid var(--border-ui);
   padding-top: var(--space-4);
+}
+
+.precificacao-ingredient > strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
 }
 
 .precificacao-ingredients-list {
   display: grid;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .precificacao-inline-error,
 .precificacao-ingredients-empty {
   margin: 0;
-  border: 1px solid rgba(212, 32, 32, 0.22);
-  border-radius: var(--radius-md);
-  background: rgba(212, 32, 32, 0.08);
-  color: rgba(255, 255, 255, 0.82);
-  font-size: var(--font-size-xs);
-  font-weight: 800;
+  border: 1px solid var(--border-ui);
+  border-radius: 11px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 720;
   line-height: 1.45;
   padding: 10px 12px;
 }
 
-.precificacao-ingredients-empty {
-  border-color: rgba(229, 231, 235, 0.08);
-  background: rgba(255, 255, 255, 0.025);
-  color: rgba(229, 231, 235, 0.62);
+.precificacao-inline-error {
+  border-color: color-mix(in srgb, var(--danger-ui) 22%, var(--border-ui));
+  background: color-mix(in srgb, var(--danger-ui) 7%, var(--surface-card));
+  color: var(--danger-ui);
 }
 
-.precificacao-ingredients-list div {
+.precificacao-ingredients-list > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--space-3);
-  border: var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.025);
-  padding: var(--space-3);
+  border: 1px solid var(--border-ui);
+  border-radius: 11px;
+  background: var(--surface-muted);
+  padding: 11px 12px;
 }
 
 .precificacao-ingredients-list span,
@@ -354,26 +417,23 @@
   overflow-wrap: anywhere;
 }
 
+.precificacao-ingredients-list span,
+.precificacao-ingredients-list strong {
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+
 .precificacao-ingredients-list small {
-  color: var(--text-muted);
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
   text-align: right;
 }
 
+.precificacao-side,
 .receitas-grid {
   display: grid;
-  gap: var(--space-4);
-}
-
-.precificacao-side {
-  display: grid;
-  gap: var(--space-4);
   min-width: 0;
-}
-
-.precificacao-ficha {
-  display: grid;
   gap: var(--space-4);
-  padding: var(--space-5);
 }
 
 .precificacao-ficha header {
@@ -383,36 +443,37 @@
   gap: var(--space-3);
 }
 
-.precificacao-ficha header div {
+.precificacao-ficha header > div {
   display: grid;
-  gap: 4px;
   min-width: 0;
+  gap: 4px;
 }
 
 .precificacao-ficha header span,
 .precificacao-ficha dt {
-  color: rgba(229, 231, 235, 0.58);
-  font-size: var(--font-size-xs);
-  font-weight: 850;
+  color: var(--text-tertiary);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .precificacao-ficha header strong,
 .precificacao-ficha__ingredients > strong {
-  color: #ffffff;
-  font-size: var(--font-size-lg);
-  line-height: 1.22;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  line-height: 1.28;
   overflow-wrap: anywhere;
 }
 
 .precificacao-ficha dl,
 .precificacao-ficha__ingredients {
   display: grid;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .precificacao-ficha dl {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   margin: 0;
 }
 
@@ -420,23 +481,23 @@
 .precificacao-ficha__ingredients div {
   display: grid;
   gap: 3px;
-  border: 1px solid rgba(229, 231, 235, 0.07);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-ui);
+  border-radius: 10px;
+  background: var(--surface-muted);
   padding: 9px 10px;
 }
 
 .precificacao-ficha dd {
   margin: 0;
-  color: #ffffff;
-  font-size: var(--font-size-sm);
-  font-weight: 900;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 820;
   overflow-wrap: anywhere;
 }
 
 .precificacao-ficha__ingredients span,
 .precificacao-ficha__ingredients b {
-  color: #ffffff;
+  color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
@@ -444,41 +505,48 @@
 .precificacao-ficha__prep,
 .precificacao-ficha__ingredients p {
   margin: 0;
-  color: rgba(229, 231, 235, 0.68);
-  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .receita-card {
   display: grid;
-  grid-template-columns: 136px minmax(0, 1fr);
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: stretch;
   gap: var(--space-4);
   overflow: hidden;
-  border-color: rgba(229, 231, 235, 0.1);
-  align-items: stretch;
+  border: 1px solid var(--border-ui);
+  border-radius: 17px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-ui);
+  padding: 16px;
 }
 
 .receita-card--saudavel {
-  box-shadow: inset 3px 0 0 var(--success);
+  border-left: 3px solid var(--success-ui);
 }
 
 .receita-card--atencao {
-  box-shadow: inset 3px 0 0 var(--warning);
+  border-left: 3px solid var(--warning-ui);
 }
 
 .receita-card--critico {
-  box-shadow: inset 3px 0 0 var(--crimson);
+  border-left: 3px solid var(--danger-ui);
 }
 
 .receita-card__image {
   display: grid;
-  min-height: 136px;
+  min-height: 128px;
   aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, rgba(212, 32, 32, 0.22), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 20%, var(--accent-soft), transparent 70%),
+    var(--surface-muted);
 }
 
 .receita-card__image img {
@@ -488,64 +556,62 @@
 }
 
 .receita-card__image span {
-  color: #ffffff;
-  font-size: var(--font-size-xl);
-  font-weight: 950;
+  color: var(--accent);
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
 .receita-card__body {
   display: grid;
-  gap: var(--space-3);
   align-content: start;
+  gap: 10px;
 }
 
 .receita-card h2 {
   margin: 0;
-  color: #ffffff;
-  font-size: var(--font-size-lg);
-  line-height: 1.22;
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1.28;
   overflow-wrap: anywhere;
 }
 
 .receita-card dl {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 104px), 1fr));
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 7px;
   margin: 0;
 }
 
 .receita-card dl > div {
   display: grid;
   min-width: 0;
-  align-content: start;
   gap: 2px;
-  border: 1px solid rgba(229, 231, 235, 0.06);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-ui);
+  border-radius: 9px;
+  background: var(--surface-muted);
   padding: 8px 9px;
 }
 
 .receita-card dt {
-  color: rgba(229, 231, 235, 0.54);
-  font-size: var(--font-size-xs);
-  font-weight: 800;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  color: var(--text-tertiary);
+  font-size: 0.63rem;
+  font-weight: 760;
+  text-transform: uppercase;
 }
 
 .receita-card dd {
   margin: 0;
-  color: #ffffff;
-  font-size: var(--font-size-sm);
-  font-weight: 900;
-  line-height: 1.25;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  font-weight: 820;
+  line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
 .receita-card__prices {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: 7px;
 }
 
 .receita-card__prices span {
@@ -553,137 +619,124 @@
   min-height: 34px;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(212, 32, 32, 0.25);
-  border-radius: var(--radius-md);
-  background: rgba(212, 32, 32, 0.1);
-  color: rgba(255, 255, 255, 0.86);
-  font-size: var(--font-size-xs);
-  font-weight: 850;
-  line-height: 1.2;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-ui));
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  padding: 7px 8px;
   text-align: center;
-  overflow-wrap: anywhere;
-  padding: 6px 9px;
-}
-
-.receita-card__actions {
-  justify-content: flex-end;
 }
 
 .precificacao-result {
   align-content: center;
-  min-height: 240px;
-  text-align: left;
+  min-height: 230px;
+}
+
+.precificacao-result p,
+.precificacao-list p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.55;
 }
 
 .precificacao-result--saudavel {
-  border-color: rgba(60, 203, 120, 0.28);
+  border-color: color-mix(in srgb, var(--success-ui) 30%, var(--border-ui));
 }
 
 .precificacao-result--atencao {
-  border-color: rgba(245, 185, 66, 0.34);
+  border-color: color-mix(in srgb, var(--warning-ui) 32%, var(--border-ui));
 }
 
 .precificacao-result--critico {
-  border-color: rgba(212, 32, 32, 0.42);
+  border-color: color-mix(in srgb, var(--danger-ui) 32%, var(--border-ui));
 }
 
-.precificacao-list p,
-.precificacao-result p {
-  margin: 0;
-  color: rgba(229, 231, 235, 0.74);
-  font-size: var(--font-size-sm);
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
-.precificacao-page .empty-state {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.precificacao-page .empty-state h2,
-.precificacao-page .empty-state p {
-  max-width: min(100%, 520px);
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 980px) {
+@media (max-width: 1060px) {
   .precificacao-hero,
   .precificacao-grid,
   .precificacao-grid--simulator {
     grid-template-columns: 1fr;
   }
 
-  .precificacao-hero {
-    align-items: stretch;
-    padding: var(--space-5);
-  }
-
-  .precificacao-hero__actions,
-  .receita-card__actions {
+  .precificacao-hero__actions {
     justify-content: flex-start;
   }
 
   .precificacao-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .receita-card dl {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .precificacao-page {
     gap: var(--space-5);
-    padding-inline: 0;
   }
 
-  .precificacao-kpi,
-  .precificacao-form,
-  .precificacao-costs,
-  .precificacao-list,
-  .precificacao-result {
-    padding: var(--space-4);
+  .precificacao-hero {
+    border-radius: 18px;
+    padding: 20px;
   }
 
   .precificacao-hero h1 {
-    font-size: var(--font-size-2xl);
+    font-size: clamp(1.8rem, 9vw, 2.35rem);
   }
 
-  .precificacao-hero p {
-    font-size: var(--font-size-xs);
+  .precificacao-hero__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
   }
 
   .precificacao-hero__actions .button {
     width: 100%;
   }
 
+  .precificacao-form__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .receita-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+
+  .receita-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
   .precificacao-kpis,
-  .precificacao-form__grid,
+  .precificacao-hero__actions,
   .receita-card,
   .receita-card dl,
   .receita-card__prices,
-  .precificacao-ingredients-list div {
+  .precificacao-ingredients-list > div {
     grid-template-columns: 1fr;
   }
 
   .receita-card__image {
+    width: 100%;
     min-height: 180px;
     aspect-ratio: 16 / 9;
-  }
-
-  .precificacao-switches {
-    display: grid;
-    grid-template-columns: 1fr;
   }
 
   .precificacao-ingredients-list small {
     text-align: left;
   }
 
-  .receita-card__actions .button {
-    width: 100%;
+  .precificacao-switches {
+    display: grid;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .precificacao-tabs button,
+  .precificacao-field input,
+  .precificacao-field select,
+  .precificacao-field textarea {
+    transition: none;
   }
 }
