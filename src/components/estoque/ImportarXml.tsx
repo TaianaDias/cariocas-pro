@@ -31,6 +31,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
     const empresaId = userProfile?.empresaId || user?.uid || "";
     const lojaId = userProfile?.lojaId || "matriz";
     const insumos = empresaId ? await listarInsumos({ empresaId, lojaId }) : [];
+    const idToken = user ? await user.getIdToken() : undefined;
 
     return Promise.all(
       itens.map(async (item, index) => {
@@ -49,7 +50,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
           );
         });
         const imagemExistente = existente?.imagemUrl || existente?.imagemPrincipal || "";
-        const externo = !imagemExistente && codigo && index < 20 ? await buscarExterno(codigo) : null;
+        const externo = !imagemExistente && codigo && index < 20 ? await buscarExterno(codigo, idToken) : null;
 
         return {
           ...item,
@@ -105,9 +106,17 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
         throw new Error("Escaneie ou digite a chave de acesso da NF-e com 44 digitos.");
       }
 
+      if (!user) {
+        throw new Error("Entre na conta para consultar a NF-e.");
+      }
+
+      const token = await user.getIdToken();
       const response = await fetch("/api/nfe/consulta", {
         body: JSON.stringify({ chave }),
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         method: "POST",
       });
       const data = await response.json();
