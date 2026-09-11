@@ -1,5 +1,5 @@
-import { ComprasPageClient } from "../../components/operacional/OperationalPages";
+import { ComprasRouteContent } from "../../components/compras/ComprasRouteContent";
 
 export default function ComprasPage() {
-  return <ComprasPageClient />;
+  return <ComprasRouteContent />;
 }
