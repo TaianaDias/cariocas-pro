@@ -1,0 +1,134 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath() {
+      return /databases/$(database)/documents/usuarios/$(request.auth.uid);
+    }
+
+    function hasProfile() {
+      return signedIn() && exists(userPath());
+    }
+
+    function profile() {
+      return get(userPath()).data;
+    }
+
+    function isActive() {
+      return hasProfile()
+        && (!('ativo' in profile()) || profile().ativo == true)
+        && (!('funcionarioAtivo' in profile()) || profile().funcionarioAtivo == true);
+    }
+
+    function isAdmin() {
+      return isActive()
+        && profile().role in ['admin', 'dono', 'proprietario', 'user'];
+    }
+
+    function isOperational() {
+      return isActive() && profile().role in ['gerente', 'funcionario'];
+    }
+
+    function sameTenant(empresaId) {
+      return isActive()
+        && ('empresaId' in profile())
+        && profile().empresaId == empresaId;
+    }
+
+    function sameStore(lojaId) {
+      return !('lojaId' in profile())
+        || lojaId == null
+        || profile().lojaId == lojaId;
+    }
+
+    function tenantResource() {
+      return ('empresaId' in resource.data)
+        && sameTenant(resource.data.empresaId)
+        && (!('lojaId' in resource.data) || sameStore(resource.data.lojaId));
+    }
+
+    function tenantRequest() {
+      return ('empresaId' in request.resource.data)
+        && sameTenant(request.resource.data.empresaId)
+        && (!('lojaId' in request.resource.data) || sameStore(request.resource.data.lojaId));
+    }
+
+    // Cada usuário pode ler o próprio perfil. Administradores podem ler apenas
+    // perfis da própria empresa. Papéis, plano, tenant e permissões nunca são
+    // elevados pelo cliente: gerenciamento de equipe passa pela API server-side.
+    match /usuarios/{uid} {
+      allow read: if signedIn() && (
+        request.auth.uid == uid
+        || (isAdmin() && ('empresaId' in resource.data) && resource.data.empresaId == profile().empresaId)
+      );
+
+      // Cadastro SaaS inicial: a conta só pode nascer como dona do próprio tenant,
+      // no plano gratuito e na loja matriz. O onboarding server-side completa os dados.
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.empresaId == uid
+        && request.resource.data.lojaId == 'matriz'
+        && request.resource.data.role == 'dono'
+        && request.resource.data.plano == 'free'
+        && request.resource.data.plan == 'free'
+        && request.resource.data.permissoes == ['*'];
+
+      // Atualização do próprio perfil é limitada a campos sem poder de autorização.
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'nome',
+          'fotoUrl',
+          'tipoConta',
+          'ultimoAcesso',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    // Funcionários são provisionados exclusivamente pela API /api/funcionarios.
+    // O Admin SDK ignora estas regras; o navegador não recebe acesso direto.
+    match /funcionarios/{funcionarioId} {
+      allow read, write: if false;
+    }
+
+    match /empresas/{empresaId} {
+      allow read: if sameTenant(empresaId);
+      allow create, update, delete: if isAdmin() && sameTenant(empresaId);
+
+      match /lojas/{lojaId} {
+        allow read: if sameTenant(empresaId) && sameStore(lojaId);
+        allow create, update, delete: if isAdmin() && sameTenant(empresaId) && sameStore(lojaId);
+      }
+
+      // Categorias não carregam custo, CMV ou margem e são necessárias para
+      // compor as telas operacionais da equipe.
+      match /categoriasEstoque/{categoriaId} {
+        allow read: if sameTenant(empresaId) && (isAdmin() || isOperational());
+        allow create, update, delete: if isAdmin() && sameTenant(empresaId);
+      }
+
+      // Demais coleções internas da empresa podem conter custos ou dados de gestão.
+      // Funcionários consomem projeções sanitizadas pelas APIs server-side.
+      match /{document=**} {
+        allow read, write: if isAdmin() && sameTenant(empresaId);
+      }
+    }
+
+    // Coleções raiz antigas só permanecem acessíveis quando já estão devidamente
+    // marcadas com empresaId/lojaId. Documentos legados sem tenant ficam negados
+    // até a migração, evitando vazamento entre empresas.
+    match /{collection}/{documentId} {
+      allow read: if isAdmin() && tenantResource();
+      allow create: if isAdmin() && tenantRequest();
+      allow update: if isAdmin() && tenantResource() && tenantRequest();
+      allow delete: if isAdmin() && tenantResource();
+    }
+  }
+}
