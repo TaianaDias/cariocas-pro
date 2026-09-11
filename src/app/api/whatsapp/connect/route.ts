@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
+import { authorizeAppRequest } from "../../../../lib/server-auth";
 import { configurarWebhook, criarInstancia, getQrCode } from "../../../../services/whatsapp.service";
 
 function jsonNoStore(body: unknown, init?: ResponseInit) {
@@ -30,7 +31,12 @@ function getPublicBaseUrl(request: Request) {
   return new URL(request.url).origin;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await authorizeAppRequest(request, "/configuracoes");
+  if (auth.status !== 200) {
+    return jsonNoStore({ status: "error", message: "Acesso não autorizado." }, { status: auth.status });
+  }
+
   try {
     const resultado = await criarInstancia();
 
