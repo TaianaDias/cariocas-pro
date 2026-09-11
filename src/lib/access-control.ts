@@ -4,15 +4,16 @@ import type { PapelUsuario, PermissaoFuncionario } from "../types";
 export const employeePermissionOptions: { label: string; permission: PermissaoFuncionario; path: string; risk?: string }[] = [
   { label: "Dashboard", path: "/dashboard", permission: "dashboard.ver" },
   { label: "Estoque e Reposicao", path: "/estoque", permission: "estoque.ver" },
-  { label: "Compras / Movimentacoes", path: "/compras", permission: "compras.ver" },
-  { label: "Producao", path: "/producao", permission: "producao.ver" },
-  { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver" },
-  { label: "Relatorios", path: "/relatorios", permission: "relatorios.ver" },
+  { label: "Compras / Movimentacoes", path: "/compras", permission: "compras.ver", risk: "Aguardando projeção operacional segura" },
+  { label: "Producao", path: "/producao", permission: "producao.ver", risk: "Aguardando projeção operacional segura" },
+  { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver", risk: "Aguardando projeção operacional segura" },
+  { label: "Relatorios", path: "/relatorios", permission: "relatorios.ver", risk: "Aguardando projeção operacional segura" },
 ];
 
 const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
 const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
 const administrativePaths = ["/precificacao", "/financeiro", "/fornecedores", "/funcionarios", "/configuracoes"];
+const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao"];
 
 export function normalizeRole(role?: string | null): PapelUsuario {
   if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
@@ -34,6 +35,10 @@ export function isOperationalRole(role?: PapelUsuario | string | null) {
 
 export function isAdministrativePath(pathname: string) {
   return administrativePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+export function isOperationallySafePath(pathname: string) {
+  return operationallySafePaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 export function parsePermissions(value?: string | null): PermissaoFuncionario[] {
@@ -79,6 +84,11 @@ export function canAccessAppPath({
 
   // Areas administrativas nunca sao liberadas por uma permissao operacional antiga.
   if (isAdministrativePath(path)) return false;
+
+  // Enquanto um modulo ainda lê documentos financeiros completos diretamente do
+  // Firestore, ele não é liberado à equipe. A rota entra nesta lista somente
+  // depois de ganhar projeção server-side sanitizada.
+  if (!isOperationallySafePath(path)) return false;
 
   const requiredPermission = getPermissionForPath(path);
 
