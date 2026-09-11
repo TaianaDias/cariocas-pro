@@ -112,6 +112,7 @@ export async function GET(request: NextRequest) {
 
   const { authorization, db } = context;
   const setor = text(request.nextUrl.searchParams.get("setor"), 80);
+  const administrative = isAdministrativeRole(authorization.role);
 
   if (setor && !SETORES.has(setor)) {
     return NextResponse.json({ error: "Setor inválido." }, { status: 400 });
@@ -126,8 +127,10 @@ export async function GET(request: NextRequest) {
   const processos = snapshot.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }))
     .filter((processo) => {
-      const item = processo as { lojaId?: string; setor?: string };
-      return item.lojaId === authorization.lojaId && (!setor || item.setor === setor);
+      const item = processo as { lojaId?: string; setor?: string; status?: string };
+      return item.lojaId === authorization.lojaId
+        && (!setor || item.setor === setor)
+        && (administrative || item.status === "ativo");
     })
     .sort((a, b) => {
       const itemA = a as { ordem?: number; nome?: string };
