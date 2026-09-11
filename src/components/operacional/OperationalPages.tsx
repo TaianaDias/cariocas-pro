@@ -1696,7 +1696,7 @@ export function ProducaoPageClient() {
               <div>
                 <Badge tone="success">{porcao.formatoPorcao || "porcao"}</Badge>
                 <small>Baixado: {porcao.quantidadeBaixada} {porcao.unidade}</small>
-                <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porção.unidade} por porção` : money(porcao.custoPorPorcao)}</small>
+                <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porcao.unidade} por porção` : money(porcao.custoPorPorcao)}</small>
                 <div className="operational-row__actions">
                   <button type="button" onClick={() => abrirEdicaoPorcao(porcao)}>Editar</button>
                   <button type="button" onClick={() => estornarPorcao(porcao)}>Estornar</button>
