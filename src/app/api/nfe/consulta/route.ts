@@ -1,4 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+import { isAdministrativeRole } from "../../../../lib/access-control";
+import { getServerUserProfile } from "../../../../lib/server-auth";
 
 function normalizarChave(value: string) {
   return value.replace(/\D/g, "");
@@ -64,7 +67,16 @@ async function fetchMeuDanfe(url: string, tokenHeader: string, tokenValue: strin
   });
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const profile = await getServerUserProfile(request);
+  if (!profile) {
+    return NextResponse.json({ error: "Sessão inválida ou expirada." }, { status: 401 });
+  }
+
+  if (!isAdministrativeRole(profile.role)) {
+    return NextResponse.json({ error: "A consulta de NF-e é restrita à gestão." }, { status: 403 });
+  }
+
   const body = await request.json().catch(() => null);
   const chave = normalizarChave(String(body?.chave || ""));
 
