@@ -1,5 +1,5 @@
-import { DesperdicioPageClient } from "../../components/operacional/OperationalPages";
+import { DesperdicioRouteContent } from "../../components/desperdicio/DesperdicioRouteContent";
 
 export default function DesperdicioPage() {
-  return <DesperdicioPageClient />;
+  return <DesperdicioRouteContent />;
 }
