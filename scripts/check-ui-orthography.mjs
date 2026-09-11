@@ -2,9 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 const WRITE = process.argv.includes("--write");
-const ROOTS = ["src/app", "src/components", "src/config", "src/hooks"];
+const ROOTS = ["src/app", "src/components", "src/config", "src/hooks", "src/lib"];
 const EXTENSIONS = new Set([".ts", ".tsx"]);
-const TEXT_PROPS = new Set(["label", "title", "subtitle", "description", "eyebrow", "placeholder", "aria-label"]);
+const TEXT_PROPS = new Set(["label", "title", "subtitle", "description", "descricao", "eyebrow", "placeholder", "aria-label"]);
+const TEXT_OBJECT_KEYS = new Set(["label", "title", "subtitle", "description", "descricao", "eyebrow", "placeholder", "risk"]);
 
 const corrections = new Map([
   ["acao", "ação"],
@@ -28,9 +29,11 @@ const corrections = new Map([
   ["codigos", "códigos"],
   ["colecao", "coleção"],
   ["colecoes", "coleções"],
+  ["conexao", "conexão"],
   ["configuracao", "configuração"],
   ["configuracoes", "configurações"],
   ["conseguira", "conseguirá"],
+  ["conteudo", "conteúdo"],
   ["conversao", "conversão"],
   ["critico", "crítico"],
   ["criticos", "críticos"],
@@ -52,12 +55,25 @@ const corrections = new Map([
   ["historico", "histórico"],
   ["historicos", "históricos"],
   ["importacao", "importação"],
+  ["informacao", "informação"],
+  ["informacoes", "informações"],
+  ["integracao", "integração"],
+  ["integracoes", "integrações"],
   ["invalido", "inválido"],
   ["invalidos", "inválidos"],
+  ["liberacao", "liberação"],
+  ["liberacoes", "liberações"],
   ["localizacao", "localização"],
+  ["maximo", "máximo"],
+  ["maximos", "máximos"],
+  ["medio", "médio"],
+  ["minimo", "mínimo"],
+  ["minimos", "mínimos"],
   ["modulo", "módulo"],
   ["modulos", "módulos"],
   ["nao", "não"],
+  ["notificacao", "notificação"],
+  ["notificacoes", "notificações"],
   ["numero", "número"],
   ["numeros", "números"],
   ["obrigatorio", "obrigatório"],
@@ -67,7 +83,12 @@ const corrections = new Map([
   ["observacao", "observação"],
   ["observacoes", "observações"],
   ["operacao", "operação"],
+  ["pagina", "página"],
+  ["paginas", "páginas"],
   ["padrao", "padrão"],
+  ["padroes", "padrões"],
+  ["paes", "pães"],
+  ["periodo", "período"],
   ["permissao", "permissão"],
   ["permissoes", "permissões"],
   ["possivel", "possível"],
@@ -76,10 +97,13 @@ const corrections = new Map([
   ["precos", "preços"],
   ["prejuizo", "prejuízo"],
   ["producao", "produção"],
+  ["propria", "própria"],
+  ["proprio", "próprio"],
   ["porcao", "porção"],
   ["porcoes", "porções"],
   ["proximo", "próximo"],
   ["proximos", "próximos"],
+  ["publico", "público"],
   ["relatorio", "relatório"],
   ["relatorios", "relatórios"],
   ["reposicao", "reposição"],
@@ -97,11 +121,19 @@ const corrections = new Map([
   ["simulacoes", "simulações"],
   ["so", "só"],
   ["sugestao", "sugestão"],
+  ["sugestoes", "sugestões"],
   ["tambem", "também"],
   ["tecnica", "técnica"],
   ["tecnicas", "técnicas"],
   ["tecnico", "técnico"],
   ["tecnicos", "técnicos"],
+  ["ultimo", "último"],
+  ["ultimos", "últimos"],
+  ["unico", "único"],
+  ["unitaria", "unitária"],
+  ["unitarias", "unitárias"],
+  ["unitario", "unitário"],
+  ["unitarios", "unitários"],
   ["usuario", "usuário"],
   ["usuarios", "usuários"],
   ["valido", "válido"],
@@ -264,12 +296,15 @@ function fixTemplateLiteral(value) {
   return output;
 }
 
+function fixLiteral(quote, value) {
+  return quote === "`" ? fixTemplateLiteral(value) : fixText(value);
+}
+
 function replaceQuotedStrings(line, shouldFix) {
   return line.replace(/(["'`])((?:\\.|(?!\1).)*)\1/g, (full, quote, value, offset) => {
     if (!value || value.startsWith("/") || value.startsWith("http")) return full;
     if (!shouldFix({ line, offset, value })) return full;
-    const fixed = quote === "`" ? fixTemplateLiteral(value) : fixText(value);
-    return `${quote}${fixed}${quote}`;
+    return `${quote}${fixLiteral(quote, value)}${quote}`;
   });
 }
 
@@ -285,15 +320,24 @@ function isInsideNonTextAttribute(line, offset) {
   return false;
 }
 
+function fixObjectTextProperties(line) {
+  return line.replace(/\b([A-Za-z0-9_-]+)\s*:\s*(["'`])((?:\\.|(?!\2).)*)\2/g, (full, key, quote, value) => {
+    if (!TEXT_OBJECT_KEYS.has(key) || !value || value.startsWith("/") || value.startsWith("http")) return full;
+    const fixed = fixLiteral(quote, value);
+    return full.replace(`${quote}${value}${quote}`, `${quote}${fixed}${quote}`);
+  });
+}
+
 function fixVisibleLine(line) {
   let output = line;
 
   // Texto JSX puro, por exemplo: <span>Historico</span>.
   output = output.replace(/>\s*([^<>{}\n][^<>{}]*)\s*</g, (full, value) => full.replace(value, fixText(value)));
+  output = fixObjectTextProperties(output);
 
-  const hasTextProp = /\b(?:label|title|subtitle|description|eyebrow|placeholder|aria-label)\s*=/.test(output);
+  const hasTextProp = /\b(?:label|title|subtitle|description|descricao|eyebrow|placeholder|aria-label)\s*=/.test(output);
   const hasTextElement = /<(?:Button|strong|span|small|option|h1|h2|h3|p)\b/.test(output);
-  const hasMessageCall = /new Error\(|NextResponse\.json\(|set(?:Error|Erro|Resultado)\(|window\.confirm\(/.test(output);
+  const hasMessageCall = /(?:new Error|NextResponse\.json|window\.confirm|set[A-Za-z0-9_]*(?:Error|Erro|Message|Mensagem|Resultado))\s*\(/.test(output);
 
   if (hasMessageCall) {
     output = replaceQuotedStrings(output, () => true);
