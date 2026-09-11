@@ -6,6 +6,7 @@ export const employeePermissionOptions: { label: string; permission: PermissaoFu
   { label: "Estoque e Reposição", path: "/estoque", permission: "estoque.ver" },
   { label: "Compras / Movimentações", path: "/compras", permission: "compras.ver" },
   { label: "Produção", path: "/producao", permission: "producao.ver" },
+  { label: "Rotinas e Padrões", path: "/rotinas", permission: "rotinas.ver" },
   { label: "Desperdício", path: "/desperdicio", permission: "desperdicio.ver" },
   { label: "Relatórios", path: "/relatorios", permission: "relatorios.ver" },
 ];
@@ -15,7 +16,7 @@ export const operationalEmployeePermissions = employeePermissionOptions.map((ite
 const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
 const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
 const administrativePaths = ["/precificacao", "/financeiro", "/fornecedores", "/funcionarios", "/configuracoes"];
-const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao", "/compras", "/producao", "/desperdicio", "/relatorios"];
+const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao", "/compras", "/producao", "/rotinas", "/desperdicio", "/relatorios"];
 
 export function normalizeRole(role?: string | null): PapelUsuario {
   if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
