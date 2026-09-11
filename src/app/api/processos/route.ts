@@ -1,4 +1,4 @@
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore, type Firestore } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAdministrativeRole } from "../../../lib/access-control";
@@ -75,7 +75,7 @@ function normalizePayload(body: ProcessoInput, fallbackSetor?: string) {
 }
 
 async function audit(
-  db: FirebaseFirestore.Firestore,
+  db: Firestore,
   empresaId: string,
   dados: Record<string, unknown>,
 ) {
