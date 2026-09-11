@@ -8,14 +8,14 @@ const DEFAULT_STORE_ID = "matriz";
 
 const DEFAULT_STOCK_CATEGORIES = [
   { cor: "#DC2626", icone: "C", id: "carnes", nome: "Carnes", ordem: 1 },
-  { cor: "#D97706", icone: "P", id: "paes", nome: "Paes", ordem: 2 },
+  { cor: "#D97706", icone: "P", id: "paes", nome: "Pães", ordem: 2 },
   { cor: "#F59E0B", icone: "Q", id: "queijos", nome: "Queijos", ordem: 3 },
   { cor: "#8B5CF6", icone: "M", id: "molhos", nome: "Molhos", ordem: 4 },
   { cor: "#22C55E", icone: "H", id: "hortifruti", nome: "Hortifruti", ordem: 5 },
   { cor: "#3B82F6", icone: "B", id: "bebidas", nome: "Bebidas", ordem: 6 },
   { cor: "#6B7280", icone: "E", id: "embalagens", nome: "Embalagens", ordem: 7 },
   { cor: "#EC4899", icone: "L", id: "limpeza", nome: "Limpeza", ordem: 8 },
-  { cor: "#F97316", icone: "P", id: "producao-propria", nome: "Producao Propria", ordem: 9 },
+  { cor: "#F97316", icone: "P", id: "producao-propria", nome: "Produção Própria", ordem: 9 },
 ] as const;
 
 function getBearerToken(request: Request) {
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   const empresaId = normalizeText(existingUser.empresaId, uid);
   const lojaId = normalizeText(existingUser.lojaId, DEFAULT_STORE_ID);
   const email = normalizeText(existingUser.email || decoded.email, "");
-  const nome = normalizeText(existingUser.nome || decoded.name || body.nome, "Usuario");
+  const nome = normalizeText(existingUser.nome || decoded.name || body.nome, "Usuário");
   const tipoConta = normalizeText(existingUser.tipoConta || body.tipoConta, "Hamburgueria / Restaurante");
   const nomeFantasia = normalizeText(body.nomeFantasia || existingUser.nomeFantasia || tipoConta, "Carioca's Pro");
   const plano = normalizeText(existingUser.plano || existingUser.plan, DEFAULT_PLAN);
