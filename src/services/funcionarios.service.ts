@@ -1,89 +1,94 @@
-import type { Funcionario } from "../types";
-import { atualizarDocumento, consultar, criarDocumento, deletarDocumento, obterDocumento, obterTodos } from "./db";
+import { sendPasswordResetEmail } from "firebase/auth";
 
-const COLECAO = "funcionarios";
-const COLECAO_USUARIOS = "usuarios";
+import { auth } from "../lib/firebase";
+import type { Funcionario } from "../types";
+
+type FuncionarioApi = Omit<Funcionario, "criadoEm" | "dataContratacao"> & {
+  criadoEm?: string | null;
+  dataContratacao?: string | null;
+};
+
+async function authHeaders() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Sessão expirada. Entre novamente para continuar.");
+  const token = await user.getIdToken();
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function apiRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const headers = await authHeaders();
+  const response = await fetch(url, {
+    ...init,
+    headers: { ...headers, ...(init?.headers || {}) },
+  });
+  const payload = (await response.json().catch(() => ({}))) as T & { error?: string };
+  if (!response.ok) {
+    throw new Error(payload.error || "Não foi possível concluir a operação.");
+  }
+  return payload;
+}
+
+function hydrateFuncionario(item: FuncionarioApi): Funcionario {
+  return {
+    ...item,
+    criadoEm: item.criadoEm ? new Date(item.criadoEm) : new Date(),
+    dataContratacao: item.dataContratacao ? new Date(item.dataContratacao) : new Date(),
+  } as Funcionario;
+}
 
 export async function listarFuncionarios(): Promise<Funcionario[]> {
-  try {
-    return obterTodos<Funcionario>(COLECAO);
-  } catch (error) {
-    console.error("Erro ao listar funcionarios", error);
-    return [];
-  }
+  const payload = await apiRequest<{ funcionarios: FuncionarioApi[] }>("/api/funcionarios");
+  return (payload.funcionarios || []).map(hydrateFuncionario);
 }
 
 export async function getFuncionario(id: string): Promise<Funcionario | null> {
   try {
-    return obterDocumento<Funcionario>(COLECAO, id);
+    const payload = await apiRequest<{ funcionario: FuncionarioApi }>(`/api/funcionarios?id=${encodeURIComponent(id)}`);
+    return hydrateFuncionario(payload.funcionario);
   } catch (error) {
-    console.error("Erro ao buscar funcionario", error);
-    return null;
+    if (error instanceof Error && error.message === "Funcionário não encontrado.") return null;
+    throw error;
   }
 }
 
 export const buscarFuncionario = getFuncionario;
 
 export async function criarFuncionario(dados: Omit<Funcionario, "id" | "criadoEm">): Promise<string> {
-  try {
-    const id = await criarDocumento(COLECAO, dados);
-    await sincronizarUsuarioFuncionario(dados);
-    return id;
-  } catch (error) {
-    console.error("Erro ao criar funcionario", error);
-    throw error;
+  const payload = await apiRequest<{ id: string; novoAcesso: boolean }>("/api/funcionarios", {
+    body: JSON.stringify(dados),
+    method: "POST",
+  });
+
+  if (payload.novoAcesso && dados.email) {
+    // O servidor cria a conta sem senha. O Firebase envia ao colaborador o fluxo
+    // oficial para definir a própria senha, sem expor credenciais ao administrador.
+    await sendPasswordResetEmail(auth, dados.email.trim().toLowerCase()).catch((error) => {
+      console.warn("Funcionário criado, mas o e-mail para definir a senha não pôde ser enviado.", error);
+    });
   }
+
+  return payload.id;
 }
 
 export async function atualizarFuncionario(id: string, dados: Partial<Funcionario>): Promise<void> {
-  try {
-    await atualizarDocumento<Funcionario>(COLECAO, id, dados);
-    const funcionario = await obterDocumento<Funcionario>(COLECAO, id);
-    if (funcionario) {
-      await sincronizarUsuarioFuncionario(funcionario);
-    }
-  } catch (error) {
-    console.error("Erro ao atualizar funcionario", error);
-    throw error;
-  }
+  await apiRequest<{ ok: boolean }>("/api/funcionarios", {
+    body: JSON.stringify({ ...dados, id }),
+    method: "PATCH",
+  });
 }
 
 export async function deletarFuncionario(id: string): Promise<void> {
-  try {
-    return deletarDocumento(COLECAO, id);
-  } catch (error) {
-    console.error("Erro ao deletar funcionario", error);
-    throw error;
-  }
+  await apiRequest<{ ok: boolean }>(`/api/funcionarios?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export const removerFuncionario = deletarFuncionario;
 
 export async function getFuncionariosAtivos(): Promise<Funcionario[]> {
-  try {
-    const todos = await listarFuncionarios();
-    return todos.filter((item) => item.ativo);
-  } catch (error) {
-    console.error("Erro ao listar funcionarios ativos", error);
-    return [];
-  }
-}
-
-async function sincronizarUsuarioFuncionario(funcionario: Partial<Funcionario>) {
-  const email = funcionario.email?.trim().toLowerCase();
-  if (!email) return;
-
-  const usuarios = await consultar<{ uid: string }>(COLECAO_USUARIOS, [{ campo: "email", operador: "==", valor: email }]);
-  await Promise.all(
-    usuarios
-      .filter((usuario) => usuario.uid)
-      .map((usuario) =>
-        atualizarDocumento(COLECAO_USUARIOS, usuario.uid, {
-          nome: funcionario.nome,
-          role: funcionario.role || "funcionario",
-          funcionarioAtivo: Boolean(funcionario.ativo),
-          permissoes: funcionario.ativo === false ? [] : funcionario.permissoes || [],
-        }),
-      ),
-  );
+  const todos = await listarFuncionarios();
+  return todos.filter((item) => item.ativo);
 }
