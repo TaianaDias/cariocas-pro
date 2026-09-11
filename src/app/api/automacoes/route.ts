@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isAdministrativeRole } from "../../../lib/access-control";
 import { authorizeAppRequest } from "../../../lib/server-auth";
 import { dispararAutomacao } from "../../../services/automacoes-whatsapp.service";
 
@@ -12,6 +13,10 @@ export async function POST(request: NextRequest) {
       { error: access.status === 401 ? "Sessão inválida." : "Acesso não autorizado." },
       { status: access.status },
     );
+  }
+
+  if (!isAdministrativeRole(access.role)) {
+    return NextResponse.json({ error: "Disparo manual de automações restrito à gestão." }, { status: 403 });
   }
 
   try {
