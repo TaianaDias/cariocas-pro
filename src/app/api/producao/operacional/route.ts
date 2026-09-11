@@ -224,6 +224,10 @@ export async function POST(request: NextRequest) {
 
     await firestore.runTransaction(async (transaction) => {
       const brutoSnapshot = await transaction.get(brutoRef as DocumentReference<DocumentData>);
+      const porcionadoSnapshot = porcionadoRef
+        ? await transaction.get(porcionadoRef as DocumentReference<DocumentData>)
+        : null;
+
       if (!brutoSnapshot.exists) throw new Error("Item bruto não encontrado.");
       const bruto = brutoSnapshot.data() || {};
       if (bruto.lojaId && bruto.lojaId !== access.lojaId) throw new Error("Loja inválida.");
@@ -237,6 +241,15 @@ export async function POST(request: NextRequest) {
       const unidade = String(bruto.unidadeMedida || bruto.unidadeUso || bruto.unidadeCompra || "un");
       const insumoNome = String(bruto.nome || "Insumo");
       let insumoPorcionadoNome = "";
+      let saldoPorcionado = 0;
+
+      if (porcionadoSnapshot) {
+        if (!porcionadoSnapshot.exists) throw new Error("Item porcionado não encontrado.");
+        const porcionado = porcionadoSnapshot.data() || {};
+        if (porcionado.lojaId && porcionado.lojaId !== access.lojaId) throw new Error("Loja inválida.");
+        saldoPorcionado = Number(porcionado.quantidadeAtual ?? porcionado.estoqueAtual) || 0;
+        insumoPorcionadoNome = String(porcionado.nome || "Item porcionado");
+      }
 
       transaction.update(brutoRef, {
         atualizadoEm: FieldValue.serverTimestamp(),
@@ -244,14 +257,7 @@ export async function POST(request: NextRequest) {
         quantidadeAtual: saldoAtual - quantidade,
       });
 
-      if (porcionadoRef) {
-        const porcionadoSnapshot = await transaction.get(porcionadoRef as DocumentReference<DocumentData>);
-        if (!porcionadoSnapshot.exists) throw new Error("Item porcionado não encontrado.");
-        const porcionado = porcionadoSnapshot.data() || {};
-        if (porcionado.lojaId && porcionado.lojaId !== access.lojaId) throw new Error("Loja inválida.");
-
-        const saldoPorcionado = Number(porcionado.quantidadeAtual ?? porcionado.estoqueAtual) || 0;
-        insumoPorcionadoNome = String(porcionado.nome || "Item porcionado");
+      if (porcionadoRef && porcionadoSnapshot) {
         transaction.update(porcionadoRef, {
           atualizadoEm: FieldValue.serverTimestamp(),
           custoUnitarioCompra: custoPorPorcao,
