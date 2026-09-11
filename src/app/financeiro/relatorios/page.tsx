@@ -10,7 +10,7 @@ import { EmptyState } from "../../../components/ui/EmptyState";
 import { Spinner } from "../../../components/ui/Spinner";
 import { useRelatorios } from "../../../hooks/useRelatorios";
 
-export default function RelatoriosFinanceirosPage() {
+export function RelatoriosFinanceirosPage() {
   const hoje = new Date();
   const [dataInicio, setDataInicio] = useState(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [dataFim, setDataFim] = useState(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59));
@@ -139,3 +139,5 @@ function ListaLinha({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+export default RelatoriosFinanceirosPage;
