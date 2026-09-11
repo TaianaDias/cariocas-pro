@@ -3,15 +3,18 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import type { NextRequest } from "next/server";
 
-import { canAccessAppPath, normalizeRole } from "./access-control";
+import { canAccessAppPath, isOperationalRole, normalizeRole } from "./access-control";
 import { canAccessPrecificacao, hasPrecificacaoPermission, normalizePlan } from "./permissions";
 import type { PrecificacaoPermission } from "./permissions";
 import type { PermissaoFuncionario } from "../types";
 
 type ServerUserProfile = {
+  ativo?: boolean;
   email?: string;
   empresaId?: string;
+  funcionarioAtivo?: boolean;
   lojaId?: string;
+  nome?: string;
   permissoes?: PermissaoFuncionario[];
   plan?: string;
   plano?: string;
@@ -78,6 +81,12 @@ export async function getServerUserProfile(request: NextRequest): Promise<Server
   }
 }
 
+function isInactiveProfile(profile: ServerUserProfile, role: string) {
+  if (profile.ativo === false) return true;
+  if (isOperationalRole(role) && profile.funcionarioAtivo === false) return true;
+  return false;
+}
+
 export async function authorizeAppRequest(request: NextRequest, path: string) {
   const profile = await getServerUserProfile(request);
 
@@ -89,6 +98,10 @@ export async function authorizeAppRequest(request: NextRequest, path: string) {
   const role = normalizeRole(profile.role);
   const empresaId = profile.empresaId || profile.uid;
   const lojaId = profile.lojaId;
+
+  if (isInactiveProfile(profile, role)) {
+    return { reason: "inactive" as const, status: 403 as const };
+  }
 
   if (!empresaId || !lojaId) {
     return { reason: "missing-tenant" as const, status: 403 as const };
@@ -124,6 +137,10 @@ export async function authorizePrecificacaoRequest(
   const role = normalizeRole(profile.role);
   const userEmpresaId = profile.empresaId || profile.uid;
   const userLojaId = profile.lojaId;
+
+  if (isInactiveProfile(profile, role)) {
+    return { reason: "inactive" as const, status: 403 as const };
+  }
 
   if (!empresaId) {
     return { reason: "missing-empresa" as const, status: 400 as const };
