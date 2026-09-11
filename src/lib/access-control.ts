@@ -6,14 +6,14 @@ export const employeePermissionOptions: { label: string; permission: PermissaoFu
   { label: "Estoque e Reposicao", path: "/estoque", permission: "estoque.ver" },
   { label: "Compras / Movimentacoes", path: "/compras", permission: "compras.ver", risk: "Aguardando projeção operacional segura" },
   { label: "Producao", path: "/producao", permission: "producao.ver", risk: "Aguardando projeção operacional segura" },
-  { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver", risk: "Aguardando projeção operacional segura" },
+  { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver" },
   { label: "Relatorios", path: "/relatorios", permission: "relatorios.ver", risk: "Aguardando projeção operacional segura" },
 ];
 
 const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
 const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
 const administrativePaths = ["/precificacao", "/financeiro", "/fornecedores", "/funcionarios", "/configuracoes"];
-const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao"];
+const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao", "/desperdicio"];
 
 export function normalizeRole(role?: string | null): PapelUsuario {
   if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
