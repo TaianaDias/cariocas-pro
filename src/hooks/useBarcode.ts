@@ -3,8 +3,8 @@
 import { useCallback } from "react";
 
 import { isOperationalRole } from "../lib/access-control";
+import { operationalStockItemToInsumo, type OperationalStockItem } from "../lib/operational-stock";
 import { buscarExterno, buscarProdutoPorCodigo } from "../services/barcode.service";
-import type { Insumo } from "../types";
 import { useAuth } from "./useAuth";
 
 export function useBarcode() {
@@ -28,8 +28,9 @@ export function useBarcode() {
 
       if (!response.ok) return null;
 
-      const data = (await response.json()) as { items?: Insumo[] };
-      return data.items?.[0] || null;
+      const data = (await response.json()) as { items?: OperationalStockItem[] };
+      const item = data.items?.[0];
+      return item ? operationalStockItemToInsumo(item) : null;
     } catch {
       return null;
     }
