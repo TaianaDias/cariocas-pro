@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:orthography": "node scripts/check-ui-orthography.mjs"
+    "check:orthography": "node scripts/check-ui-orthography.mjs",
+    "fix:orthography": "node scripts/check-ui-orthography.mjs --write"
   },
   "dependencies": {
     "firebase": "^11.10.0",
