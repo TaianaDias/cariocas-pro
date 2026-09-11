@@ -1,10 +1,10 @@
 "use client";
 
-import { RelatoriosFinanceirosPage } from "../financeiro/relatorios/page";
+import { RelatoriosFinanceiros } from "../../components/financeiro/RelatoriosFinanceiros";
 import { RelatoriosOperacionais } from "../../components/relatorios/RelatoriosOperacionais";
+import { Spinner } from "../../components/ui/Spinner";
 import { useAuth } from "../../hooks/useAuth";
 import { isOperationalRole } from "../../lib/access-control";
-import { Spinner } from "../../components/ui/Spinner";
 
 export default function RelatoriosPage() {
   const { loading, userProfile } = useAuth();
@@ -17,5 +17,5 @@ export default function RelatoriosPage() {
     return <RelatoriosOperacionais />;
   }
 
-  return <RelatoriosFinanceirosPage />;
+  return <RelatoriosFinanceiros />;
 }
