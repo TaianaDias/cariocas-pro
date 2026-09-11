@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+
+import { authorizeAppRequest } from "../../../../lib/server-auth";
 
 function normalizarCodigo(value: string) {
   return value.replace(/\D/g, "");
@@ -18,9 +20,16 @@ function getTimeoutSignal(ms = 5000) {
   return AbortSignal.timeout(ms);
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const codigo = normalizarCodigo(searchParams.get("codigo") || "");
+export async function GET(request: NextRequest) {
+  const access = await authorizeAppRequest(request, "/estoque");
+  if (access.status !== 200) {
+    return NextResponse.json(
+      { error: access.status === 401 ? "Sessão inválida." : "Acesso não autorizado." },
+      { status: access.status },
+    );
+  }
+
+  const codigo = normalizarCodigo(request.nextUrl.searchParams.get("codigo") || "");
 
   if (!codigo) {
     return NextResponse.json({ error: "Informe um codigo de barras valido." }, { status: 400 });
