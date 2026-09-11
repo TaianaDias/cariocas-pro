@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: build-v2-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
