@@ -3,12 +3,14 @@ import type { PapelUsuario, PermissaoFuncionario } from "../types";
 
 export const employeePermissionOptions: { label: string; permission: PermissaoFuncionario; path: string; risk?: string }[] = [
   { label: "Dashboard", path: "/dashboard", permission: "dashboard.ver" },
-  { label: "Estoque e Reposicao", path: "/estoque", permission: "estoque.ver" },
-  { label: "Compras / Movimentacoes", path: "/compras", permission: "compras.ver" },
-  { label: "Producao", path: "/producao", permission: "producao.ver" },
-  { label: "Desperdicio", path: "/desperdicio", permission: "desperdicio.ver" },
-  { label: "Relatorios", path: "/relatorios", permission: "relatorios.ver" },
+  { label: "Estoque e Reposição", path: "/estoque", permission: "estoque.ver" },
+  { label: "Compras / Movimentações", path: "/compras", permission: "compras.ver" },
+  { label: "Produção", path: "/producao", permission: "producao.ver" },
+  { label: "Desperdício", path: "/desperdicio", permission: "desperdicio.ver" },
+  { label: "Relatórios", path: "/relatorios", permission: "relatorios.ver" },
 ];
+
+export const operationalEmployeePermissions = employeePermissionOptions.map((item) => item.permission);
 
 const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
 const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
@@ -21,7 +23,7 @@ export function normalizeRole(role?: string | null): PapelUsuario {
   }
 
   // Mantemos "user" como administrativo por compatibilidade com contas antigas.
-  // A migracao de papeis pode remover este fallback em uma etapa separada.
+  // A migração de papéis pode remover este fallback em uma etapa separada.
   return "user";
 }
 
@@ -82,10 +84,10 @@ export function canAccessAppPath({
   if (isAdministrativeRole(normalizedRole)) return true;
   if (!isOperationalRole(normalizedRole)) return false;
 
-  // Areas administrativas nunca sao liberadas por uma permissao operacional antiga.
+  // Áreas administrativas nunca são liberadas por uma permissão operacional antiga.
   if (isAdministrativePath(path)) return false;
 
-  // Enquanto um modulo ainda lê documentos financeiros completos diretamente do
+  // Enquanto um módulo ainda lê documentos financeiros completos diretamente do
   // Firestore, ele não é liberado à equipe. A rota entra nesta lista somente
   // depois de ganhar projeção server-side sanitizada.
   if (!isOperationallySafePath(path)) return false;
