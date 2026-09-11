@@ -1,4 +1,4 @@
-import { isAdministrativeRole } from "../lib/access-control";
+import { canAccessAppPath, isAdministrativeRole } from "../lib/access-control";
 
 export type NavigationIcon =
   | "dashboard"
@@ -122,6 +122,17 @@ export const navigationSections: NavigationSection[] = [
   },
 ];
 
-export function getDashboardSections(role?: string | null) {
-  return navigationSections.filter((section) => !section.adminOnly || isAdministrativeRole(role));
+export function getDashboardSections(role?: string | null, permissions?: readonly string[] | null, plan?: string | null) {
+  const administrative = isAdministrativeRole(role);
+
+  return navigationSections
+    .filter((section) => !section.adminOnly || administrative)
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (item.planned || administrative) return true;
+        return canAccessAppPath({ path: item.href.split("?")[0], permissions, plan, role });
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
 }
