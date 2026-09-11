@@ -18,7 +18,9 @@ export function DashboardHome() {
   const { user, userProfile } = useAuth();
   const { comprasRecomendadas, error, kpis, loading, produtosVencer } = useDashboardData();
   const role = userProfile?.role || "user";
-  const sections = getDashboardSections(role);
+  const permissions = userProfile?.permissoes || [];
+  const plan = userProfile?.plano || userProfile?.plan || "free";
+  const sections = getDashboardSections(role, permissions, plan);
   const displayName = userProfile?.nome || user?.displayName || "equipe";
   const firstName = displayName.trim().split(/\s+/)[0] || "equipe";
   const administrative = isAdministrativeRole(role);
