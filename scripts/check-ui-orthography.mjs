@@ -147,19 +147,56 @@ function fixText(value) {
   return output;
 }
 
-function repairInterpolationExpression(expression) {
-  let output = expression;
+function repairCodeSegment(segment) {
+  let output = segment;
 
-  // A versão anterior do corretor podia acentuar nomes de propriedades dentro de ${...}.
-  // Aqui restauramos apenas identificadores de código; o texto visível continua corrigido fora da interpolação.
   for (const [wrong, right] of corrections) {
-    const property = new RegExp(`\\.${escapeRegExp(right)}(?=[^\\p{L}\\p{N}_$]|$)`, "giu");
-    output = output.replace(property, `.${wrong}`);
-
-    const standalone = new RegExp(`^\\s*${escapeRegExp(right)}(?=\\s*(?:[.\[]|$))`, "iu");
-    output = output.replace(standalone, (match) => match.replace(new RegExp(escapeRegExp(right), "iu"), wrong));
+    const re = new RegExp(`(^|[^\\p{L}\\p{N}_$])(${escapeRegExp(right)})(?=[^\\p{L}\\p{N}_$]|$)`, "giu");
+    output = output.replace(re, (_match, prefix, word) => `${prefix}${preserveCase(word, wrong)}`);
   }
 
+  return output;
+}
+
+function repairInterpolationExpression(expression) {
+  let output = "";
+  let codeBuffer = "";
+  let quote = null;
+  let escaped = false;
+
+  const flushCode = () => {
+    output += repairCodeSegment(codeBuffer);
+    codeBuffer = "";
+  };
+
+  for (let index = 0; index < expression.length; index += 1) {
+    const char = expression[index];
+
+    if (quote) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (char === quote) quote = null;
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === "`") {
+      flushCode();
+      quote = char;
+      output += char;
+      continue;
+    }
+
+    codeBuffer += char;
+  }
+
+  flushCode();
   return output;
 }
 
