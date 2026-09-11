@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { isOperationalRole } from "../lib/access-control";
+import { operationalStockItemToInsumo, type OperationalStockItem } from "../lib/operational-stock";
 import {
   getComprasRecomendadas,
   getKpis,
@@ -100,10 +101,11 @@ export function useDashboardData(): DashboardData {
             headers: { authorization: `Bearer ${token}` },
             cache: "no-store",
           });
-          const payload = (await response.json().catch(() => ({}))) as { error?: string; items?: Insumo[] };
+          const payload = (await response.json().catch(() => ({}))) as { error?: string; items?: OperationalStockItem[] };
           if (!response.ok) throw new Error(payload.error || "Erro ao carregar dashboard operacional.");
 
-          const operationalData = getOperationalDashboard(payload.items || []);
+          const items = (payload.items || []).map(operationalStockItemToInsumo);
+          const operationalData = getOperationalDashboard(items);
           if (!mounted) return;
           setData({ ...operationalData, loading: false, error: null });
           return;
