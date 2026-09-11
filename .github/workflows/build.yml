@@ -42,5 +42,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check UI orthography
+        run: npm run check:orthography
+
       - name: Build
         run: npm run build
