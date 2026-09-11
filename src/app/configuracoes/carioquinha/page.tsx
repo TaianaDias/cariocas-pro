@@ -231,7 +231,7 @@ export default function CarioquinhaConfigPage() {
             <h2>Escaneie o QR Code</h2>
           </div>
           <img src={`data:image/png;base64,${status.qrcode}`} alt="QR Code para conectar WhatsApp" />
-          <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a camera para este código.</p>
+          <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a câmera para este código.</p>
           <Button variant="secondary" onClick={conectarWhatsApp} disabled={criando}>
             {criando ? "Gerando..." : "Gerar novo QR Code"}
           </Button>
@@ -266,7 +266,7 @@ export default function CarioquinhaConfigPage() {
 
           <div className="carioquinha-page__messages" aria-label="Exemplo de conversa">
             <article className="carioquinha-page__bubble carioquinha-page__bubble--user">
-              <span>Voce</span>
+              <span>Você</span>
               <p>O que preciso comprar hoje?</p>
             </article>
             <article className="carioquinha-page__bubble carioquinha-page__bubble--ai">

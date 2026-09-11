@@ -15,13 +15,13 @@ function numberValue(value: string) {
 export function ProdutoAbaFornecedores({ onChange, produto }: Props) {
   return (
     <section className="drawer-tab">
-      <h3>Fornecedores e Reposicao</h3>
+      <h3>Fornecedores e Reposição</h3>
       <div className="drawer-form-grid">
         <TextInput label="Fornecedor principal" value={produto.fornecedorPrincipal || ""} onChange={(event) => onChange({ fornecedorPrincipal: event.target.value })} />
-        <TextInput label="Frequencia de pedido" value={produto.frequenciaPedido || ""} onChange={(event) => onChange({ frequenciaPedido: event.target.value })} />
+        <TextInput label="Frequência de pedido" value={produto.frequenciaPedido || ""} onChange={(event) => onChange({ frequenciaPedido: event.target.value })} />
         <TextInput label="Dias para pedido" type="number" min="0" value={produto.diasPedido ?? 0} onChange={(event) => onChange({ diasPedido: numberValue(event.target.value) })} />
         <TextInput label="Dias de entrega" type="number" min="0" value={produto.diasEntrega ?? 0} onChange={(event) => onChange({ diasEntrega: numberValue(event.target.value) })} />
-        <TextInput label="Quantidade padrao por pedido" type="number" min="0" value={produto.quantidadePadraoPedido ?? 0} onChange={(event) => onChange({ quantidadePadraoPedido: numberValue(event.target.value) })} />
+        <TextInput label="Quantidade padrão por pedido" type="number" min="0" value={produto.quantidadePadraoPedido ?? 0} onChange={(event) => onChange({ quantidadePadraoPedido: numberValue(event.target.value) })} />
       </div>
       {produto.fornecedores?.length ? (
         <div className="drawer-list">

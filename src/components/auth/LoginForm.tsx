@@ -80,7 +80,7 @@ export function LoginForm() {
         <TextInput
           label="Email"
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="voce@empresa.com"
+          placeholder="você@empresa.com"
           type="email"
           value={email}
         />

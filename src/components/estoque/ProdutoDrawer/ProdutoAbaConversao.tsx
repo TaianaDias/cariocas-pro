@@ -11,7 +11,7 @@ export function ProdutoAbaConversao({ insumo, onSave }: ProdutoAbaConversaoProps
 
   return (
     <section className="drawer-tab" id="conversao">
-      <h3>Conversao</h3>
+      <h3>Conversão</h3>
       <details open>
         <summary>Unidades de compra e consumo</summary>
         <div className="drawer-form-grid">

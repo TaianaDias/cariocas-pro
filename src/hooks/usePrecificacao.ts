@@ -122,7 +122,7 @@ export function usePrecificacao() {
       setInsumos(insumosData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar precificacao.");
+      setError(err instanceof Error ? err.message : "Erro ao carregar precificação.");
     } finally {
       setLoading(false);
     }

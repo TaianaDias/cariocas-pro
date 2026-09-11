@@ -78,15 +78,15 @@ export function PlanosPageClient() {
             <strong>42%</strong>
           </div>
           <div>
-            <span>Preco ideal</span>
+            <span>Preço ideal</span>
             <strong>R$ 31,90</strong>
           </div>
         </div>
         <div className="plans-hero__content">
           <a className="plans-logo" href="/">Carioca&apos;s Pro</a>
           <Badge tone="danger">Planos SaaS para food service</Badge>
-          <h1>Escolha o plano certo para liberar a operação que voce precisa hoje</h1>
-          <p>Comece simples, evolua para gestão profissional e desbloqueie precificacao, CMV, relatórios e automações quando fizer sentido.</p>
+          <h1>Escolha o plano certo para liberar a operação que você precisa hoje</h1>
+          <p>Comece simples, evolua para gestão profissional e desbloqueie precificação, CMV, relatórios e automações quando fizer sentido.</p>
           <div className="plans-hero__actions">
             <a className="button button--primary" href="#comparar">Comparar planos</a>
             <a className="button button--secondary" href={user ? "/dashboard" : "/cadastro"}>{user ? "Voltar ao sistema" : "Criar conta"}</a>

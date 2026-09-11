@@ -20,14 +20,14 @@ export function ProdutoAbaConversao({ onChange, produto }: Props) {
 
   return (
     <section className="drawer-tab">
-      <h3>Conversao para Ficha Técnica</h3>
+      <h3>Conversão para Ficha Técnica</h3>
       <p className="estoque-feedback">Informe quanto a compra rende na unidade usada nas receitas. Ex: 1 KG de bacon rende 50 FATIAS.</p>
       <div className="drawer-form-grid">
         <label className="field">
           <span className="field__label">Metodo de custo</span>
           <select className="select-input" value={metodoCusto} onChange={(event) => onChange({ metodoCusto: event.target.value as Insumo["metodoCusto"] })}>
             <option value="ultimo_custo_compra">Ultimo custo de compra</option>
-            <option value="medio_automatico">Custo medio automatico</option>
+            <option value="medio_automatico">Custo medio automático</option>
             <option value="manual_travado">Manual travado</option>
           </select>
         </label>
@@ -39,7 +39,7 @@ export function ProdutoAbaConversao({ onChange, produto }: Props) {
           <TextInput label={`Custo fixo por ${unidadeUso}`} helperText="Ex: alface = R$ 0,25 por folha" type="number" min="0" step="0.01" value={produto.custoManualTravado ?? 0} onChange={(event) => onChange({ custoManualTravado: numberValue(event.target.value) })} />
         ) : null}
         <TextInput label="Custo promocional" type="number" min="0" step="0.01" value={produto.custoPromocional ?? ""} onChange={(event) => onChange({ custoPromocional: event.target.value ? numberValue(event.target.value) : undefined })} />
-        <TextInput label="Preco de venda" type="number" min="0" step="0.01" value={produto.precoVenda ?? 0} onChange={(event) => onChange({ precoVenda: numberValue(event.target.value) })} />
+        <TextInput label="Preço de venda" type="number" min="0" step="0.01" value={produto.precoVenda ?? 0} onChange={(event) => onChange({ precoVenda: numberValue(event.target.value) })} />
       </div>
       <div className="drawer-list">
         <article><span>Custo por {unidadeUso}{metodoCusto === "manual_travado" ? " travado" : ""}</span><strong>R$ {custoUnitario.toFixed(2)}</strong></article>

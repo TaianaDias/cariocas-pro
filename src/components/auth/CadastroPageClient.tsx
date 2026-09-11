@@ -86,7 +86,7 @@ export function CadastroPageClient() {
           <TextInput
             label="Email"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="voce@empresa.com"
+            placeholder="você@empresa.com"
             required
             type="email"
             value={email}

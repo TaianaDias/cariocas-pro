@@ -504,7 +504,7 @@ export function ComprasPageClient() {
 
   async function excluirPedidoMercado(pedido: PedidoCompra) {
     if (!pedido.id) return;
-    const confirmou = window.confirm(`Excluir a lista de mercado ${pedido.número || ""}?`);
+    const confirmou = window.confirm(`Excluir a lista de mercado ${pedido.numero || ""}?`);
     if (!confirmou) return;
 
     setSaving(true);
@@ -615,7 +615,7 @@ export function ComprasPageClient() {
 
   async function receberPedido(pedido: PedidoCompra) {
     if (!pedido.id || !empresaId || !lojaId || !user?.uid) return;
-    const confirmou = window.confirm(`Registrar recebimento do pedido ${pedido.número || ""} e atualizar o estoque?`);
+    const confirmou = window.confirm(`Registrar recebimento do pedido ${pedido.numero || ""} e atualizar o estoque?`);
     if (!confirmou) return;
 
     setSaving(true);
@@ -641,7 +641,7 @@ export function ComprasPageClient() {
         <Kpi label="Pedidos" value={String(pedidos.length)} />
         <Kpi label="Pendentes" value={String(pendentes)} />
         <Kpi label="Valor total" value={money(total)} />
-        <Kpi label="Reposicao" value={String(insumosAbaixoMinimo.length)} />
+        <Kpi label="Reposição" value={String(insumosAbaixoMinimo.length)} />
       </section>
 
       {insumosAbaixoMinimo.length ? (
@@ -754,7 +754,7 @@ export function ComprasPageClient() {
             <header>
               <div>
                 <strong>Selecionar insumos do estoque</strong>
-                <span>Marque os itens que voce quer comprar. Os itens no minimo ja aparecem como sugestao.</span>
+                <span>Marque os itens que você quer comprar. Os itens no minimo ja aparecem como sugestão.</span>
               </div>
               <Badge tone="neutral">{insumosLoading ? "carregando" : `${selectedInsumos.length} selecionados`}</Badge>
             </header>
@@ -821,7 +821,7 @@ export function ComprasPageClient() {
 
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar compras" description={error} /> : null}
       {!loading && !error && pedidos.length === 0 ? (
-        <EmptyState title="Nenhum pedido registrado" description="Os próximos pedidos de compra aparecerao aqui." action={<Button onClick={abrirNovoPedido}>Novo Pedido</Button>} />
+        <EmptyState title="Nenhum pedido registrado" description="Os próximos pedidos de compra aparecerão aqui." action={<Button onClick={abrirNovoPedido}>Novo Pedido</Button>} />
       ) : null}
       {!loading && pedidos.length ? (
         <section className="operational-list">
@@ -1071,7 +1071,7 @@ export function FornecedoresPageClient() {
 
   async function excluirFornecedor(fornecedor: Fornecedor) {
     if (!fornecedor.id) return;
-    const confirmou = window.confirm(`Excluir "${fornecedor.nome}"? O fornecedor tambem sera removido dos vínculos dos insumos.`);
+    const confirmou = window.confirm(`Excluir "${fornecedor.nome}"? O fornecedor também será removido dos vínculos dos insumos.`);
     if (!confirmou) return;
 
     setFormError(null);
@@ -1150,11 +1150,11 @@ export function FornecedoresPageClient() {
             />
             <Field label="Custo unitario" type="number" value={vinculoForm.custoUnitario} onChange={(value) => setVinculoForm((current) => ({ ...current, custoUnitario: Number(value) }))} />
             <Field label="Unidade compra/uso" value={vinculoForm.unidadeUso} onChange={(value) => setVinculoForm((current) => ({ ...current, unidadeUso: value }))} />
-            <Field label="Conversao" type="number" value={vinculoForm.conversao} onChange={(value) => setVinculoForm((current) => ({ ...current, conversao: Number(value) }))} />
-            <Field label="Qtd padrao pedido" type="number" value={vinculoForm.quantidadePadrao} onChange={(value) => setVinculoForm((current) => ({ ...current, quantidadePadrao: Number(value) }))} />
+            <Field label="Conversão" type="number" value={vinculoForm.conversao} onChange={(value) => setVinculoForm((current) => ({ ...current, conversao: Number(value) }))} />
+            <Field label="Qtd padrão pedido" type="number" value={vinculoForm.quantidadePadrao} onChange={(value) => setVinculoForm((current) => ({ ...current, quantidadePadrao: Number(value) }))} />
             <Field label="Dias entrega" type="number" value={vinculoForm.diasEntrega} onChange={(value) => setVinculoForm((current) => ({ ...current, diasEntrega: Number(value) }))} />
             <Field label="Dias pedido" type="number" value={vinculoForm.diasPedido} onChange={(value) => setVinculoForm((current) => ({ ...current, diasPedido: Number(value) }))} />
-            <Field label="Frequencia pedido" value={vinculoForm.frequenciaPedido} onChange={(value) => setVinculoForm((current) => ({ ...current, frequenciaPedido: value }))} />
+            <Field label="Frequência pedido" value={vinculoForm.frequenciaPedido} onChange={(value) => setVinculoForm((current) => ({ ...current, frequenciaPedido: value }))} />
             <SelectField label="Fornecedor principal deste insumo" value={vinculoForm.principal ? "sim" : "nao"} onChange={(value) => setVinculoForm((current) => ({ ...current, principal: value === "sim" }))}>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
@@ -1329,7 +1329,7 @@ export function FuncionariosPageClient() {
           </div>
           <div className="operational-permissions">
             <strong>Módulos liberados</strong>
-            <span>O funcionário so conseguira abrir os módulos marcados abaixo. Rotas diretas tambem sao bloqueadas.</span>
+            <span>O funcionário só conseguirá abrir os módulos marcados abaixo. Rotas diretas também são bloqueadas.</span>
             <div className="operational-permissions__grid">
               {employeePermissionOptions.map((item) => {
                 const checked = form.permissoes.includes(item.permission);
@@ -1350,7 +1350,7 @@ export function FuncionariosPageClient() {
       ) : null}
       {loading ? <LoadingGrid /> : error ? <EmptyState title="Erro ao carregar funcionários" description={error} /> : null}
       {!loading && !error && funcionarios.length === 0 ? (
-        <EmptyState title="Nenhum funcionário cadastrado" description="Cadastre a equipe para controlar acesso, funcoes e operação." action={<Button onClick={abrirNovoFuncionario}>Novo Funcionário</Button>} />
+        <EmptyState title="Nenhum funcionário cadastrado" description="Cadastre a equipe para controlar acesso, funções e operação." action={<Button onClick={abrirNovoFuncionario}>Novo Funcionário</Button>} />
       ) : null}
       {!loading && funcionarios.length ? (
         <section className="operational-list">
@@ -1527,7 +1527,7 @@ export function ProducaoPageClient() {
 
   async function excluirPorcao(porcao: ProducaoPorcao) {
     if (!porcao.id) return;
-    const confirmou = window.confirm(`Excluir a porção de "${porção.insumoNome}"? Esta ação remove o controle da porção, mas não devolve automaticamente a baixa ao estoque.`);
+    const confirmou = window.confirm(`Excluir a porção de "${porcao.insumoNome}"? Esta ação remove o controle da porção, mas não devolve automaticamente a baixa ao estoque.`);
     if (!confirmou) return;
 
     setFormError(null);
@@ -1541,7 +1541,7 @@ export function ProducaoPageClient() {
 
   async function estornarPorcao(porcao: ProducaoPorcao) {
     if (!porcao.id || !empresaId || !lojaId) return;
-    const confirmou = window.confirm(`Estornar a produção de "${porção.insumoNome}"? O insumo bruto volta ao estoque e as porções serao removidas.`);
+    const confirmou = window.confirm(`Estornar a produção de "${porcao.insumoNome}"? O insumo bruto volta ao estoque e as porções serão removidas.`);
     if (!confirmou) return;
 
     setFormError(null);
@@ -1600,7 +1600,7 @@ export function ProducaoPageClient() {
               <option value="unidade">Unidade</option>
             </SelectField>
             <Field label="Qtd por porção" type="number" value={porcaoForm.quantidadePorPorcao} onChange={(value) => setPorcaoForm((current) => ({ ...current, quantidadePorPorcao: Number(value) }))} />
-            <Field label="Area" value={porcaoForm.area} onChange={(value) => setPorcaoForm((current) => ({ ...current, area: value }))} />
+            <Field label="Área" value={porcaoForm.area} onChange={(value) => setPorcaoForm((current) => ({ ...current, area: value }))} />
           </div>
           {insumoSelecionado ? (
             <Card className="operational-row">
@@ -1633,7 +1633,7 @@ export function ProducaoPageClient() {
             </SelectField>
             <Field label="Qtd por porção" type="number" value={porcaoEditForm.quantidadePorPorcao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, quantidadePorPorcao: Number(value) }))} />
             <Field label="Unidade da porção" value={porcaoEditForm.unidadePorcao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, unidadePorcao: value }))} />
-            <Field label="Area" value={porcaoEditForm.area} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, area: value }))} />
+            <Field label="Área" value={porcaoEditForm.area} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, area: value }))} />
             <Field label="Observação" value={porcaoEditForm.observacao} onChange={(value) => setPorcaoEditForm((current) => ({ ...current, observacao: value }))} />
           </div>
           <Card className="operational-row">
@@ -1696,7 +1696,7 @@ export function ProducaoPageClient() {
               <div>
                 <Badge tone="success">{porcao.formatoPorcao || "porcao"}</Badge>
                 <small>Baixado: {porcao.quantidadeBaixada} {porcao.unidade}</small>
-                <small>{porcao.quantidadePorPorcao ? `${porção.quantidadePorPorcao} ${porção.unidadePorcao || porção.unidade} por porção` : money(porcao.custoPorPorcao)}</small>
+                <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porção.unidade} por porção` : money(porcao.custoPorPorcao)}</small>
                 <div className="operational-row__actions">
                   <button type="button" onClick={() => abrirEdicaoPorcao(porcao)}>Editar</button>
                   <button type="button" onClick={() => estornarPorcao(porcao)}>Estornar</button>
@@ -1753,11 +1753,11 @@ export function ConfiguracoesPageClient() {
 
 export function ReposicaoPageClient() {
   return (
-    <PageShell eyebrow="Reposicao" subtitle="Alertas de compra, cobertura de estoque e sugestoes por fornecedor." title="Reposicao Inteligente">
+    <PageShell eyebrow="Reposição" subtitle="Alertas de compra, cobertura de estoque e sugestoes por fornecedor." title="Reposição Inteligente">
       <section className="operational-cards">
         <Card className="operational-feature"><strong>Alertas de estoque</strong><span>Produtos zerados, abaixo do minimo e com baixa cobertura.</span><a href="/estoque">Ver estoque</a></Card>
         <Card className="operational-feature"><strong>Compras recomendadas</strong><span>Pedidos sugeridos com base em minimo, maximo e consumo.</span><a href="/compras">Ver compras</a></Card>
-        <Card className="operational-feature"><strong>Fornecedores</strong><span>Melhor custo, prazo e contato para reposicao.</span><a href="/fornecedores">Ver fornecedores</a></Card>
+        <Card className="operational-feature"><strong>Fornecedores</strong><span>Melhor custo, prazo e contato para reposição.</span><a href="/fornecedores">Ver fornecedores</a></Card>
       </section>
     </PageShell>
   );

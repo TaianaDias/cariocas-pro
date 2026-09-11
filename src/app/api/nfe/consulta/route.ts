@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   const chave = normalizarChave(String(body?.chave || ""));
 
   if (chave.length !== 44) {
-    return NextResponse.json({ error: "Informe a chave de acesso da NF-e com 44 digitos." }, { status: 400 });
+    return NextResponse.json({ error: "Informe a chave de acesso da NF-e com 44 dígitos." }, { status: 400 });
   }
 
   const meuDanfeApiKey = process.env.MEUDANFE_API_KEY?.trim();

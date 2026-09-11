@@ -6,7 +6,7 @@ type MessageBubbleProps = {
 export function MessageBubble({ author, children }: MessageBubbleProps) {
   return (
     <article className={`carioquinha-message carioquinha-message--${author}`}>
-      <span>{author === "ai" ? "IA Carioquinha" : "Voce"}</span>
+      <span>{author === "ai" ? "IA Carioquinha" : "Você"}</span>
       <p>{children}</p>
     </article>
   );

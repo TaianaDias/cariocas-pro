@@ -26,11 +26,11 @@ export async function POST(request: NextRequest) {
   }
 
   if (authorization.status === 400) {
-    return NextResponse.json({ error: "empresaId e obrigatorio." }, { status: 400 });
+    return NextResponse.json({ error: "empresaId e obrigatório." }, { status: 400 });
   }
 
   if (authorization.status === 403) {
-    return NextResponse.json({ error: "Plano, permissão ou empresa inválidos para recalcular precificacao." }, { status: 403 });
+    return NextResponse.json({ error: "Plano, permissão ou empresa inválidos para recalcular precificação." }, { status: 403 });
   }
 
   const insumos = await listarInsumos({ empresaId: authorization.empresaId, lojaId: authorization.lojaId || undefined });

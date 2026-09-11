@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const codigo = normalizarCodigo(request.nextUrl.searchParams.get("codigo") || "");
 
   if (!codigo) {
-    return NextResponse.json({ error: "Informe um código de barras valido." }, { status: 400 });
+    return NextResponse.json({ error: "Informe um código de barras válido." }, { status: 400 });
   }
 
   const cosmosApiKey = process.env.COSMOS_API_KEY || process.env.NEXT_PUBLIC_COSMOS_API_KEY;

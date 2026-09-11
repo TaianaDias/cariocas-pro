@@ -103,7 +103,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
 
       const chave = entrada.replace(/\D/g, "");
       if (chave.length !== 44) {
-        throw new Error("Escaneie ou digite a chave de acesso da NF-e com 44 digitos.");
+        throw new Error("Escaneie ou digite a chave de acesso da NF-e com 44 dígitos.");
       }
 
       if (!user) {
@@ -202,7 +202,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       <header className="estoque-panel__header">
         <div>
           <span>Nota fiscal</span>
-          <h2>Importacao XML NF-e</h2>
+          <h2>Importação XML NF-e</h2>
         </div>
         <div className="estoque-row-actions">
           {onFechar ? <Button variant="ghost" onClick={onFechar}>Fechar</Button> : null}
@@ -221,7 +221,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       <div className="nfe-code-reader">
         <div>
           <strong>Ler por código de barras da NF-e</strong>
-          <span>Escaneie a chave de acesso de 44 digitos da nota ou cole o XML completo para montar o preview.</span>
+          <span>Escaneie a chave de acesso de 44 dígitos da nota ou cole o XML completo para montar o preview.</span>
         </div>
         <TextInput
           label="Chave de acesso ou XML da NF-e"
@@ -261,7 +261,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
                 </small>
                 <small>{item.produtoExistenteNome ? `Vínculo sugerido: ${item.produtoExistenteNome}` : "Novo insumo sugerido"}</small>
                 <label className="operational-field">
-                  <span>Ação na importacao</span>
+                  <span>Ação na importação</span>
                   <select value={item.acao || (item.produtoExistenteId ? "vincular" : "criar")} onChange={(event) => atualizarAcaoPreview(index, event.target.value as "criar" | "vincular")}>
                     <option value="criar">Cadastrar como novo insumo</option>
                     <option value="vincular" disabled={!item.produtoExistenteId}>Vincular ao insumo sugerido</option>
