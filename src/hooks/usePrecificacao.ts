@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { canSeePrecificacaoMoney, canUsePrecificacaoCompleta, hasPrecificacaoPermission } from "../lib/permissions";
+import { canAccessPrecificacao, canSeePrecificacaoMoney, canUsePrecificacaoCompleta, hasPrecificacaoPermission } from "../lib/permissions";
 import {
   atualizarIngredientesComEstoque,
   custosFixosPadrao,
@@ -48,6 +48,7 @@ export function usePrecificacao() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const canAccessModule = canAccessPrecificacao(plan, role);
   const canSeeMoney = canSeePrecificacaoMoney(plan, role);
   const canUseFullModule = canUsePrecificacaoCompleta(plan, role);
   const canConfigure = hasPrecificacaoPermission("precificacao.configurar", plan, role);
@@ -98,6 +99,13 @@ export function usePrecificacao() {
     setLoading(true);
 
     try {
+      if (!canAccessModule) {
+        setInsumos([]);
+        setReceitas([]);
+        setError(null);
+        return;
+      }
+
       if (!canSeeMoney) {
         const insumosData = await listarInsumos({ empresaId, lojaId: lojaSegura });
         setInsumos(insumosData);
@@ -118,13 +126,17 @@ export function usePrecificacao() {
     } finally {
       setLoading(false);
     }
-  }, [canSeeMoney, empresaId, lojaSegura]);
+  }, [canAccessModule, canSeeMoney, empresaId, lojaSegura]);
 
   useEffect(() => {
-    carregar();
+    void carregar();
   }, [carregar]);
 
   async function salvarReceita(receita: Partial<ReceitaPrecificacao>) {
+    if (!canConfigure) {
+      throw new Error("Seu perfil ou plano não permite alterar a precificação.");
+    }
+
     const recalculada = recalcularReceita(
       {
         ...receita,
@@ -143,6 +155,10 @@ export function usePrecificacao() {
   }
 
   async function salvarCustos(novosCustos: CustosFixosPrecificacao) {
+    if (!canConfigure) {
+      throw new Error("Seu perfil ou plano não permite alterar custos da precificação.");
+    }
+
     const normalizados = {
       ...novosCustos,
       empresaId,
@@ -153,8 +169,12 @@ export function usePrecificacao() {
   }
 
   async function recalcularAgora() {
+    if (!canRecalculate) {
+      throw new Error("Seu perfil ou plano não permite recalcular a precificação.");
+    }
+
     if (!user) {
-      throw new Error("Sessao nao encontrada. Entre novamente para recalcular a precificacao.");
+      throw new Error("Sessão não encontrada. Entre novamente para recalcular a precificação.");
     }
 
     const token = await user.getIdToken();
@@ -169,7 +189,7 @@ export function usePrecificacao() {
 
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new Error(data.error || "Nao foi possivel recalcular a precificacao.");
+      throw new Error(data.error || "Não foi possível recalcular a precificação.");
     }
 
     await carregar();
@@ -177,6 +197,7 @@ export function usePrecificacao() {
 
   return {
     alertas,
+    canAccessModule,
     canConfigure,
     canRecalculate,
     canReport,
