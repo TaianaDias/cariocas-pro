@@ -10,36 +10,71 @@ const corrections = new Map([
   ["acao", "ação"],
   ["acoes", "ações"],
   ["administracao", "administração"],
+  ["analise", "análise"],
+  ["analises", "análises"],
+  ["aparecerao", "aparecerão"],
+  ["aplicacao", "aplicação"],
+  ["area", "área"],
+  ["atencao", "atenção"],
+  ["autenticacao", "autenticação"],
   ["automacao", "automação"],
   ["automacoes", "automações"],
+  ["automatico", "automático"],
+  ["automatica", "automática"],
+  ["automaticos", "automáticos"],
+  ["automaticas", "automáticas"],
+  ["camera", "câmera"],
   ["codigo", "código"],
   ["codigos", "códigos"],
+  ["colecao", "coleção"],
+  ["colecoes", "coleções"],
   ["configuracao", "configuração"],
   ["configuracoes", "configurações"],
+  ["conseguira", "conseguirá"],
+  ["conversao", "conversão"],
   ["critico", "crítico"],
   ["criticos", "críticos"],
   ["descricao", "descrição"],
+  ["digito", "dígito"],
+  ["digitos", "dígitos"],
+  ["dinamico", "dinâmico"],
+  ["dinamica", "dinâmica"],
   ["disponivel", "disponível"],
   ["disponiveis", "disponíveis"],
   ["endereco", "endereço"],
+  ["exclusao", "exclusão"],
+  ["frequencia", "frequência"],
+  ["funcao", "função"],
+  ["funcoes", "funções"],
   ["funcionario", "funcionário"],
   ["funcionarios", "funcionários"],
   ["gestao", "gestão"],
   ["historico", "histórico"],
   ["historicos", "históricos"],
+  ["importacao", "importação"],
   ["invalido", "inválido"],
   ["invalidos", "inválidos"],
+  ["localizacao", "localização"],
   ["modulo", "módulo"],
   ["modulos", "módulos"],
   ["nao", "não"],
   ["numero", "número"],
   ["numeros", "números"],
+  ["obrigatorio", "obrigatório"],
+  ["obrigatoria", "obrigatória"],
+  ["obrigatorios", "obrigatórios"],
+  ["obrigatorias", "obrigatórias"],
   ["observacao", "observação"],
   ["observacoes", "observações"],
   ["operacao", "operação"],
+  ["padrao", "padrão"],
   ["permissao", "permissão"],
   ["permissoes", "permissões"],
   ["possivel", "possível"],
+  ["precificacao", "precificação"],
+  ["preco", "preço"],
+  ["precos", "preços"],
+  ["prejuizo", "prejuízo"],
   ["producao", "produção"],
   ["porcao", "porção"],
   ["porcoes", "porções"],
@@ -47,17 +82,33 @@ const corrections = new Map([
   ["proximos", "próximos"],
   ["relatorio", "relatório"],
   ["relatorios", "relatórios"],
+  ["reposicao", "reposição"],
+  ["reposicoes", "reposições"],
   ["responsavel", "responsável"],
   ["responsaveis", "responsáveis"],
+  ["restauracao", "restauração"],
+  ["sao", "são"],
+  ["secao", "seção"],
+  ["secoes", "seções"],
+  ["sera", "será"],
+  ["serao", "serão"],
   ["sessao", "sessão"],
+  ["simulacao", "simulação"],
+  ["simulacoes", "simulações"],
+  ["so", "só"],
+  ["sugestao", "sugestão"],
+  ["tambem", "também"],
   ["tecnica", "técnica"],
   ["tecnicas", "técnicas"],
   ["tecnico", "técnico"],
   ["tecnicos", "técnicos"],
   ["usuario", "usuário"],
   ["usuarios", "usuários"],
+  ["valido", "válido"],
+  ["validos", "válidos"],
   ["vinculo", "vínculo"],
   ["vinculos", "vínculos"],
+  ["voce", "você"],
 ]);
 
 function walk(dir) {
@@ -96,11 +147,91 @@ function fixText(value) {
   return output;
 }
 
+function repairInterpolationExpression(expression) {
+  let output = expression;
+
+  // A versão anterior do corretor podia acentuar nomes de propriedades dentro de ${...}.
+  // Aqui restauramos apenas identificadores de código; o texto visível continua corrigido fora da interpolação.
+  for (const [wrong, right] of corrections) {
+    const property = new RegExp(`\\.${escapeRegExp(right)}(?=[^\\p{L}\\p{N}_$]|$)`, "giu");
+    output = output.replace(property, `.${wrong}`);
+
+    const standalone = new RegExp(`^\\s*${escapeRegExp(right)}(?=\\s*(?:[.\[]|$))`, "iu");
+    output = output.replace(standalone, (match) => match.replace(new RegExp(escapeRegExp(right), "iu"), wrong));
+  }
+
+  return output;
+}
+
+function findInterpolationEnd(value, start) {
+  let depth = 1;
+  let quote = null;
+  let escaped = false;
+
+  for (let index = start; index < value.length; index += 1) {
+    const char = value[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) quote = null;
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+
+    if (char === "{") depth += 1;
+    if (char === "}") depth -= 1;
+    if (depth === 0) return index;
+  }
+
+  return -1;
+}
+
+function fixTemplateLiteral(value) {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < value.length) {
+    const interpolationStart = value.indexOf("${", cursor);
+    if (interpolationStart === -1) {
+      output += fixText(value.slice(cursor));
+      break;
+    }
+
+    output += fixText(value.slice(cursor, interpolationStart));
+    const expressionStart = interpolationStart + 2;
+    const interpolationEnd = findInterpolationEnd(value, expressionStart);
+
+    if (interpolationEnd === -1) {
+      output += value.slice(interpolationStart);
+      break;
+    }
+
+    const expression = value.slice(expressionStart, interpolationEnd);
+    output += `\${${repairInterpolationExpression(expression)}}`;
+    cursor = interpolationEnd + 1;
+  }
+
+  return output;
+}
+
 function replaceQuotedStrings(line, shouldFix) {
   return line.replace(/(["'`])((?:\\.|(?!\1).)*)\1/g, (full, quote, value, offset) => {
     if (!value || value.startsWith("/") || value.startsWith("http")) return full;
     if (!shouldFix({ line, offset, value })) return full;
-    const fixed = fixText(value);
+    const fixed = quote === "`" ? fixTemplateLiteral(value) : fixText(value);
     return `${quote}${fixed}${quote}`;
   });
 }
