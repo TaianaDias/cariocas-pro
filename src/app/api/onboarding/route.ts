@@ -5,6 +5,8 @@ import { getAdminApp } from "../../../lib/server-auth";
 
 const DEFAULT_PLAN = "free";
 const DEFAULT_STORE_ID = "matriz";
+const ADMIN_ROLES = new Set(["admin", "dono", "proprietario", "user"]);
+const OPERATIONAL_ROLES = new Set(["gerente", "funcionario"]);
 
 const DEFAULT_STOCK_CATEGORIES = [
   { cor: "#DC2626", icone: "C", id: "carnes", nome: "Carnes", ordem: 1 },
@@ -60,6 +62,33 @@ export async function POST(request: Request) {
   const userRef = db.collection("usuarios").doc(uid);
   const userSnap = await userRef.get();
   const existingUser = userSnap.exists ? userSnap.data() || {} : {};
+  const existingRole = normalizeText(existingUser.role, "");
+
+  // Perfis operacionais são criados e mantidos exclusivamente pela API de equipe.
+  // O onboarding nunca pode transformar um funcionário/gerente em dono do tenant.
+  if (userSnap.exists && OPERATIONAL_ROLES.has(existingRole)) {
+    const empresaId = normalizeText(existingUser.empresaId, "");
+    const lojaId = normalizeText(existingUser.lojaId, "");
+    if (!empresaId || !lojaId) {
+      return NextResponse.json({ error: "Perfil operacional sem empresa ou loja vinculada." }, { status: 403 });
+    }
+
+    return NextResponse.json({
+      empresaId,
+      lojaId,
+      ok: true,
+      plano: normalizeText(existingUser.plano || existingUser.plan, DEFAULT_PLAN),
+      role: existingRole,
+      skipped: true,
+      uid,
+    });
+  }
+
+  if (userSnap.exists && existingRole && !ADMIN_ROLES.has(existingRole)) {
+    return NextResponse.json({ error: "Papel de usuário inválido para onboarding." }, { status: 403 });
+  }
+
+  const role = existingRole || "dono";
   const empresaId = normalizeText(existingUser.empresaId, uid);
   const lojaId = normalizeText(existingUser.lojaId, DEFAULT_STORE_ID);
   const email = normalizeText(existingUser.email || decoded.email, "");
@@ -67,6 +96,7 @@ export async function POST(request: Request) {
   const tipoConta = normalizeText(existingUser.tipoConta || body.tipoConta, "Hamburgueria / Restaurante");
   const nomeFantasia = normalizeText(body.nomeFantasia || existingUser.nomeFantasia || tipoConta, "Carioca's Pro");
   const plano = normalizeText(existingUser.plano || existingUser.plan, DEFAULT_PLAN);
+  const permissoes = Array.isArray(existingUser.permissoes) && existingUser.permissoes.length ? existingUser.permissoes : ["*"];
   const now = FieldValue.serverTimestamp();
   const batch = db.batch();
   const empresaRef = db.collection("empresas").doc(empresaId);
@@ -75,12 +105,12 @@ export async function POST(request: Request) {
   batch.set(
     empresaRef,
     {
-      cnpj: normalizeText(body.cnpj, ""),
-      criadoEm: now,
+      cnpj: normalizeText(body.cnpj || existingUser.cnpj, ""),
+      criadoEm: existingUser.criadoEm || now,
       id: empresaId,
       nomeFantasia,
       plano,
-      razaoSocial: normalizeText(body.razaoSocial, ""),
+      razaoSocial: normalizeText(body.razaoSocial || existingUser.razaoSocial, ""),
       status: "ativo",
       atualizadoEm: now,
     },
@@ -127,16 +157,16 @@ export async function POST(request: Request) {
   batch.set(
     userRef,
     {
-      ativo: true,
+      ativo: existingUser.ativo !== false,
       email,
       empresaId,
-      funcionarioAtivo: true,
+      funcionarioAtivo: existingUser.funcionarioAtivo !== false,
       lojaId,
       nome,
-      permissoes: ["*"],
+      permissoes,
       plan: plano,
       plano,
-      role: "dono",
+      role,
       tipoConta,
       uid,
       ultimoAcesso: now,
@@ -152,7 +182,7 @@ export async function POST(request: Request) {
     lojaId,
     ok: true,
     plano,
-    role: "dono",
+    role,
     uid,
   });
 }
