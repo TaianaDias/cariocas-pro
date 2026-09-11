@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
 
+import { isAdministrativeRole } from "../lib/access-control";
 import { db } from "../lib/firebase";
 import type { Categoria } from "../types";
 import { useAuth } from "./useAuth";
@@ -25,6 +26,7 @@ export function useCategoriasInsumos() {
   const { user, userProfile } = useAuth();
   const empresaId = userProfile?.empresaId || user?.uid || "";
   const lojaId = userProfile?.lojaId || "matriz";
+  const administrative = isAdministrativeRole(userProfile?.role || "user");
   const [categorias, setCategorias] = useState<CategoriaComOculta[]>([]);
   const [categoriasRemovidas, setCategoriasRemovidas] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export function useCategoriasInsumos() {
 
     return onSnapshot(consulta, (snapshot) => {
       const items = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as CategoriaComOculta);
-      if (items.length === 0) {
+      if (administrative && items.length === 0) {
         const batch = writeBatch(db);
         CATEGORIAS_PADRAO.forEach((categoria) => {
           batch.set(doc(categoriasRef, categoria.id), {
@@ -59,10 +61,10 @@ export function useCategoriasInsumos() {
       setCategorias(items);
       setLoading(false);
     });
-  }, [empresaId, lojaId]);
+  }, [administrative, empresaId, lojaId]);
 
   useEffect(() => {
-    if (!empresaId) {
+    if (!empresaId || !administrative) {
       setCategoriasRemovidas([]);
       return undefined;
     }
@@ -72,10 +74,11 @@ export function useCategoriasInsumos() {
     return onSnapshot(consulta, (snapshot) => {
       setCategoriasRemovidas(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Categoria));
     });
-  }, [empresaId]);
+  }, [administrative, empresaId]);
 
   const criarCategoria = useCallback(
     async (nome: string, cor = "#6B7280", icone = "C") => {
+      if (!administrative) throw new Error("Apenas perfis administrativos podem criar categorias.");
       const maxOrdem = categorias.reduce((max, categoria) => Math.max(max, categoria.ordem || 0), 0);
       if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
       await addDoc(collection(db, "empresas", empresaId, "categoriasEstoque"), {
@@ -90,18 +93,19 @@ export function useCategoriasInsumos() {
         ordem: maxOrdem + 1,
       });
     },
-    [categorias, empresaId, lojaId],
+    [administrative, categorias, empresaId, lojaId],
   );
 
   const ocultarCategoria = useCallback(
     async (id: string) => {
+      if (!administrative) throw new Error("Apenas perfis administrativos podem ocultar categorias.");
       const categoria = categorias.find((item) => item.id === id);
       if (!categoria) return;
       if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
       await addDoc(collection(db, "empresas", empresaId, "categoriasEstoqueRemovidas"), categoria);
       await updateDoc(doc(db, "empresas", empresaId, "categoriasEstoque", id), { oculta: true, atualizadoEm: serverTimestamp() });
     },
-    [categorias, empresaId],
+    [administrative, categorias, empresaId],
   );
 
   return {
