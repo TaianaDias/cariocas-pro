@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { canAccessAppPath, parsePermissions } from "./lib/access-control";
 
-const publicRoutes = ["/", "/login", "/cadastro", "/planos", "/auditoria"];
+const publicRoutes = ["/login", "/cadastro", "/planos", "/auditoria"];
 
 const planOrder: Record<string, number> = {
   free: 0,
@@ -70,6 +70,10 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authenticated = isAuthenticated(request);
   const tenantReady = hasTenantContext(request);
+
+  if (pathname === "/") {
+    return NextResponse.redirect(new URL(authenticated && tenantReady ? "/dashboard" : "/login", request.url));
+  }
 
   if (authenticated && tenantReady && (pathname === "/login" || pathname === "/cadastro")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
