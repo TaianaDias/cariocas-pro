@@ -52,13 +52,16 @@ export type ProdutoExterno = {
   nome: string;
 };
 
-export async function buscarExterno(codigo: string): Promise<ProdutoExterno | null> {
+export async function buscarExterno(codigo: string, idToken?: string): Promise<ProdutoExterno | null> {
   const normalizado = normalizarCodigo(codigo);
   if (!normalizado) return null;
 
   try {
     if (typeof window !== "undefined") {
-      const response = await fetch(`/api/barcode/lookup?codigo=${encodeURIComponent(normalizado)}`);
+      if (!idToken) return null;
+      const response = await fetch(`/api/barcode/lookup?codigo=${encodeURIComponent(normalizado)}`, {
+        headers: { authorization: `Bearer ${idToken}` },
+      });
       if (!response.ok) return null;
 
       const data = await response.json();
@@ -69,7 +72,7 @@ export async function buscarExterno(codigo: string): Promise<ProdutoExterno | nu
       };
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_COSMOS_API_KEY;
+    const apiKey = process.env.COSMOS_API_KEY || process.env.NEXT_PUBLIC_COSMOS_API_KEY;
     if (apiKey) {
       const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${normalizado}.json`, {
         headers: { "X-Cosmos-Token": apiKey },
