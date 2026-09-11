@@ -3,14 +3,16 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import type { NextRequest } from "next/server";
 
-import { normalizeRole } from "./access-control";
+import { canAccessAppPath, normalizeRole } from "./access-control";
 import { canAccessPrecificacao, hasPrecificacaoPermission, normalizePlan } from "./permissions";
 import type { PrecificacaoPermission } from "./permissions";
+import type { PermissaoFuncionario } from "../types";
 
 type ServerUserProfile = {
   email?: string;
   empresaId?: string;
   lojaId?: string;
+  permissoes?: PermissaoFuncionario[];
   plan?: string;
   plano?: string;
   role?: string;
@@ -74,6 +76,36 @@ export async function getServerUserProfile(request: NextRequest): Promise<Server
   } catch {
     return null;
   }
+}
+
+export async function authorizeAppRequest(request: NextRequest, path: string) {
+  const profile = await getServerUserProfile(request);
+
+  if (!profile) {
+    return { reason: "unauthenticated" as const, status: 401 as const };
+  }
+
+  const plan = profile.plano || profile.plan || "free";
+  const role = normalizeRole(profile.role);
+  const empresaId = profile.empresaId || profile.uid;
+  const lojaId = profile.lojaId;
+
+  if (!empresaId || !lojaId) {
+    return { reason: "missing-tenant" as const, status: 403 as const };
+  }
+
+  if (!canAccessAppPath({ path, permissions: profile.permissoes || [], plan, role })) {
+    return { reason: "forbidden" as const, status: 403 as const };
+  }
+
+  return {
+    empresaId,
+    lojaId,
+    plan,
+    profile,
+    role,
+    status: 200 as const,
+  };
 }
 
 export async function authorizePrecificacaoRequest(
