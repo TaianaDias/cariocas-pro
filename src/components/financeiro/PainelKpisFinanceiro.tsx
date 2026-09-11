@@ -17,7 +17,6 @@ export function PainelKpisFinanceiro({ kpis, loading }: PainelKpisProps) {
     <section className="financeiro-kpi-grid">
       <KpiFinanceiro
         corValor={kpis && kpis.variacaoCusto > 0 ? "var(--crimson)" : undefined}
-        icone="$"
         label="Custo Total do Estoque"
         loading={loading}
         valor={kpis ? formatCurrency(kpis.custoTotal) : ""}
@@ -25,36 +24,31 @@ export function PainelKpisFinanceiro({ kpis, loading }: PainelKpisProps) {
       />
       <KpiFinanceiro
         corValor="var(--green-success)"
-        icone="FT"
         label="Faturamento Estimado"
         loading={loading}
         valor={kpis ? formatCurrency(kpis.faturamentoEstimado) : ""}
       />
       <KpiFinanceiro
         corValor={kpis && kpis.margemMedia >= 40 ? "var(--green-success)" : "var(--yellow-warn)"}
-        icone="MG"
-        label="Margem Media"
+        label="Margem Média"
         loading={loading}
         valor={kpis ? `${kpis.margemMedia.toFixed(1)}%` : ""}
         variacao={kpis ? `${kpis.variacaoMargem > 0 ? "+" : ""}${kpis.variacaoMargem.toFixed(1)}%` : ""}
       />
       <KpiFinanceiro
         corValor={kpis && kpis.cmvMedio <= 30 ? "var(--green-success)" : kpis && kpis.cmvMedio <= 40 ? "var(--yellow-warn)" : "var(--crimson)"}
-        icone="CMV"
         label="CMV Médio"
         loading={loading}
         valor={kpis ? `${kpis.cmvMedio.toFixed(1)}%` : ""}
       />
       <KpiFinanceiro
         corValor={kpis && kpis.percentualDesperdicio > 5 ? "var(--crimson)" : "var(--green-success)"}
-        icone="DP"
-        label="Desperdicio"
+        label="Desperdício"
         loading={loading}
         valor={kpis ? formatCurrency(kpis.custoDesperdicio) : ""}
         variacao={kpis ? `${kpis.percentualDesperdicio.toFixed(1)}% do custo` : ""}
       />
       <KpiFinanceiro
-        icone="TK"
         label="Ticket Médio"
         loading={loading}
         valor={kpis ? formatCurrency(kpis.ticketMedio) : ""}
