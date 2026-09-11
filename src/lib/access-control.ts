@@ -6,7 +6,7 @@ export const employeePermissionOptions: { label: string; permission: PermissaoFu
   { label: "Estoque e Reposição", path: "/estoque", permission: "estoque.ver" },
   { label: "Compras / Movimentações", path: "/compras", permission: "compras.ver" },
   { label: "Produção", path: "/producao", permission: "producao.ver" },
-  { label: "Rotinas e Padrões", path: "/rotinas", permission: "rotinas.ver" },
+  { label: "Rotinas e Padrões", path: "/rotinas", permission: "rotinas.ver" as PermissaoFuncionario },
   { label: "Desperdício", path: "/desperdicio", permission: "desperdicio.ver" },
   { label: "Relatórios", path: "/relatorios", permission: "relatorios.ver" },
 ];
