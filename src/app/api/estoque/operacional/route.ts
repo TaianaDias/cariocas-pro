@@ -1,6 +1,7 @@
 import { FieldValue, getFirestore, type DocumentData, type DocumentReference } from "firebase-admin/firestore";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { createOperationalStockItem } from "../../../../lib/operational-stock";
 import { authorizeAppRequest, getAdminApp } from "../../../../lib/server-auth";
 
 function unauthorizedResponse(status: number) {
@@ -8,64 +9,6 @@ function unauthorizedResponse(status: number) {
     { error: status === 401 ? "Sessão inválida ou expirada." : "Acesso não autorizado ao estoque." },
     { status },
   );
-}
-
-function operationalInsumo(id: string, data: DocumentData) {
-  const quantidadeAtual = Number(data.quantidadeAtual ?? data.estoqueAtual) || 0;
-  const estoqueMinimo = Number(data.estoqueMinimo) || 0;
-  const estoqueMaximo = Number(data.estoqueMaximo) || 0;
-
-  return {
-    id,
-    nome: String(data.nome || ""),
-    sku: String(data.sku || ""),
-    codigoBarras: String(data.codigoBarras || ""),
-    codigoBarrasNormalizado: String(data.codigoBarrasNormalizado || ""),
-    marca: String(data.marca || ""),
-    categoriaId: String(data.categoriaId || ""),
-    status: String(data.status || "ativo"),
-    statusProduto: String(data.statusProduto || "ativo"),
-    imagemUrl: String(data.imagemUrl || ""),
-    imagemUploadUrl: String(data.imagemUploadUrl || ""),
-    imagemCosmosUrl: String(data.imagemCosmosUrl || ""),
-    imagemPrincipal: String(data.imagemPrincipal || ""),
-    quantidadeAtual,
-    estoqueAtual: quantidadeAtual,
-    estoqueMinimo,
-    estoqueMaximo,
-    localArmazenamento: String(data.localArmazenamento || ""),
-    unidadeMedida: String(data.unidadeMedida || data.unidadeUso || data.unidadeCompra || "unidade"),
-    unidadeCompra: String(data.unidadeCompra || data.unidadeMedida || "unidade"),
-    unidadeUso: String(data.unidadeUso || data.unidadeMedida || "unidade"),
-    conversao: Number(data.conversao ?? data.fatorConversao) || 1,
-    fatorConversao: Number(data.fatorConversao ?? data.conversao) || 1,
-    validadeOriginal: Number(data.validadeOriginal) || 0,
-    validadeAposAberto: Number(data.validadeAposAberto) || 0,
-    validadeAposProducao: Number(data.validadeAposProducao) || 0,
-    loteInterno: String(data.loteInterno || ""),
-    frequenciaPedido: String(data.frequenciaPedido || ""),
-    diasPedido: Number(data.diasPedido) || 0,
-    diasEntrega: Number(data.diasEntrega) || 0,
-    quantidadePadraoPedido: Number(data.quantidadePadraoPedido) || 0,
-    responsavel: String(data.responsavel || ""),
-    observacao: String(data.observacao || ""),
-    tipoEtiqueta: String(data.tipoEtiqueta || ""),
-    etiquetaResponsavel: String(data.etiquetaResponsavel || ""),
-    etiquetaObservacao: String(data.etiquetaObservacao || ""),
-    fichaTecnicaVinculos: Array.isArray(data.fichaTecnicaVinculos) ? data.fichaTecnicaVinculos : [],
-    fichaTecnicaObservacoes: String(data.fichaTecnicaObservacoes || ""),
-    promocaoAtiva: false,
-    precosVenda: [],
-    margemEstimada: 0,
-    cmv: 0,
-    custoCompra: 0,
-    custoUnitarioCompra: 0,
-    custoUnitarioUso: 0,
-    custoUnitario: 0,
-    createdBy: "",
-    criadoEm: null,
-    atualizadoEm: null,
-  };
 }
 
 async function listOperationalStock(empresaId: string, lojaId: string) {
@@ -77,7 +20,7 @@ async function listOperationalStock(empresaId: string, lojaId: string) {
   const nestedSnapshot = await nestedRef.where("lojaId", "==", lojaId).get();
 
   if (!nestedSnapshot.empty) {
-    return nestedSnapshot.docs.map((doc) => operationalInsumo(doc.id, doc.data()));
+    return nestedSnapshot.docs.map((doc) => createOperationalStockItem(doc.id, doc.data()));
   }
 
   const legacySnapshot = await firestore
@@ -86,7 +29,7 @@ async function listOperationalStock(empresaId: string, lojaId: string) {
     .where("lojaId", "==", lojaId)
     .get();
 
-  return legacySnapshot.docs.map((doc) => operationalInsumo(doc.id, doc.data()));
+  return legacySnapshot.docs.map((doc) => createOperationalStockItem(doc.id, doc.data()));
 }
 
 async function resolveInsumoRef(empresaId: string, lojaId: string, insumoId: string) {
