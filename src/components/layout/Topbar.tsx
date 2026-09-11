@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
-import { isAdministrativeRole } from "../../config/navigation";
 import { useAlertas } from "../../hooks/useAlertas";
 import { useAuth } from "../../hooks/useAuth";
+import { isAdministrativeRole } from "../../lib/access-control";
 import { BadgeAlerta } from "../alertas/BadgeAlerta";
 import { PainelAlertas } from "../alertas/PainelAlertas";
 import { ThemeToggle } from "./ThemeToggle";
