@@ -1,6 +1,6 @@
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 
-import { db } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 import type { Insumo } from "../types";
 import { getInsumosCollectionPath } from "./estoque.service";
 
@@ -58,9 +58,10 @@ export async function buscarExterno(codigo: string, idToken?: string): Promise<P
 
   try {
     if (typeof window !== "undefined") {
-      if (!idToken) return null;
+      const token = idToken || await auth.currentUser?.getIdToken();
+      if (!token) return null;
       const response = await fetch(`/api/barcode/lookup?codigo=${encodeURIComponent(normalizado)}`, {
-        headers: { authorization: `Bearer ${idToken}` },
+        headers: { authorization: `Bearer ${token}` },
       });
       if (!response.ok) return null;
 
