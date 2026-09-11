@@ -22,7 +22,7 @@ export function GraficoCmv({ dados, loading }: GraficoCmvProps) {
   return (
     <section className="financeiro-chart financeiro-chart--compact">
       <header>
-        <strong>Evolucao do CMV</strong>
+        <strong>Evolução do CMV</strong>
         <span>Meta 30%</span>
       </header>
 

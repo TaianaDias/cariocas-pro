@@ -24,10 +24,10 @@ export function ProdutoAbaConversao({ onChange, produto }: Props) {
       <p className="estoque-feedback">Informe quanto a compra rende na unidade usada nas receitas. Ex: 1 KG de bacon rende 50 FATIAS.</p>
       <div className="drawer-form-grid">
         <label className="field">
-          <span className="field__label">Metodo de custo</span>
+          <span className="field__label">Método de custo</span>
           <select className="select-input" value={metodoCusto} onChange={(event) => onChange({ metodoCusto: event.target.value as Insumo["metodoCusto"] })}>
-            <option value="ultimo_custo_compra">Ultimo custo de compra</option>
-            <option value="medio_automatico">Custo medio automático</option>
+            <option value="ultimo_custo_compra">Último custo de compra</option>
+            <option value="medio_automatico">Custo médio automático</option>
             <option value="manual_travado">Manual travado</option>
           </select>
         </label>

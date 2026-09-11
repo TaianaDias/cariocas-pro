@@ -13,7 +13,7 @@ export function FinanceiroHeader() {
     <header className="financeiro-header">
       <div>
         <Title eyebrow="Financeiro">{isRelatorios ? "Relatórios" : "Dashboard Financeiro"}</Title>
-        <p>{isRelatorios ? "Compras, fornecedores e movimentacoes por periodo." : "KPIs financeiros, CMV e evolucao de custos."}</p>
+        <p>{isRelatorios ? "Compras, fornecedores e movimentações por período." : "KPIs financeiros, CMV e evolução de custos."}</p>
       </div>
 
       <nav aria-label="Navegacao financeira">

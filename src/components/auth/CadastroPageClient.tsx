@@ -40,7 +40,7 @@ export function CadastroPageClient() {
     }
 
     if (!isValidEmail(email)) {
-      setLocalError("Informe um email valido.");
+      setLocalError("Informe um email válido.");
       return;
     }
 
@@ -60,7 +60,7 @@ export function CadastroPageClient() {
       await register(email, password, nome, tipoConta);
       router.push("/dashboard");
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "Nao foi possivel criar a conta agora.");
+      setLocalError(error instanceof Error ? error.message : "Não foi possível criar a conta agora.");
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export function CadastroPageClient() {
           <TextInput
             label="Senha"
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Minimo 6 caracteres"
+            placeholder="Mínimo 6 caracteres"
             required
             type="password"
             value={password}
@@ -125,7 +125,7 @@ export function CadastroPageClient() {
         {error || localError ? <p className="auth-card__error">{error ?? localError}</p> : null}
 
         <div className="auth-links">
-          <Link href="/login">Ja tem conta? Faca login</Link>
+          <Link href="/login">Já tem conta? Faca login</Link>
         </div>
       </section>
     </main>

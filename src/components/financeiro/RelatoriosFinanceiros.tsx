@@ -61,7 +61,7 @@ export function RelatoriosFinanceiros() {
       {error ? <EmptyState title="Erro no relatório" description={error} /> : null}
 
       {!loading && !error && !gerado ? (
-        <EmptyState title="Selecione o periodo" description="Clique em gerar relatório para visualizar os dados financeiros." />
+        <EmptyState title="Selecione o período" description="Clique em gerar relatório para visualizar os dados financeiros." />
       ) : null}
 
       {!loading && !error && gerado && resumo ? (
@@ -69,7 +69,7 @@ export function RelatoriosFinanceiros() {
           <section className="financeiro-kpi-grid">
             <ResumoCard label="Custo em Compras" value={`R$ ${resumo.custoCompras.toFixed(2)}`} />
             <ResumoCard label="Custo em Desperdicio" value={`R$ ${resumo.custoDesperdicio.toFixed(2)}`} />
-            <ResumoCard label="Movimentacoes" value={String(resumo.totalMovimentacoes)} />
+            <ResumoCard label="Movimentações" value={String(resumo.totalMovimentacoes)} />
             <ResumoCard label="Fornecedores" value={String(resumo.topFornecedores.length)} />
           </section>
 
@@ -79,7 +79,7 @@ export function RelatoriosFinanceiros() {
               {resumo.topFornecedores.length ? (
                 resumo.topFornecedores.map((item) => <ListaLinha key={item.nome} label={item.nome} value={`${item.total} pedidos`} />)
               ) : (
-                <p>Nenhuma compra no periodo.</p>
+                <p>Nenhuma compra no período.</p>
               )}
             </Card>
 
@@ -88,7 +88,7 @@ export function RelatoriosFinanceiros() {
               {resumo.topInsumos.length ? (
                 resumo.topInsumos.map((item) => <ListaLinha key={item.nome} label={item.nome} value={`${item.total} un`} />)
               ) : (
-                <p>Nenhuma movimentacao no periodo.</p>
+                <p>Nenhuma movimentação no período.</p>
               )}
             </Card>
           </section>

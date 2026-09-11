@@ -30,12 +30,12 @@ type ProdutoDrawerProps = {
 const ABAS = [
   { id: "dados", label: "Dados Gerais" },
   { id: "estoque", label: "Estoque" },
-  { id: "conversao", label: "Compra e Conversao" },
+  { id: "conversao", label: "Compra e Conversão" },
   { id: "validade", label: "Validade" },
   { id: "fornecedores", label: "Fornecedores" },
   { id: "etiqueta", label: "Etiqueta" },
-  { id: "ficha", label: "Ficha Tecnica" },
-  { id: "historico", label: "Historico" },
+  { id: "ficha", label: "Ficha Técnica" },
+  { id: "historico", label: "Histórico" },
 ] as const;
 
 type AbaId = (typeof ABAS)[number]["id"];

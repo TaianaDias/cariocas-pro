@@ -40,7 +40,7 @@ export function ProdutoAbaHistorico({ insumoId }: ProdutoAbaHistoricoProps) {
       {loading ? (
         <Skeleton lines={3} />
       ) : historico.length === 0 ? (
-        <EmptyState title="Nenhuma movimentacao registrada" />
+        <EmptyState title="Nenhuma movimentação registrada" />
       ) : (
         <div className="drawer-timeline">
           {historico.map((evento) => (

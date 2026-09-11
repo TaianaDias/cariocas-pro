@@ -19,12 +19,12 @@ import { ProdutoAbaValidade } from "./ProdutoAbaValidade";
 const tabs = [
   { label: "Dados", href: "#dados" },
   { label: "Estoque", href: "#estoque" },
-  { label: "Conversao", href: "#conversao" },
+  { label: "Conversão", href: "#conversao" },
   { label: "Validade", href: "#validade" },
   { label: "Fornecedores", href: "#fornecedores" },
   { label: "Etiqueta", href: "#etiqueta" },
-  { label: "Ficha Tecnica", href: "#ficha-tecnica" },
-  { label: "Historico", href: "#historico" },
+  { label: "Ficha Técnica", href: "#ficha-tecnica" },
+  { label: "Histórico", href: "#historico" },
 ];
 
 type ProdutoDrawerProps = {

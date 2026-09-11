@@ -16,7 +16,7 @@ export function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps) {
   return (
     <section className="financeiro-chart">
       <header>
-        <strong>Evolucao Custo x Faturamento</strong>
+        <strong>Evolução Custo x Faturamento</strong>
       </header>
 
       <div className="financeiro-bars">

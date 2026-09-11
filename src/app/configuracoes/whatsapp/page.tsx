@@ -135,7 +135,7 @@ export default function WhatsAppConfigPage() {
       <Card className="whatsapp-config__card">
         <div className="whatsapp-config__status">
           <div>
-            <strong>Status da Conexao</strong>
+            <strong>Status da Conexão</strong>
             <span>
               {status.owner
                 ? `Conectado como: ${status.profileName || status.owner}`

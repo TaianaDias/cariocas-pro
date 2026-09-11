@@ -95,7 +95,7 @@ export const planCatalog: Record<
   free: {
     badge: "Inicio",
     cta: "Usar Free",
-    description: "Para testar o sistema e controlar o basico da operacao.",
+    description: "Para testar o sistema e controlar o básico da operação.",
     name: "Free",
     price: "R$ 0",
     shortFeatures: ["Estoque basico", "Alertas simples", "Cadastro inicial", "Relatorio simples"],
@@ -103,7 +103,7 @@ export const planCatalog: Record<
   essencial: {
     badge: "Operacao",
     cta: "Ativar Essencial",
-    description: "Para organizar compras, producao e fornecedores com rotina profissional.",
+    description: "Para organizar compras, produção e fornecedores com rotina profissional.",
     name: "Essencial",
     price: "R$ 49",
     shortFeatures: ["Tudo do Free", "Compras", "Producao basica", "Fornecedores"],
@@ -111,7 +111,7 @@ export const planCatalog: Record<
   pro: {
     badge: "Crescimento",
     cta: "Ativar Pro",
-    description: "Para acompanhar CMV, desperdicio, reposicao inteligente e relatorios avancados.",
+    description: "Para acompanhar CMV, desperdicio, reposição inteligente e relatórios avançados.",
     name: "Pro",
     price: "R$ 99",
     shortFeatures: ["Tudo do Essencial", "CMV avancado", "Desperdicio", "IA Carioquinha"],
@@ -119,7 +119,7 @@ export const planCatalog: Record<
   plus: {
     badge: "Mais vendido",
     cta: "Ativar Plus",
-    description: "Para liberar precificacao inteligente, simulacoes e decisao financeira.",
+    description: "Para liberar precificação inteligente, simulações e decisão financeira.",
     featured: true,
     name: "Plus",
     price: "R$ 149",
@@ -128,7 +128,7 @@ export const planCatalog: Record<
   full: {
     badge: "Completo",
     cta: "Ativar Full",
-    description: "Para operacoes que querem automacoes, canais e gestao completa.",
+    description: "Para operações que querem automações, canais e gestão completa.",
     name: "Full",
     price: "R$ 249",
     shortFeatures: ["Tudo do Plus", "WhatsApp", "Equipe", "Automacoes completas"],

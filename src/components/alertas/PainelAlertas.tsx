@@ -39,7 +39,7 @@ export function PainelAlertas({ aberto, onFechar }: PainelAlertasProps) {
       <div className="alertas-panel__filters">
         {[
           { key: "todos", label: "Todos" },
-          { key: "critical", label: "Criticos" },
+          { key: "critical", label: "Críticos" },
           { key: "warning", label: "Avisos" },
         ].map((item) => (
           <button

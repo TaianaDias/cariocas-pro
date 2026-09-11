@@ -281,7 +281,7 @@ export default function CarioquinhaConfigPage() {
 
         <Card className="carioquinha-page__panel">
           <div className="carioquinha-page__section-heading">
-            <span>Comandos rapidos</span>
+            <span>Comandos rápidos</span>
             <h2>Perguntas prontas</h2>
           </div>
 
@@ -296,7 +296,7 @@ export default function CarioquinhaConfigPage() {
 
         <Card className="carioquinha-page__panel">
           <div className="carioquinha-page__section-heading">
-            <span>Seguranca</span>
+            <span>Segurança</span>
             <h2>Regras de uso</h2>
           </div>
 

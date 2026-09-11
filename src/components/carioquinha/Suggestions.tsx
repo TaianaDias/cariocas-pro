@@ -8,7 +8,7 @@ export function Suggestions({ onSelect }: SuggestionsProps) {
   const suggestions = getSugestoesRapidas();
 
   return (
-    <div className="carioquinha-suggestions" aria-label="Sugestoes rapidas">
+    <div className="carioquinha-suggestions" aria-label="Sugestões rápidas">
       {suggestions.map((suggestion) => (
         <button type="button" key={suggestion} onClick={() => onSelect(suggestion)}>
           {suggestion}

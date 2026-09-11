@@ -29,7 +29,7 @@ export function CardAlerta({ alerta, onMarcarLido, onResolver }: CardAlertaProps
 
       <div className="alerta-card__metrics">
         <span>Estoque: <strong>{alerta.estoqueAtual ?? "-"}</strong></span>
-        <span>Minimo: <strong>{alerta.estoqueMinimo ?? "-"}</strong></span>
+        <span>Mínimo: <strong>{alerta.estoqueMinimo ?? "-"}</strong></span>
         <span>Consumo: <strong>{alerta.consumoDiario ?? 0}/dia</strong></span>
         <span>Cobertura: <strong>{alerta.diasCobertura ?? "-"}d</strong></span>
         <span>Sugerido: <strong>{alerta.qtdSugerida ?? 0}</strong></span>

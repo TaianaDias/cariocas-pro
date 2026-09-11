@@ -81,7 +81,7 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
                 </dd>
               </div>
               <div>
-                <dt>Minimo</dt>
+                <dt>Mínimo</dt>
                 <dd>
                   {insumo.estoqueMinimo} {insumo.unidadeMedida}
                 </dd>
@@ -118,7 +118,7 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
               <th>Categoria</th>
               <th>Fornecedor</th>
               <th>Saldo</th>
-              <th>Minimo</th>
+              <th>Mínimo</th>
               <th>Custo</th>
               <th>Status</th>
               <th>Ações</th>

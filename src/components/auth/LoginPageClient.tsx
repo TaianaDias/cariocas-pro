@@ -26,7 +26,7 @@ export function LoginPageClient() {
       await login(email, password);
       router.push("/dashboard");
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "Nao foi possivel entrar. Verifique email e senha.");
+      setLocalError(error instanceof Error ? error.message : "Não foi possível entrar. Verifique email e senha.");
     } finally {
       setLoading(false);
     }

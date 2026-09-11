@@ -164,7 +164,7 @@ export function PrecificacaoPageClient() {
         recursoNome: receita.nome,
       });
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Nao foi possivel recalcular a receita.");
+      setActionError(err instanceof Error ? err.message : "Não foi possível recalcular a receita.");
     }
   }
 
@@ -183,7 +183,7 @@ export function PrecificacaoPageClient() {
         recursoNome: receita.nome,
       });
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Nao foi possivel aplicar o preco sugerido.");
+      setActionError(err instanceof Error ? err.message : "Não foi possível aplicar o preço sugerido.");
     }
   }
 
@@ -194,7 +194,7 @@ export function PrecificacaoPageClient() {
     try {
       await precificacao.recalcularAgora();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Nao foi possivel recalcular.");
+      setActionError(err instanceof Error ? err.message : "Não foi possível recalcular.");
     } finally {
       setRecalculando(false);
     }
@@ -228,14 +228,14 @@ export function PrecificacaoPageClient() {
       {precificacao.canSeeMoney ? (
         <section className="precificacao-kpis">
           <Kpi label="Lucro estimado" value={money(precificacao.kpis.lucroTotal)} />
-          <Kpi label="CMV medio" value={`${precificacao.kpis.cmvMedio.toFixed(1)}%`} />
+          <Kpi label="CMV médio" value={`${precificacao.kpis.cmvMedio.toFixed(1)}%`} />
           <Kpi label="Margem media" value={`${precificacao.kpis.margemMedia.toFixed(1)}%`} />
-          <Kpi label="Receitas criticas" value={String(precificacao.kpis.criticas)} tone={precificacao.kpis.criticas ? "danger" : "success"} />
+          <Kpi label="Receitas críticas" value={String(precificacao.kpis.criticas)} tone={precificacao.kpis.criticas ? "danger" : "success"} />
         </section>
       ) : (
         <Card className="precificacao-simple-mode">
           <strong>Ficha técnica simples</strong>
-          <p>Seu acesso permite cadastrar receitas e ingredientes sem visualizar custos, lucro, margem, CMV avancado ou sugestoes de preço.</p>
+          <p>Seu acesso permite cadastrar receitas e ingredientes sem visualizar custos, lucro, margem, CMV avançado ou sugestões de preço.</p>
         </Card>
       )}
 
@@ -306,7 +306,7 @@ export function PrecificacaoPageClient() {
                   </select>
                 </label>
                 {precificacao.canSeeMoney ? (
-                  <Field label="Custo unitario convertido" value={String(ingrediente.custoUnitarioConvertido || "")} onChange={(value) => setIngrediente({ ...ingrediente, custoUnitarioConvertido: parseNumber(value) })} />
+                  <Field label="Custo unitário convertido" value={String(ingrediente.custoUnitarioConvertido || "")} onChange={(value) => setIngrediente({ ...ingrediente, custoUnitarioConvertido: parseNumber(value) })} />
                 ) : null}
               </div>
               {ingrediente.insumoId && precificacao.canSeeMoney ? (

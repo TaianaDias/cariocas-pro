@@ -97,7 +97,7 @@ export function PlanosPageClient() {
       <section className="plans-section" id="comparar">
         <div className="plans-section__header">
           <span>Comparativo</span>
-          <h2>Uma liberacao clara para cada momento da hamburgueria</h2>
+          <h2>Uma liberação clara para cada momento da hamburgueria</h2>
         </div>
 
         <div className="plans-grid">

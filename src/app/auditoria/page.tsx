@@ -79,7 +79,7 @@ export default function AuditoriaPage() {
         </div>
         <div>
           <strong>Sem escrita</strong>
-          <span>Botoes de alteracao desativados</span>
+          <span>Botoes de alteração desativados</span>
         </div>
       </section>
 

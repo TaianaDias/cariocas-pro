@@ -41,7 +41,7 @@ export function PainelKpisFinanceiro({ kpis, loading }: PainelKpisProps) {
       <KpiFinanceiro
         corValor={kpis && kpis.cmvMedio <= 30 ? "var(--green-success)" : kpis && kpis.cmvMedio <= 40 ? "var(--yellow-warn)" : "var(--crimson)"}
         icone="CMV"
-        label="CMV Medio"
+        label="CMV Médio"
         loading={loading}
         valor={kpis ? `${kpis.cmvMedio.toFixed(1)}%` : ""}
       />
@@ -55,7 +55,7 @@ export function PainelKpisFinanceiro({ kpis, loading }: PainelKpisProps) {
       />
       <KpiFinanceiro
         icone="TK"
-        label="Ticket Medio"
+        label="Ticket Médio"
         loading={loading}
         valor={kpis ? formatCurrency(kpis.ticketMedio) : ""}
       />

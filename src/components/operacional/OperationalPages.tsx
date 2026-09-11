@@ -513,7 +513,7 @@ export function ComprasPageClient() {
       await deletarPedido(pedido.id, { empresaId, lojaId });
       refetch();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível excluir.");
     } finally {
       setSaving(false);
     }
@@ -559,7 +559,7 @@ export function ComprasPageClient() {
       setForm((current) => ({ ...current, mercadoId: id, mercadoNome: novoMercado.nome, mercadoTelefone: novoMercado.telefone }));
       refetchMercados();
     } catch (err) {
-      setMercadoError(err instanceof Error ? err.message : "Nao foi possivel cadastrar o mercado.");
+      setMercadoError(err instanceof Error ? err.message : "Não foi possível cadastrar o mercado.");
     } finally {
       setSavingMercado(false);
     }
@@ -603,7 +603,7 @@ export function ComprasPageClient() {
       setFormAberto(false);
       refetch();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -624,7 +624,7 @@ export function ComprasPageClient() {
       await registrarRecebimentoPedido(pedido.id, { empresaId, lojaId, uid: user.uid });
       refetch();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel registrar o recebimento.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível registrar o recebimento.");
     } finally {
       setSaving(false);
     }
@@ -649,7 +649,7 @@ export function ComprasPageClient() {
           <header>
             <div>
               <strong>Lista de compras sugerida</strong>
-              <span>Insumos que chegaram ao estoque minimo aparecem aqui automaticamente.</span>
+              <span>Insumos que chegaram ao estoque mínimo aparecem aqui automaticamente.</span>
             </div>
             <Button onClick={selecionarAbaixoMinimo}>Comprar todos</Button>
           </header>
@@ -754,7 +754,7 @@ export function ComprasPageClient() {
             <header>
               <div>
                 <strong>Selecionar insumos do estoque</strong>
-                <span>Marque os itens que você quer comprar. Os itens no minimo ja aparecem como sugestão.</span>
+                <span>Marque os itens que você quer comprar. Os itens no mínimo já aparecem como sugestão.</span>
               </div>
               <Badge tone="neutral">{insumosLoading ? "carregando" : `${selectedInsumos.length} selecionados`}</Badge>
             </header>
@@ -896,7 +896,7 @@ export function DesperdicioPageClient() {
       refetch();
       refetchInsumos();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -922,7 +922,7 @@ export function DesperdicioPageClient() {
               label="Insumo"
               value={form.insumoId}
               insumos={insumos}
-              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeUso || insumo.unidadeMedida || "un"} disponivel`}
+              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeUso || insumo.unidadeMedida || "un"} disponível`}
               onChange={(value) => setForm((current) => ({ ...current, insumoId: value }))}
             />
             <Field label="Motivo" value={form.motivo} onChange={(value) => setForm((current) => ({ ...current, motivo: value }))} />
@@ -1063,7 +1063,7 @@ export function FornecedoresPageClient() {
       setFormAberto(false);
       refetch();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -1080,7 +1080,7 @@ export function FornecedoresPageClient() {
       refetch();
       refetchInsumos();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir o fornecedor.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível excluir o fornecedor.");
     }
   }
 
@@ -1108,7 +1108,7 @@ export function FornecedoresPageClient() {
       setFornecedorVinculo(null);
       refetchInsumos();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel vincular o insumo.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível vincular o insumo.");
     } finally {
       setSavingVinculo(false);
     }
@@ -1148,7 +1148,7 @@ export function FornecedoresPageClient() {
                 setVinculoForm((current) => ({ ...current, insumoId: value, unidadeUso: insumo?.unidadeCompra || insumo?.unidadeMedida || current.unidadeUso }));
               }}
             />
-            <Field label="Custo unitario" type="number" value={vinculoForm.custoUnitario} onChange={(value) => setVinculoForm((current) => ({ ...current, custoUnitario: Number(value) }))} />
+            <Field label="Custo unitário" type="number" value={vinculoForm.custoUnitario} onChange={(value) => setVinculoForm((current) => ({ ...current, custoUnitario: Number(value) }))} />
             <Field label="Unidade compra/uso" value={vinculoForm.unidadeUso} onChange={(value) => setVinculoForm((current) => ({ ...current, unidadeUso: value }))} />
             <Field label="Conversão" type="number" value={vinculoForm.conversao} onChange={(value) => setVinculoForm((current) => ({ ...current, conversao: Number(value) }))} />
             <Field label="Qtd padrão pedido" type="number" value={vinculoForm.quantidadePadrao} onChange={(value) => setVinculoForm((current) => ({ ...current, quantidadePadrao: Number(value) }))} />
@@ -1295,14 +1295,14 @@ export function FuncionariosPageClient() {
       setFormAberto(false);
       refetch();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <PageShell actions={<Button onClick={abrirNovoFuncionario}>Novo Funcionário</Button>} eyebrow="Equipe" subtitle="Controle equipe, papel e liberacoes por módulo com bloqueio de rota." title="Funcionários">
+    <PageShell actions={<Button onClick={abrirNovoFuncionario}>Novo Funcionário</Button>} eyebrow="Equipe" subtitle="Controle equipe, papel e liberações por módulo com bloqueio de rota." title="Funcionários">
       <section className="operational-kpis">
         <Kpi label="Funcionários" value={String(funcionarios.length)} />
         <Kpi label="Ativos" value={String(ativos)} />
@@ -1442,7 +1442,7 @@ export function ProducaoPageClient() {
       setFormAberto(false);
       refetchFichas();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel salvar.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível salvar.");
     } finally {
       setSaving(false);
     }
@@ -1479,7 +1479,7 @@ export function ProducaoPageClient() {
       refetchPorcoes();
       refetchInsumos();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel gerar porcoes.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível gerar porções.");
     } finally {
       setSavingPorcao(false);
     }
@@ -1519,7 +1519,7 @@ export function ProducaoPageClient() {
       setPorcaoEditando(null);
       refetchPorcoes();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel editar a porcao.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível editar a porção.");
     } finally {
       setSavingEdicaoPorcao(false);
     }
@@ -1535,7 +1535,7 @@ export function ProducaoPageClient() {
       await deletarProducaoPorcao(porcao.id, { empresaId, lojaId });
       refetchPorcoes();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel excluir a porcao.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível excluir a porção.");
     }
   }
 
@@ -1550,7 +1550,7 @@ export function ProducaoPageClient() {
       refetchPorcoes();
       refetchInsumos();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Nao foi possivel estornar a porcao.");
+      setFormError(err instanceof Error ? err.message : "Não foi possível estornar a porção.");
     }
   }
 
@@ -1580,7 +1580,7 @@ export function ProducaoPageClient() {
               label="Item em estoque"
               value={porcaoForm.insumoId}
               insumos={itensDisponiveisProducao}
-              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeMedida || insumo.unidadeCompra || "un"} disponivel`}
+              descricao={(insumo) => `${Number(insumo.quantidadeAtual) || 0} ${insumo.unidadeMedida || insumo.unidadeCompra || "un"} disponível`}
               onChange={(value) => setPorcaoForm((current) => ({ ...current, insumoId: value }))}
             />
             <SearchableInsumoField
@@ -1743,8 +1743,8 @@ export function ConfiguracoesPageClient() {
   return (
     <PageShell eyebrow="Configurações" subtitle="Central de preferencias do estabelecimento, canais e automações." title="Configurações">
       <section className="operational-cards">
-        <Card className="operational-feature"><strong>IA Carioquinha</strong><span>Assistente e sugestoes inteligentes.</span><a href="/configuracoes/carioquinha">Abrir</a></Card>
-        <Card className="operational-feature"><strong>WhatsApp</strong><span>Conexao, webhooks e mensagens.</span><a href="/configuracoes/whatsapp">Abrir</a></Card>
+        <Card className="operational-feature"><strong>IA Carioquinha</strong><span>Assistente e sugestões inteligentes.</span><a href="/configuracoes/carioquinha">Abrir</a></Card>
+        <Card className="operational-feature"><strong>WhatsApp</strong><span>Conexão, webhooks e mensagens.</span><a href="/configuracoes/whatsapp">Abrir</a></Card>
         <Card className="operational-feature"><strong>Planos</strong><span>Recursos premium e permissão por módulo.</span><a href="/precificacao">Ver Plus</a></Card>
       </section>
     </PageShell>
@@ -1753,10 +1753,10 @@ export function ConfiguracoesPageClient() {
 
 export function ReposicaoPageClient() {
   return (
-    <PageShell eyebrow="Reposição" subtitle="Alertas de compra, cobertura de estoque e sugestoes por fornecedor." title="Reposição Inteligente">
+    <PageShell eyebrow="Reposição" subtitle="Alertas de compra, cobertura de estoque e sugestões por fornecedor." title="Reposição Inteligente">
       <section className="operational-cards">
-        <Card className="operational-feature"><strong>Alertas de estoque</strong><span>Produtos zerados, abaixo do minimo e com baixa cobertura.</span><a href="/estoque">Ver estoque</a></Card>
-        <Card className="operational-feature"><strong>Compras recomendadas</strong><span>Pedidos sugeridos com base em minimo, maximo e consumo.</span><a href="/compras">Ver compras</a></Card>
+        <Card className="operational-feature"><strong>Alertas de estoque</strong><span>Produtos zerados, abaixo do mínimo e com baixa cobertura.</span><a href="/estoque">Ver estoque</a></Card>
+        <Card className="operational-feature"><strong>Compras recomendadas</strong><span>Pedidos sugeridos com base em mínimo, máximo e consumo.</span><a href="/compras">Ver compras</a></Card>
         <Card className="operational-feature"><strong>Fornecedores</strong><span>Melhor custo, prazo e contato para reposição.</span><a href="/fornecedores">Ver fornecedores</a></Card>
       </section>
     </PageShell>

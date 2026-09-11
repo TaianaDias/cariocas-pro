@@ -22,7 +22,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 
 export const metadata = {
   title: "Carioca's Pro 2026",
-  description: "Central de operacao e gestao para food service.",
+  description: "Central de operação e gestão para food service.",
 };
 
 export const viewport: Viewport = {
