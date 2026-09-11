@@ -37,7 +37,7 @@ export type NavigationItem = {
 };
 
 export type NavigationSection = {
-  id: "operacao" | "rotinas" | "relatorios" | "administracao";
+  id: "operacao" | "rotinas" | "pedidos" | "relatorios" | "administracao";
   label: string;
   description: string;
   adminOnly?: boolean;
@@ -69,26 +69,33 @@ export const navigationSections: NavigationSection[] = [
         icon: "etiquetas",
         showInSidebar: false,
       },
-      {
-        id: "pedidos-insumos",
-        label: "Pedidos de Insumos",
-        href: "/pedidos-insumos",
-        icon: "pedidos",
-        description: "Solicitações internas de compra feitas pela operação.",
-        planned: true,
-        showInSidebar: false,
-      },
     ],
   },
   {
     id: "rotinas",
     label: "Rotinas e Padrões",
-    description: "POPs e checklists separados por setor, com execução simples e rastreável.",
+    description: "Crie POPs, processos e checklists por setor, com conteúdo totalmente ajustável à sua operação.",
     items: [
-      { id: "rotina-cozinha", label: "Cozinha de Produção", href: "/rotinas/cozinha-producao", icon: "cozinha", planned: true },
-      { id: "rotina-montagem", label: "Área de Montagem", href: "/rotinas/montagem", icon: "montagem", planned: true },
-      { id: "rotina-delivery", label: "Salão / Delivery", href: "/rotinas/salao-delivery", icon: "delivery", planned: true },
-      { id: "rotina-reposicao", label: "Salão / Reposição", href: "/rotinas/salao-reposicao", icon: "salao", planned: true },
+      { id: "rotina-cozinha", label: "Cozinha de Produção", href: "/rotinas/cozinha-producao", icon: "cozinha" },
+      { id: "rotina-montagem", label: "Área de Montagem", href: "/rotinas/montagem", icon: "montagem" },
+      { id: "rotina-delivery", label: "Salão / Delivery", href: "/rotinas/salao-delivery", icon: "delivery" },
+      { id: "rotina-reposicao", label: "Salão / Reposição", href: "/rotinas/salao-reposicao", icon: "salao" },
+    ],
+  },
+  {
+    id: "pedidos",
+    label: "Pedidos de Insumos",
+    description: "Solicitações internas para transformar necessidades da operação em ordem de compra organizada.",
+    items: [
+      {
+        id: "pedidos-insumos",
+        label: "Ordem de Pedido",
+        href: "/pedidos-insumos",
+        icon: "pedidos",
+        description: "Solicite, acompanhe e organize itens que precisam ser comprados.",
+        planned: true,
+        showInSidebar: false,
+      },
     ],
   },
   {
