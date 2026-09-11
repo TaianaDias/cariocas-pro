@@ -371,21 +371,29 @@ export function useEstoque() {
 
       await batch.commit();
 
-      try {
-        await fetch("/api/automacoes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            dados: { whatsappNumber: "5521988531687" },
-            insumoId: dados.insumoId,
-            insumoNome: dados.insumoNome,
-            quantidade: dados.quantidade,
-            responsavel: dados.responsavel,
-            tipo: dados.tipo,
-          }),
-        });
-      } catch (err) {
-        console.error("Erro ao disparar automacao de estoque:", err);
+      if (user) {
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch("/api/automacoes", {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              insumoId: dados.insumoId,
+              insumoNome: dados.insumoNome,
+              quantidade: dados.quantidade,
+              tipo: dados.tipo,
+            }),
+          });
+
+          if (!response.ok) {
+            console.warn("Automacao de estoque nao enviada.", response.status);
+          }
+        } catch (err) {
+          console.error("Erro ao disparar automacao de estoque:", err);
+        }
       }
     },
     [carregarOperacional, empresaId, insumos, lojaId, operational, user],
