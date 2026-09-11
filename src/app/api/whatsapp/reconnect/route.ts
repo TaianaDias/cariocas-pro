@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
+import { authorizeAppRequest } from "../../../../lib/server-auth";
 import { configurarWebhook, recriarInstancia } from "../../../../services/whatsapp.service";
 
 function jsonNoStore(body: unknown, init?: ResponseInit) {
@@ -30,13 +31,18 @@ function getPublicBaseUrl(request: Request) {
   return new URL(request.url).origin;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await authorizeAppRequest(request, "/configuracoes");
+  if (auth.status !== 200) {
+    return jsonNoStore({ status: "error", message: "Acesso não autorizado." }, { status: auth.status });
+  }
+
   try {
     const resultado = await recriarInstancia();
 
     if (!resultado.success) {
       return jsonNoStore(
-        { status: "error", message: resultado.error || "Erro ao recriar sessao do WhatsApp" },
+        { status: "error", message: resultado.error || "Erro ao reconectar o WhatsApp" },
         { status: 500 },
       );
     }
@@ -52,7 +58,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[WhatsApp Reconnect] Erro:", error);
     return jsonNoStore(
-      { status: "error", message: error instanceof Error ? error.message : "Erro interno ao recriar sessao" },
+      { status: "error", message: error instanceof Error ? error.message : "Erro interno ao reconectar o WhatsApp" },
       { status: 500 },
     );
   }
