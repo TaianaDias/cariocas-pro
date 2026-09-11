@@ -33,7 +33,9 @@ export function CardAlerta({ alerta, onMarcarLido, onResolver }: CardAlertaProps
         <span>Consumo: <strong>{alerta.consumoDiario ?? 0}/dia</strong></span>
         <span>Cobertura: <strong>{alerta.diasCobertura ?? "-"}d</strong></span>
         <span>Sugerido: <strong>{alerta.qtdSugerida ?? 0}</strong></span>
-        <span>Custo: <strong>R$ {(alerta.custoEstimado ?? 0).toFixed(2)}</strong></span>
+        {typeof alerta.custoEstimado === "number" ? (
+          <span>Custo: <strong>R$ {alerta.custoEstimado.toFixed(2)}</strong></span>
+        ) : null}
       </div>
 
       {alerta.melhorFornecedor ? (
