@@ -17,14 +17,14 @@
 }
 
 .processos-hero p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 1rem;
   margin: 0;
   max-width: 760px;
 }
 
 .processos-eyebrow {
-  color: var(--brand, #2f67d8);
+  color: var(--accent);
   font-size: .78rem;
   font-weight: 800;
   letter-spacing: .14em;
@@ -33,7 +33,7 @@
 
 .processos-primary-button,
 .processos-empty button {
-  background: var(--brand, #2f67d8);
+  background: var(--accent);
   border: 0;
   border-radius: 14px;
   color: #fff;
@@ -52,14 +52,14 @@
 .processos-note,
 .processos-error,
 .processos-empty {
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-ui);
   border-radius: 18px;
   padding: 16px 18px;
 }
 
 .processos-note {
-  background: color-mix(in srgb, var(--brand, #2f67d8) 8%, var(--surface));
-  color: var(--text-muted);
+  background: var(--accent-soft);
+  color: var(--text-secondary);
 }
 
 .processos-note strong {
@@ -67,13 +67,13 @@
 }
 
 .processos-error {
-  background: color-mix(in srgb, #dc2626 8%, var(--surface));
-  color: #b91c1c;
+  background: var(--brand-soft);
+  color: var(--danger-ui);
 }
 
 .processos-empty {
   align-items: flex-start;
-  background: var(--surface);
+  background: var(--surface-card);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -82,7 +82,7 @@
 }
 
 .processos-empty span {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .processos-list {
@@ -91,8 +91,8 @@
 }
 
 .processo-card {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border: 1px solid var(--border-ui);
   border-radius: 20px;
   padding: 20px;
 }
@@ -107,7 +107,7 @@
 }
 
 .processo-card__top p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -118,9 +118,9 @@
 }
 
 .processo-card__badges span {
-  background: var(--surface-soft);
+  background: var(--surface-muted);
   border-radius: 999px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: .75rem;
   font-weight: 800;
   padding: 6px 10px;
@@ -134,9 +134,9 @@
 }
 
 .processo-card__meta span {
-  background: var(--surface-soft);
+  background: var(--surface-muted);
   border-radius: 12px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: .86rem;
   padding: 10px 12px;
 }
@@ -146,7 +146,7 @@
 }
 
 .processo-card__steps {
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-ui);
   display: grid;
   gap: 10px;
   margin-top: 18px;
@@ -162,7 +162,7 @@
 
 .processo-step-preview > span {
   align-items: center;
-  background: var(--surface-soft);
+  background: var(--surface-muted);
   border-radius: 10px;
   display: flex;
   font-weight: 800;
@@ -171,12 +171,12 @@
 }
 
 .processo-step-preview p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 4px 0 6px;
 }
 
 .processo-step-preview small {
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .processo-card__actions {
@@ -192,7 +192,7 @@
 .processos-step-editor__actions button,
 .processos-editor__header > button {
   background: transparent;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-ui);
   border-radius: 10px;
   color: var(--text-primary);
   cursor: pointer;
@@ -209,12 +209,12 @@
 }
 
 .processos-danger-link {
-  color: #b91c1c !important;
+  color: var(--danger-ui) !important;
 }
 
 .processos-modal-backdrop {
   align-items: flex-start;
-  background: rgba(8, 15, 30, .58);
+  background: var(--backdrop-ui);
   display: flex;
   inset: 0;
   justify-content: center;
@@ -225,10 +225,10 @@
 }
 
 .processos-editor {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border: 1px solid var(--border-ui);
   border-radius: 24px;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, .22);
+  box-shadow: var(--shadow-ui-hover);
   margin: auto;
   max-width: 920px;
   overflow: hidden;
@@ -237,14 +237,14 @@
 
 .processos-editor__header {
   align-items: center;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-ui);
   display: flex;
   justify-content: space-between;
   padding: 20px 22px;
 }
 
 .processos-editor__header span {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: .8rem;
   font-weight: 800;
   letter-spacing: .08em;
@@ -294,8 +294,8 @@
 .processos-step-editor input,
 .processos-step-editor textarea,
 .processos-step-editor select {
-  background: var(--surface-soft);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-ui);
   border-radius: 12px;
   color: var(--text-primary);
   font: inherit;
@@ -310,7 +310,8 @@
 .processos-step-editor input:focus,
 .processos-step-editor textarea:focus,
 .processos-step-editor select:focus {
-  border-color: var(--brand, #2f67d8);
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .processos-field textarea,
@@ -335,21 +336,21 @@
 }
 
 .processos-steps-editor__title p {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .processos-step-empty {
-  border: 1px dashed var(--border-subtle);
+  border: 1px dashed var(--border-ui);
   border-radius: 16px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   padding: 20px;
 }
 
 .processos-step-editor {
   align-items: flex-start;
-  background: var(--surface-soft);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-ui);
   border-radius: 16px;
   display: grid;
   gap: 12px;
@@ -359,7 +360,7 @@
 
 .processos-step-editor__number {
   align-items: center;
-  background: var(--surface);
+  background: var(--surface-card);
   border-radius: 10px;
   display: flex;
   font-weight: 800;
@@ -413,7 +414,7 @@
 
 .processos-editor__footer {
   align-items: center;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--border-ui);
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -421,7 +422,7 @@
 }
 
 .processos-editor__footer small {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   max-width: 520px;
 }
 
@@ -431,8 +432,8 @@
 }
 
 .processos-editor__footer .processos-primary-button {
-  background: var(--brand, #2f67d8);
-  border-color: var(--brand, #2f67d8);
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 
