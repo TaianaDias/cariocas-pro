@@ -349,7 +349,7 @@ export function mascararReceitaPrecificacao(receita: ReceitaPrecificacao): Recei
 
 export async function salvarReceitaPrecificacao(receita: ReceitaPrecificacao) {
   if (receita.precoVenda <= 0) {
-    throw new Error("Preco de venda precisa ser maior que zero.");
+    throw new Error("Preço de venda precisa ser maior que zero.");
   }
 
   if (!receita.ingredientes.length) {
@@ -357,11 +357,11 @@ export async function salvarReceitaPrecificacao(receita: ReceitaPrecificacao) {
   }
 
   if (!receita.empresaId) {
-    throw new Error("empresaId e obrigatorio.");
+    throw new Error("empresaId e obrigatório.");
   }
 
   if (!receita.globalEmpresa && !receita.lojaId) {
-    throw new Error("lojaId e obrigatorio para receitas de loja.");
+    throw new Error("lojaId e obrigatório para receitas de loja.");
   }
 
   const id = receita.id || doc(collection(db, getReceitasCollectionPath(receita.empresaId))).id;
@@ -411,7 +411,7 @@ export async function salvarReceitaPrecificacao(receita: ReceitaPrecificacao) {
 
 export async function salvarCustosFixos(custos: CustosFixosPrecificacao) {
   if (!custos.empresaId || !custos.lojaId) {
-    throw new Error("empresaId e lojaId sao obrigatorios para custos fixos.");
+    throw new Error("empresaId e lojaId são obrigatórios para custos fixos.");
   }
 
   const id = `${custos.empresaId}_${custos.lojaId}`;

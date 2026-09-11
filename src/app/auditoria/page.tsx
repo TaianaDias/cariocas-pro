@@ -50,7 +50,7 @@ export default function AuditoriaPage() {
       <section className="audit-hero">
         <div>
           <span className="audit-pill">Modo auditoria somente leitura</span>
-          <h1>Carioca&apos;s Pro</h1>
+          <h1>Carioca&após;s Pro</h1>
           <p>
             Ambiente publico para avaliacao dos assistentes Adapta, com visao dos modulos, fluxos e regras comerciais sem expor dados reais
             nem permitir alteracoes.

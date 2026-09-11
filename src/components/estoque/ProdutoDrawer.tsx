@@ -152,7 +152,7 @@ export function ProdutoDrawer({ aberto, onFechar, onSalvo, produtoId }: ProdutoD
       }
       onSalvo();
     } catch (errorSalvar) {
-      setErroSalvar(errorSalvar instanceof Error ? errorSalvar.message : "Nao foi possivel salvar o insumo.");
+      setErroSalvar(errorSalvar instanceof Error ? errorSalvar.message : "Não foi possível salvar o insumo.");
     } finally {
       setSalvando(false);
     }

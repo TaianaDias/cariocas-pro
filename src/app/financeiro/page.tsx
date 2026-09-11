@@ -67,7 +67,7 @@ export default function FinanceiroPage() {
             <div className="financeiro-summary__list">
               <ResumoItem label="Custo total" value={`R$ ${(kpis?.custoTotal || 0).toFixed(2)}`} />
               <ResumoItem label="CMV médio" value={`${(kpis?.cmvMedio || 0).toFixed(1)}%`} tone={(kpis?.cmvMedio || 0) <= 30 ? "success" : "danger"} />
-              <ResumoItem label="Margem media" value={`${(kpis?.margemMedia || 0).toFixed(1)}%`} tone={(kpis?.margemMedia || 0) >= 40 ? "success" : "warning"} />
+              <ResumoItem label="Margem média" value={`${(kpis?.margemMedia || 0).toFixed(1)}%`} tone={(kpis?.margemMedia || 0) >= 40 ? "success" : "warning"} />
               <ResumoItem label="Desperdicio" value={`${(kpis?.percentualDesperdicio || 0).toFixed(1)}%`} tone={(kpis?.percentualDesperdicio || 0) > 5 ? "danger" : "success"} />
               <ResumoItem label="Desperdicio em R$" value={`R$ ${(kpis?.custoDesperdicio || 0).toFixed(2)}`} />
               <ResumoItem label="Ticket médio" value={`R$ ${(kpis?.ticketMedio || 0).toFixed(2)}`} strong />

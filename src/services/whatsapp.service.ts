@@ -51,7 +51,7 @@ async function evolutionFetch(endpoint: string, options: EvolutionFetchOptions =
     return new Response(
       JSON.stringify({
         error: "connection_failed",
-        message: `Nao consegui conectar na Evolution API em ${EVOLUTION_API_URL}. Verifique se o container evolution-api esta online e se a porta 8080 responde localmente.`,
+        message: `Não consegui conectar na Evolution API em ${EVOLUTION_API_URL}. Verifique se o container evolution-api esta online e se a porta 8080 responde localmente.`,
         details: error instanceof Error ? error.message : "fetch failed",
       }),
       {
@@ -331,7 +331,7 @@ export async function recriarInstancia(): Promise<{ success: boolean; qrcode?: s
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao recriar sessao do WhatsApp",
+      error: error instanceof Error ? error.message : "Erro ao recriar sessão do WhatsApp",
     };
   }
 }

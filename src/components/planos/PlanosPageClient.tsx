@@ -57,9 +57,9 @@ export function PlanosPageClient() {
 
     try {
       await updatePlan(plano);
-      setFeedback(`Plano ${planCatalog[plano].name} ativado. Permissoes atualizadas no sistema.`);
+      setFeedback(`Plano ${planCatalog[plano].name} ativado. Permissões atualizadas no sistema.`);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Nao foi possivel atualizar o plano.");
+      setFeedback(error instanceof Error ? error.message : "Não foi possível atualizar o plano.");
     } finally {
       setSavingPlan(null);
     }
@@ -83,7 +83,7 @@ export function PlanosPageClient() {
           </div>
         </div>
         <div className="plans-hero__content">
-          <a className="plans-logo" href="/">Carioca&apos;s Pro</a>
+          <a className="plans-logo" href="/">Carioca&após;s Pro</a>
           <Badge tone="danger">Planos SaaS para food service</Badge>
           <h1>Escolha o plano certo para liberar a operação que você precisa hoje</h1>
           <p>Comece simples, evolua para gestão profissional e desbloqueie precificação, CMV, relatórios e automações quando fizer sentido.</p>
@@ -113,7 +113,7 @@ export function PlanosPageClient() {
                 </div>
                 <div>
                   <h3>{detalhes.name}</h3>
-                  <strong>{detalhes.price}<small>/mes</small></strong>
+                  <strong>{detalhes.price}<small>/mês</small></strong>
                   <p>{detalhes.description}</p>
                 </div>
                 <ul>

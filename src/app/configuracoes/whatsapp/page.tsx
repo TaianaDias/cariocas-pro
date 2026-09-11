@@ -219,7 +219,7 @@ export default function WhatsAppConfigPage() {
       </Card>
 
       <Card className="whatsapp-config__card">
-        <strong>Conexão gerenciada pelo Carioca&apos;s Pro</strong>
+        <strong>Conexão gerenciada pelo Carioca&após;s Pro</strong>
         <p>
           A infraestrutura técnica do WhatsApp é administrada pelo sistema. Sua empresa só precisa vincular o número pelo QR Code quando solicitado.
         </p>

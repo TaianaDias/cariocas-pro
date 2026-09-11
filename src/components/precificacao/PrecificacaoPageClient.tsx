@@ -229,7 +229,7 @@ export function PrecificacaoPageClient() {
         <section className="precificacao-kpis">
           <Kpi label="Lucro estimado" value={money(precificacao.kpis.lucroTotal)} />
           <Kpi label="CMV médio" value={`${precificacao.kpis.cmvMedio.toFixed(1)}%`} />
-          <Kpi label="Margem media" value={`${precificacao.kpis.margemMedia.toFixed(1)}%`} />
+          <Kpi label="Margem média" value={`${precificacao.kpis.margemMedia.toFixed(1)}%`} />
           <Kpi label="Receitas críticas" value={String(precificacao.kpis.criticas)} tone={precificacao.kpis.criticas ? "danger" : "success"} />
         </section>
       ) : (

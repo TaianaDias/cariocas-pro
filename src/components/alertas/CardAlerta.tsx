@@ -10,7 +10,7 @@ type CardAlertaProps = {
 
 export function CardAlerta({ alerta, onMarcarLido, onResolver }: CardAlertaProps) {
   const nivelCor = alerta.nivel === "critical" ? "var(--crimson)" : "var(--yellow-warn)";
-  const nivelLabel = alerta.nivel === "critical" ? "Critico" : "Aviso";
+  const nivelLabel = alerta.nivel === "critical" ? "Crítico" : "Aviso";
 
   return (
     <article

@@ -9,7 +9,7 @@ type FiltroPeriodoProps = {
 };
 
 const periodosPredefinidos = [
-  { label: "Este mes", dias: 0 },
+  { label: "Este mês", dias: 0 },
   { label: "30 dias", dias: 30 },
   { label: "90 dias", dias: 90 },
   { label: "Este ano", dias: 365 },
@@ -44,7 +44,7 @@ export function FiltroPeriodo({ dataFim, dataInicio, onAplicar, onChangeFim, onC
       ))}
 
       <input type="date" value={formatDate(dataInicio)} onChange={(event) => onChangeInicio(new Date(event.target.value))} />
-      <span>ate</span>
+      <span>até</span>
       <input type="date" value={formatDate(dataFim)} onChange={(event) => onChangeFim(new Date(event.target.value))} />
 
       {onAplicar ? (

@@ -137,7 +137,7 @@ export async function criarInsumo(
 ): Promise<string> {
   try {
     if (!dados.empresaId || !dados.lojaId) {
-      throw new Error("empresaId e lojaId sao obrigatorios para criar insumo.");
+      throw new Error("empresaId e lojaId são obrigatórios para criar insumo.");
     }
     return criarDocumento(getInsumosCollectionPath(dados.empresaId), normalizarInsumoFinanceiro({ ...dados, createdBy: uid }));
   } catch (error) {
@@ -149,7 +149,7 @@ export async function criarInsumo(
 export async function atualizarInsumo(id: string, dados: Partial<Insumo>): Promise<void> {
   try {
     if (!dados.empresaId || !dados.lojaId) {
-      throw new Error("empresaId e lojaId sao obrigatorios para atualizar insumo.");
+      throw new Error("empresaId e lojaId são obrigatórios para atualizar insumo.");
     }
     return atualizarDocumento<Insumo>(getInsumosCollectionPath(dados.empresaId), id, normalizarInsumoFinanceiro(dados));
   } catch (error) {

@@ -5,7 +5,7 @@ export function AppLoading() {
         <div className="app-loading__brand" aria-hidden="true">
           <span className="app-loading__brand-mark">CP</span>
           <div>
-            <strong>Carioca&apos;s Pro</strong>
+            <strong>Carioca&após;s Pro</strong>
             <small>Central de operação</small>
           </div>
         </div>

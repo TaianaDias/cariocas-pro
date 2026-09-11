@@ -36,7 +36,7 @@ export function LoginPageClient() {
     <main className="auth-screen">
       <section className="auth-card">
         <header className="auth-card__header auth-card__header--center">
-          <strong>CARIOCA&apos;S PRO</strong>
+          <strong>CARIOCA&após;S PRO</strong>
           <h1>Faca login para continuar</h1>
         </header>
 

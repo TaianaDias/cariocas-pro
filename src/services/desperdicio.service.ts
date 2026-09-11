@@ -61,12 +61,12 @@ export async function buscarDesperdicio(id: string): Promise<Desperdicio | null>
 
 export async function registrarDesperdicio(dados: Omit<Desperdicio, "id" | "criadoEm">): Promise<string> {
   try {
-    if (!dados.empresaId || !dados.lojaId) throw new Error("empresaId e lojaId sao obrigatorios para registrar desperdicio.");
+    if (!dados.empresaId || !dados.lojaId) throw new Error("empresaId e lojaId são obrigatórios para registrar desperdicio.");
     if (!dados.insumoId) throw new Error("Selecione o insumo do desperdicio.");
     if (dados.quantidade <= 0) throw new Error("Quantidade precisa ser maior que zero.");
 
     const insumo = await obterDocumento<Insumo>(getInsumosCollectionPath(dados.empresaId), dados.insumoId);
-    if (!insumo) throw new Error("Insumo nao encontrado.");
+    if (!insumo) throw new Error("Insumo não encontrado.");
     if (insumo.lojaId && insumo.lojaId !== dados.lojaId) throw new Error("Insumo pertence a outra loja.");
 
     const estoqueAtual = Number(insumo.estoqueAtual ?? insumo.quantidadeAtual) || 0;

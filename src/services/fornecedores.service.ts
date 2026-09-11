@@ -129,7 +129,7 @@ export async function vincularInsumoAoFornecedor(
   dados: VincularInsumoFornecedorInput,
 ): Promise<void> {
   try {
-    if (!fornecedor.id || !insumo.id) throw new Error("Fornecedor e insumo sao obrigatorios.");
+    if (!fornecedor.id || !insumo.id) throw new Error("Fornecedor e insumo são obrigatórios.");
     if (dados.custoUnitario <= 0) throw new Error("Informe um custo maior que zero.");
 
     const vinculosAtuais = insumo.fornecedores || [];

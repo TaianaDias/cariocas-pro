@@ -67,7 +67,7 @@ export function parseNfeXml(xmlText: string): XmlNfeParseResult {
   const parserError = xml.getElementsByTagName("parsererror")[0];
 
   if (parserError) {
-    throw new Error("XML invalido. Confira se o arquivo selecionado e uma NF-e em XML.");
+    throw new Error("XML inválido. Confira se o arquivo selecionado e uma NF-e em XML.");
   }
 
   const emitente = xml.getElementsByTagName("emit")[0];
@@ -193,7 +193,7 @@ export async function processarLoteXml(
             (await obterDocumento<Insumo>("insumos", produtoExistenteId))
           : null;
         if (!produto || !produtoExistenteId) {
-          throw new Error("Produto existente nao encontrado para vinculo.");
+          throw new Error("Produto existente não encontrado para vínculo.");
         }
 
         const quantidadeAtual = Number(produto.estoqueAtual ?? produto.quantidadeAtual) || 0;

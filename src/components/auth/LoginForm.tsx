@@ -39,7 +39,7 @@ export function LoginForm() {
         setFeedback("Enviamos o link de recuperacao para seu email.");
       }
     } catch {
-      setFeedback("Nao foi possivel concluir a autenticacao. Verifique os dados e tente novamente.");
+      setFeedback("Não foi possível concluir a autenticação. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export function LoginForm() {
       await signInWithGoogle();
       setFeedback("Login com Google realizado com sucesso.");
     } catch {
-      setFeedback("Nao foi possivel entrar com Google agora.");
+      setFeedback("Não foi possível entrar com Google agora.");
     } finally {
       setLoading(false);
     }

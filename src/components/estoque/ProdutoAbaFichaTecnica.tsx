@@ -15,7 +15,7 @@ export function ProdutoAbaFichaTecnica({ onChange, produto }: Props) {
       <div className="drawer-form-grid">
         <TextInput
           label="Vínculos de ficha técnica"
-          helperText="Separe codigos ou nomes por virgula."
+          helperText="Separe códigos ou nomes por virgula."
           value={(produto.fichaTecnicaVinculos || []).join(", ")}
           onChange={(event) =>
             onChange({

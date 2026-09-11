@@ -1363,7 +1363,7 @@ export function FuncionariosPageClient() {
               </div>
               <div>
                 <Badge tone={funcionario.ativo ? "success" : "neutral"}>{funcionario.ativo ? "ativo" : "inativo"}</Badge>
-                <Badge>{funcionario.role || "funcionario"}</Badge>
+                <Badge>{funcionario.role || "funcionário"}</Badge>
                 <small>{funcionario.email || funcionario.telefone || "Sem contato"}</small>
                 <div className="operational-row__actions">
                   <button type="button" onClick={() => abrirEdicaoFuncionario(funcionario)}>Editar acessos</button>
@@ -1694,7 +1694,7 @@ export function ProducaoPageClient() {
                 <span>{porcao.porcoesDisponiveis}/{porcao.porcoesGeradas} {porcao.formatoPorcao || "porções"} disponiveis em {porcao.area}</span>
               </div>
               <div>
-                <Badge tone="success">{porcao.formatoPorcao || "porcao"}</Badge>
+                <Badge tone="success">{porcao.formatoPorcao || "porção"}</Badge>
                 <small>Baixado: {porcao.quantidadeBaixada} {porcao.unidade}</small>
                 <small>{porcao.quantidadePorPorcao ? `${porcao.quantidadePorPorcao} ${porcao.unidadePorcao || porcao.unidade} por porção` : money(porcao.custoPorPorcao)}</small>
                 <div className="operational-row__actions">

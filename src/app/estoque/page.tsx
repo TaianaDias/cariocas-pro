@@ -64,7 +64,7 @@ export default function EstoquePage() {
     return filtrados;
   }, [busca, categoriaAtiva, filtroAtencao, insumos]);
 
-  const filtroAtencaoLabel = filtroAtencao === "criticos" ? "Itens críticos" : filtroAtencao === "reposicao" ? "Reposição pendente" : "";
+  const filtroAtencaoLabel = filtroAtencao === "críticos" ? "Itens críticos" : filtroAtencao === "reposição" ? "Reposição pendente" : "";
 
   const handleNovoInsumo = useCallback(() => {
     if (!administrative) return;

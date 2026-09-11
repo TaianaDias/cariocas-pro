@@ -100,7 +100,7 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
             <div className="produto-actions" aria-label="Ações do produto">
               <button type="button">Editar</button>
               <button type="button">Entrada</button>
-              <button type="button">Saida</button>
+              <button type="button">Saída</button>
               <button type="button">Etiqueta</button>
               <button type="button">Histórico</button>
             </div>

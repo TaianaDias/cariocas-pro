@@ -79,20 +79,20 @@ export async function registrarSaidaParaProducao(input: SaidaParaProducaoInput):
   try {
     if (!input.insumoNome.trim()) throw new Error("Informe o nome do insumo.");
     if (input.quantidade <= 0) throw new Error("A quantidade precisa ser maior que zero.");
-    if (input.porcoes <= 0) throw new Error("A quantidade de porcoes precisa ser maior que zero.");
+    if (input.porcoes <= 0) throw new Error("A quantidade de porções precisa ser maior que zero.");
 
     const insumo = input.insumoId
       ? (await obterDocumento<Insumo>(getInsumosCollectionPath(input.empresaId), input.insumoId)) ||
         (await obterDocumento<Insumo>("insumos", input.insumoId))
       : await buscarInsumoPorNome(input.insumoNome, input);
     if (!insumo?.id) {
-      throw new Error(`Nao encontrei o insumo "${input.insumoNome}" no estoque.`);
+      throw new Error(`Não encontrei o insumo "${input.insumoNome}" no estoque.`);
     }
     if (input.empresaId && insumo.empresaId && insumo.empresaId !== input.empresaId) {
-      throw new Error("Este insumo nao pertence a empresa atual.");
+      throw new Error("Este insumo não pertence a empresa atual.");
     }
     if (input.lojaId && insumo.lojaId && insumo.lojaId !== input.lojaId) {
-      throw new Error("Este insumo nao pertence a loja atual.");
+      throw new Error("Este insumo não pertence a loja atual.");
     }
 
     const insumoPorcionado = input.insumoPorcionadoId
@@ -241,13 +241,13 @@ export async function getProducaoPorcao(id: string, context?: TenantContext): Pr
 export async function estornarProducaoPorcao(id: string, context: Required<TenantContext> & { responsavel: string }): Promise<void> {
   try {
     const porcao = await obterDocumento<ProducaoPorcao>(getPorcoesCollectionPath(context.empresaId), id);
-    if (!porcao) throw new Error("Porcao nao encontrada.");
-    if (porcao.status === "estornado") throw new Error("Esta producao ja foi estornada.");
-    if (porcao.lojaId && porcao.lojaId !== context.lojaId) throw new Error("Esta porcao pertence a outra loja.");
+    if (!porcao) throw new Error("Porção não encontrada.");
+    if (porcao.status === "estornado") throw new Error("Esta produção já foi estornada.");
+    if (porcao.lojaId && porcao.lojaId !== context.lojaId) throw new Error("Esta porção pertence a outra loja.");
 
     const brutoId = porcao.insumoBrutoId || porcao.insumoId;
     const bruto = await obterDocumento<Insumo>(getInsumosCollectionPath(context.empresaId), brutoId);
-    if (!bruto?.id) throw new Error("Insumo bruto nao encontrado para estorno.");
+    if (!bruto?.id) throw new Error("Insumo bruto não encontrado para estorno.");
 
     const saldoBruto = Number(bruto.estoqueAtual ?? bruto.quantidadeAtual) || 0;
     const novoSaldoBruto = saldoBruto + Number(porcao.quantidadeBaixada || 0);
@@ -300,20 +300,20 @@ export async function estornarProducaoPorcao(id: string, context: Required<Tenan
 export async function atualizarProducaoPorcao(id: string, dados: AtualizarPorcaoInput): Promise<void> {
   try {
     const porcaoAtual = await obterDocumento<ProducaoPorcao>(getPorcoesCollectionPath(dados.empresaId), id);
-    if (!porcaoAtual) throw new Error("Porcao nao encontrada.");
+    if (!porcaoAtual) throw new Error("Porção não encontrada.");
     if (dados.empresaId && porcaoAtual.empresaId && porcaoAtual.empresaId !== dados.empresaId) {
-      throw new Error("Esta porcao nao pertence a empresa atual.");
+      throw new Error("Esta porção não pertence a empresa atual.");
     }
     if (dados.lojaId && porcaoAtual.lojaId && porcaoAtual.lojaId !== dados.lojaId) {
-      throw new Error("Esta porcao nao pertence a loja atual.");
+      throw new Error("Esta porção não pertence a loja atual.");
     }
 
     const porcoesGeradas = Number(dados.porcoesGeradas ?? porcaoAtual.porcoesGeradas) || 0;
     const porcoesDisponiveis = Number(dados.porcoesDisponiveis ?? porcaoAtual.porcoesDisponiveis) || 0;
 
     if (porcoesGeradas <= 0) throw new Error("A quantidade gerada precisa ser maior que zero.");
-    if (porcoesDisponiveis < 0) throw new Error("Porcoes disponiveis nao pode ser negativo.");
-    if (porcoesDisponiveis > porcoesGeradas) throw new Error("Porcoes disponiveis nao pode ser maior que porcoes geradas.");
+    if (porcoesDisponiveis < 0) throw new Error("Porções disponíveis não pode ser negativo.");
+    if (porcoesDisponiveis > porcoesGeradas) throw new Error("Porções disponíveis não pode ser maior que porções geradas.");
 
     const status: ProducaoPorcao["status"] = porcoesDisponiveis <= 0 ? "finalizado" : porcoesDisponiveis < porcoesGeradas ? "parcial" : "disponivel";
 
@@ -336,12 +336,12 @@ export async function atualizarProducaoPorcao(id: string, dados: AtualizarPorcao
 export async function deletarProducaoPorcao(id: string, context?: TenantContext): Promise<void> {
   try {
     const porcaoAtual = await obterDocumento<ProducaoPorcao>(getPorcoesCollectionPath(context?.empresaId), id);
-    if (!porcaoAtual) throw new Error("Porcao nao encontrada.");
+    if (!porcaoAtual) throw new Error("Porção não encontrada.");
     if (context?.empresaId && porcaoAtual.empresaId && porcaoAtual.empresaId !== context.empresaId) {
-      throw new Error("Esta porcao nao pertence a empresa atual.");
+      throw new Error("Esta porção não pertence a empresa atual.");
     }
     if (context?.lojaId && porcaoAtual.lojaId && porcaoAtual.lojaId !== context.lojaId) {
-      throw new Error("Esta porcao nao pertence a loja atual.");
+      throw new Error("Esta porção não pertence a loja atual.");
     }
     await deletarDocumento(getPorcoesCollectionPath(context?.empresaId), id);
   } catch (error) {

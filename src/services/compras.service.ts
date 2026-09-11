@@ -60,7 +60,7 @@ export const buscarPedidoCompra = getPedido;
 export async function criarPedido(dados: Omit<PedidoCompra, "id" | "createdBy" | "criadoEm" | "atualizadoEm">, uid: string): Promise<string> {
   try {
     if (!dados.empresaId || !dados.lojaId) {
-      throw new Error("empresaId e lojaId sao obrigatorios para criar pedido de compra.");
+      throw new Error("empresaId e lojaId são obrigatórios para criar pedido de compra.");
     }
     return criarDocumento(getPedidosCollectionPath(dados.empresaId), { ...dados, createdBy: uid });
   } catch (error) {
@@ -109,9 +109,9 @@ export async function registrarRecebimentoPedido(
 ): Promise<void> {
   try {
     const pedido = await obterDocumento<PedidoCompra>(getPedidosCollectionPath(context.empresaId), id);
-    if (!pedido) throw new Error("Pedido de compra nao encontrado.");
+    if (!pedido) throw new Error("Pedido de compra não encontrado.");
     if (pedido.lojaId && pedido.lojaId !== context.lojaId) throw new Error("Pedido pertence a outra loja.");
-    if (pedido.status === "recebido") throw new Error("Pedido ja foi recebido.");
+    if (pedido.status === "recebido") throw new Error("Pedido já foi recebido.");
 
     for (const item of pedido.itens || []) {
       if (!item.insumoId) continue;
