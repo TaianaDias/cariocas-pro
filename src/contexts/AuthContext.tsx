@@ -24,7 +24,7 @@ import {
 } from "../services/auth.service";
 import { atualizarPlano } from "../services/usuarios.service";
 import type { Plano } from "../lib/plan";
-import { serializePermissions } from "../lib/access-control";
+import { isOperationalRole, serializePermissions } from "../lib/access-control";
 
 type AuthContextValue = {
   error: string | null;
@@ -45,24 +45,31 @@ type AuthProviderProps = {
 
 function getFriendlyAuthError(error: unknown) {
   if (!(error instanceof FirebaseError)) {
-    return "Nao foi possivel concluir a autenticacao. Tente novamente.";
+    return error instanceof Error ? error.message : "Não foi possível concluir a autenticação. Tente novamente.";
   }
 
   const messages: Record<string, string> = {
-    "auth/admin-restricted-operation": "O cadastro por email e senha esta desativado no Firebase Authentication.",
-    "auth/email-already-in-use": "Este email ja esta cadastrado. Tente fazer login.",
-    "auth/invalid-api-key": "A chave do Firebase esta invalida. Confira o arquivo .env.local.",
-    "auth/invalid-credential": "Email ou senha invalidos.",
-    "auth/invalid-email": "Informe um email valido.",
-    "auth/network-request-failed": "Falha de conexao com o Firebase. Verifique sua internet.",
-    "auth/operation-not-allowed": "Ative o metodo Email/Senha no Firebase Authentication.",
-    "auth/user-not-found": "Nao encontramos uma conta com este email.",
+    "auth/admin-restricted-operation": "O cadastro por e-mail e senha está desativado no Firebase Authentication.",
+    "auth/email-already-in-use": "Este e-mail já está cadastrado. Tente fazer login.",
+    "auth/invalid-api-key": "A chave do Firebase está inválida. Confira o arquivo .env.local.",
+    "auth/invalid-credential": "E-mail ou senha inválidos.",
+    "auth/invalid-email": "Informe um e-mail válido.",
+    "auth/network-request-failed": "Falha de conexão com o Firebase. Verifique sua internet.",
+    "auth/operation-not-allowed": "Ative o método E-mail/Senha no Firebase Authentication.",
+    "auth/user-disabled": "Este acesso está desativado. Procure o administrador da empresa.",
+    "auth/user-not-found": "Não encontramos uma conta com este e-mail.",
     "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
     "auth/wrong-password": "Senha incorreta.",
     "permission-denied": "O login funcionou, mas o Firestore bloqueou o perfil em usuarios/{uid}. Confira as regras.",
   };
 
   return messages[error.code] ?? `Firebase retornou: ${error.code}`;
+}
+
+function isInactiveProfile(profile: UserProfile | null) {
+  if (!profile) return false;
+  if (profile.ativo === false) return true;
+  return isOperationalRole(profile.role) && profile.funcionarioAtivo === false;
 }
 
 function setAuthCookies(currentUser: User | null, profile: UserProfile | null) {
@@ -90,7 +97,7 @@ async function runOnboarding(currentUser: User, profile: UserProfile | null) {
   const token = await currentUser.getIdToken();
   const response = await fetch("/api/onboarding", {
     body: JSON.stringify({
-      nome: profile?.nome || currentUser.displayName || "Usuario",
+      nome: profile?.nome || currentUser.displayName || "Usuário",
       tipoConta: profile?.tipoConta || "Hamburgueria / Restaurante",
     }),
     headers: {
@@ -102,7 +109,7 @@ async function runOnboarding(currentUser: User, profile: UserProfile | null) {
 
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error || "Nao foi possivel preparar a empresa para este usuario.");
+    throw new Error(data.error || "Não foi possível preparar a empresa para este usuário.");
   }
 }
 
@@ -111,8 +118,12 @@ function hasRequiredTenantContext(profile: UserProfile | null) {
 }
 
 function refreshOnboardingInBackground(currentUser: User, profile: UserProfile | null) {
+  // Funcionários e gerentes recebem o tenant pronto no provisionamento e nunca
+  // executam rotina de criação/configuração da empresa.
+  if (profile && isOperationalRole(profile.role)) return;
+
   void runOnboarding(currentUser, profile).catch((error) => {
-    console.warn("Onboarding em segundo plano indisponivel.", error);
+    console.warn("Onboarding em segundo plano indisponível.", error);
   });
 }
 
@@ -127,6 +138,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const existingProfile = await getUserProfile(currentUser.uid);
     const profile = existingProfile ?? (await ensureUserProfile(currentUser));
 
+    if (isInactiveProfile(profile)) {
+      await logoutUser().catch(() => undefined);
+      setAuthCookies(null, null);
+      throw new Error("Este acesso está desativado. Procure o administrador da empresa.");
+    }
+
     if (hasRequiredTenantContext(profile)) {
       setUserProfile(profile);
       setAuthCookies(currentUser, profile);
@@ -134,14 +151,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return profile;
     }
 
-    try {
-      await runOnboarding(currentUser, profile);
-    } catch (error) {
-      throw error;
-    }
+    await runOnboarding(currentUser, profile);
 
     const onboardedProfile = await getUserProfile(currentUser.uid);
     const nextProfile = onboardedProfile ?? profile;
+    if (isInactiveProfile(nextProfile)) {
+      await logoutUser().catch(() => undefined);
+      setAuthCookies(null, null);
+      throw new Error("Este acesso está desativado. Procure o administrador da empresa.");
+    }
+
     setUserProfile(nextProfile);
     setAuthCookies(currentUser, nextProfile);
     return nextProfile;
@@ -161,8 +180,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUserProfile(null);
           setAuthCookies(null, null);
         }
-      } catch {
-        setError("Nao foi possivel carregar o perfil do usuario.");
+      } catch (profileError) {
+        setError(profileError instanceof Error ? profileError.message : "Não foi possível carregar o perfil do usuário.");
         setUserProfile(null);
         if (currentUser) {
           setAuthCookies(currentUser, null);
@@ -178,6 +197,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return listenUserProfile(user.uid, (profile) => {
       if (!profile) return;
+      if (isInactiveProfile(profile)) {
+        setError("Este acesso está desativado. Procure o administrador da empresa.");
+        setUserProfile(null);
+        setAuthCookies(null, null);
+        void logoutUser();
+        return;
+      }
       setUserProfile(profile);
       setAuthCookies(user, profile);
     });
@@ -192,8 +218,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const credential = await loginWithEmail(email, password);
         setUser(credential.user);
         await loadUserProfile(credential.user);
-      } catch (error) {
-        const message = getFriendlyAuthError(error);
+      } catch (loginError) {
+        const message = getFriendlyAuthError(loginError);
         setError(message);
         throw new Error(message);
       } finally {
@@ -212,8 +238,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const credential = await registerWithEmail(email, password, nome, tipoConta);
         setUser(credential.user);
         await loadUserProfile(credential.user);
-      } catch (error) {
-        const message = getFriendlyAuthError(error);
+      } catch (registerError) {
+        const message = getFriendlyAuthError(registerError);
         setError(message);
         throw new Error(message);
       } finally {
@@ -233,8 +259,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUserProfile(null);
       setAuthCookies(null, null);
     } catch {
-      setError("Nao foi possivel sair da conta agora.");
-      throw new Error("Nao foi possivel sair da conta agora.");
+      setError("Não foi possível sair da conta agora.");
+      throw new Error("Não foi possível sair da conta agora.");
     } finally {
       setLoading(false);
     }
@@ -250,7 +276,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const nextProfile: UserProfile = {
         ...(userProfile ?? {
           email: user.email || "",
-          nome: user.displayName || "Usuario",
+          nome: user.displayName || "Usuário",
           role: "user",
           tipoConta: "Hamburgueria / Restaurante",
           uid: user.uid,
