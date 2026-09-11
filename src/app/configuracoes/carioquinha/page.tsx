@@ -147,7 +147,7 @@ export default function CarioquinhaConfigPage() {
       const data = await lerRespostaJson(response);
 
       if (!response.ok || data.status === "error") {
-        throw new Error(data.message || "Nao foi possivel recriar a sessao do WhatsApp.");
+        throw new Error(data.message || "Não foi possível recriar a sessão do WhatsApp.");
       }
 
       setStatus({
@@ -156,7 +156,7 @@ export default function CarioquinhaConfigPage() {
         webhookAtivo: data.webhookAtivo,
       });
     } catch (error) {
-      setErro(error instanceof Error ? error.message : "Nao foi possivel recriar a sessao do WhatsApp.");
+      setErro(error instanceof Error ? error.message : "Não foi possível recriar a sessão do WhatsApp.");
     } finally {
       setRecuperando(false);
     }
@@ -231,7 +231,7 @@ export default function CarioquinhaConfigPage() {
             <h2>Escaneie o QR Code</h2>
           </div>
           <img src={`data:image/png;base64,${status.qrcode}`} alt="QR Code para conectar WhatsApp" />
-          <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a camera para este codigo.</p>
+          <p>Abra o WhatsApp, acesse Dispositivos conectados e aponte a camera para este código.</p>
           <Button variant="secondary" onClick={conectarWhatsApp} disabled={criando}>
             {criando ? "Gerando..." : "Gerar novo QR Code"}
           </Button>
@@ -245,7 +245,7 @@ export default function CarioquinhaConfigPage() {
         <Card className="carioquinha-page__panel carioquinha-page__panel--large">
           <div className="carioquinha-page__section-heading">
             <span>O que ela faz</span>
-            <h2>Comandos pensados para operacao real</h2>
+            <h2>Comandos pensados para operação real</h2>
           </div>
 
           <div className="carioquinha-page__capabilities">

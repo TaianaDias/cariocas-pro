@@ -97,12 +97,12 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
             <strong className={`produto-status produto-status--${status.toLowerCase()}`}>
               {status}
             </strong>
-            <div className="produto-actions" aria-label="Acoes do produto">
+            <div className="produto-actions" aria-label="Ações do produto">
               <button type="button">Editar</button>
               <button type="button">Entrada</button>
               <button type="button">Saida</button>
               <button type="button">Etiqueta</button>
-              <button type="button">Historico</button>
+              <button type="button">Histórico</button>
             </div>
           </article>
           );
@@ -121,7 +121,7 @@ export function ListaProdutos({ insumos, loading, onSelect }: ListaProdutosProps
               <th>Minimo</th>
               <th>Custo</th>
               <th>Status</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>

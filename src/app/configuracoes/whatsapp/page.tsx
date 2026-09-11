@@ -90,7 +90,7 @@ export default function WhatsAppConfigPage() {
   }
 
   async function handleRecriarSessao() {
-    if (!window.confirm("Recriar a sessao do WhatsApp? Use quando o QR Code falhar ou a IA parar de responder.")) return;
+    if (!window.confirm("Recriar a sessão do WhatsApp? Use quando o QR Code falhar ou a IA parar de responder.")) return;
 
     setRecuperando(true);
 
@@ -99,7 +99,7 @@ export default function WhatsAppConfigPage() {
       const data = await lerRespostaJson(res);
 
       if (!res.ok || data.status === "error") {
-        throw new Error(data.message || "Erro ao recriar sessao");
+        throw new Error(data.message || "Erro ao recriar sessão");
       }
 
       setStatus({

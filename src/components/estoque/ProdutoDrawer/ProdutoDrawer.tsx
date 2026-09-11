@@ -81,7 +81,7 @@ export function ProdutoDrawer({ insumoId, onClose, onSaved }: ProdutoDrawerProps
         const dados = await getInsumo(insumoId);
         if (!mounted) return;
         setInsumo(dados ?? emptyInsumo);
-        setError(dados ? null : "Insumo nao encontrado.");
+        setError(dados ? null : "Insumo não encontrado.");
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "Erro ao carregar insumo.");
       } finally {
@@ -109,7 +109,7 @@ export function ProdutoDrawer({ insumoId, onClose, onSaved }: ProdutoDrawerProps
 
     try {
       if (!empresaId || !lojaId) {
-        throw new Error("Nao foi possivel identificar empresa e loja.");
+        throw new Error("Não foi possível identificar empresa e loja.");
       }
 
       const payload = { ...insumo, empresaId, lojaId };
@@ -120,7 +120,7 @@ export function ProdutoDrawer({ insumoId, onClose, onSaved }: ProdutoDrawerProps
       }
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Nao foi possivel salvar o insumo.");
+      setError(err instanceof Error ? err.message : "Não foi possível salvar o insumo.");
     } finally {
       setLoading(false);
     }

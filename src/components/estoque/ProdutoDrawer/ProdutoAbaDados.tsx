@@ -28,14 +28,14 @@ export function ProdutoAbaDados({ insumo, onSave }: ProdutoAbaDadosProps) {
         </label>
         <label>
           Codigo de barras
-          <input defaultValue={insumo.codigoBarras ?? ""} onBlur={(event) => onSave({ codigoBarras: event.target.value })} placeholder="Codigo de barras" />
+          <input defaultValue={insumo.codigoBarras ?? ""} onBlur={(event) => onSave({ codigoBarras: event.target.value })} placeholder="Código de barras" />
         </label>
         <label>
           Status
           <select defaultValue={insumo.status ?? "ativo"} onChange={(event) => onSave({ status: event.target.value })}>
             <option value="ativo">Ativo</option>
             <option value="pausado">Pausado</option>
-            <option value="critico">Critico</option>
+            <option value="critico">Crítico</option>
           </select>
         </label>
       </div>

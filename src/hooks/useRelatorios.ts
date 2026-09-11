@@ -33,7 +33,7 @@ export function useRelatorios() {
       setProdutos(produtosData);
       setResumo(resumoData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar relatorio");
+      setError(err instanceof Error ? err.message : "Erro ao gerar relatório");
     } finally {
       setLoading(false);
     }

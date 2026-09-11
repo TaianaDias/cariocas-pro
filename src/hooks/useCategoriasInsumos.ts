@@ -80,7 +80,7 @@ export function useCategoriasInsumos() {
     async (nome: string, cor = "#6B7280", icone = "C") => {
       if (!administrative) throw new Error("Apenas perfis administrativos podem criar categorias.");
       const maxOrdem = categorias.reduce((max, categoria) => Math.max(max, categoria.ordem || 0), 0);
-      if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
+      if (!empresaId) throw new Error("Contexto de empresa não encontrado.");
       await addDoc(collection(db, "empresas", empresaId, "categoriasEstoque"), {
         ativo: true,
         cor,
@@ -101,7 +101,7 @@ export function useCategoriasInsumos() {
       if (!administrative) throw new Error("Apenas perfis administrativos podem ocultar categorias.");
       const categoria = categorias.find((item) => item.id === id);
       if (!categoria) return;
-      if (!empresaId) throw new Error("Contexto de empresa nao encontrado.");
+      if (!empresaId) throw new Error("Contexto de empresa não encontrado.");
       await addDoc(collection(db, "empresas", empresaId, "categoriasEstoqueRemovidas"), categoria);
       await updateDoc(doc(db, "empresas", empresaId, "categoriasEstoque", id), { oculta: true, atualizadoEm: serverTimestamp() });
     },

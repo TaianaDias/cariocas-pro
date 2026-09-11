@@ -85,8 +85,8 @@ export function PlanosPageClient() {
         <div className="plans-hero__content">
           <a className="plans-logo" href="/">Carioca&apos;s Pro</a>
           <Badge tone="danger">Planos SaaS para food service</Badge>
-          <h1>Escolha o plano certo para liberar a operacao que voce precisa hoje</h1>
-          <p>Comece simples, evolua para gestao profissional e desbloqueie precificacao, CMV, relatorios e automacoes quando fizer sentido.</p>
+          <h1>Escolha o plano certo para liberar a operação que voce precisa hoje</h1>
+          <p>Comece simples, evolua para gestão profissional e desbloqueie precificacao, CMV, relatórios e automações quando fizer sentido.</p>
           <div className="plans-hero__actions">
             <a className="button button--primary" href="#comparar">Comparar planos</a>
             <a className="button button--secondary" href={user ? "/dashboard" : "/cadastro"}>{user ? "Voltar ao sistema" : "Criar conta"}</a>
@@ -132,7 +132,7 @@ export function PlanosPageClient() {
 
       <section className="plans-compare">
         <div className="plans-section__header">
-          <span>Permissoes</span>
+          <span>Permissões</span>
           <h2>O que cada clique libera no sistema</h2>
         </div>
         <div className="plans-table">
@@ -155,7 +155,7 @@ export function PlanosPageClient() {
 
       <section className="plans-section plans-section--modules">
         <div className="plans-section__header">
-          <span>Preview tecnico</span>
+          <span>Preview técnico</span>
           <h2>Recursos internos por plano</h2>
         </div>
         <div className="plans-modules">

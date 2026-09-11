@@ -11,10 +11,10 @@ type Props = {
 export function ProdutoAbaFichaTecnica({ onChange, produto }: Props) {
   return (
     <section className="drawer-tab">
-      <h3>Ficha Tecnica</h3>
+      <h3>Ficha Técnica</h3>
       <div className="drawer-form-grid">
         <TextInput
-          label="Vinculos de ficha tecnica"
+          label="Vínculos de ficha técnica"
           helperText="Separe codigos ou nomes por virgula."
           value={(produto.fichaTecnicaVinculos || []).join(", ")}
           onChange={(event) =>
@@ -26,7 +26,7 @@ export function ProdutoAbaFichaTecnica({ onChange, produto }: Props) {
             })
           }
         />
-        <TextInput label="Observacoes da ficha" value={produto.fichaTecnicaObservacoes || ""} onChange={(event) => onChange({ fichaTecnicaObservacoes: event.target.value })} />
+        <TextInput label="Observações da ficha" value={produto.fichaTecnicaObservacoes || ""} onChange={(event) => onChange({ fichaTecnicaObservacoes: event.target.value })} />
       </div>
       {produto.fichaTecnicaIngredientes?.length ? (
         <div className="drawer-list">

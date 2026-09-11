@@ -169,7 +169,7 @@ export function useEstoque() {
 
   const criarInsumo = useCallback(async (dados: Partial<Insumo>, uid: string) => {
     if (operational) throw new Error("Apenas perfis administrativos podem criar insumos.");
-    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
     const payload = normalizarInsumoFinanceiro({
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, "") || "",
@@ -187,7 +187,7 @@ export function useEstoque() {
 
   const atualizarInsumo = useCallback(async (id: string, dados: Partial<Insumo>) => {
     if (operational) throw new Error("Apenas perfis administrativos podem editar insumos.");
-    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
     await updateDoc(doc(db, getInsumosCollectionPath(empresaId), id), normalizarInsumoFinanceiro({
       ...dados,
       codigoBarrasNormalizado: dados.codigoBarras?.replace(/\D/g, ""),
@@ -200,7 +200,7 @@ export function useEstoque() {
 
   const deletarInsumo = useCallback(async (id: string, nome: string, responsavel: string) => {
     if (operational) throw new Error("Apenas perfis administrativos podem excluir insumos.");
-    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
     const batch = writeBatch(db);
     batch.delete(doc(db, getInsumosCollectionPath(empresaId), id));
     batch.set(doc(collection(db, getHistoricoEstoqueCollectionPath(empresaId))), {
@@ -219,7 +219,7 @@ export function useEstoque() {
 
   const criarInsumoComEntrada = useCallback(async (dados: CriarEntradaInput) => {
     if (operational) throw new Error("Apenas perfis administrativos podem cadastrar insumos por entrada rápida.");
-    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+    if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
     if (!dados.nome.trim()) throw new Error("Informe o nome do produto.");
     if (dados.quantidade <= 0) throw new Error("Quantidade deve ser maior que zero.");
     if (dados.custoTotal <= 0) throw new Error("Custo total deve ser maior que zero.");
@@ -297,7 +297,7 @@ export function useEstoque() {
 
   const registrarMovimento = useCallback(
     async (dados: MovimentoInput) => {
-      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
 
       if (operational) {
         if (!user) throw new Error("Sessão inválida.");
@@ -330,7 +330,7 @@ export function useEstoque() {
       }
 
       const insumoAtual = insumos.find((item) => item.id === dados.insumoId);
-      if (!insumoAtual?.id) throw new Error("Insumo nao encontrado");
+      if (!insumoAtual?.id) throw new Error("Insumo não encontrado");
 
       let novaQuantidade = insumoAtual.quantidadeAtual;
       let novoCusto = insumoAtual.custoCompra;
@@ -402,7 +402,7 @@ export function useEstoque() {
   const zerarEstoque = useCallback(
     async (responsavel: string) => {
       if (operational) throw new Error("Apenas perfis administrativos podem zerar o estoque.");
-      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+      if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja não encontrado.");
       const batch = writeBatch(db);
       for (const insumo of insumos) {
         if (!insumo.id || insumo.quantidadeAtual <= 0) continue;

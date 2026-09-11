@@ -19,7 +19,7 @@ export function ProdutoAbaValidade({ onChange, produto }: Props) {
       <div className="drawer-form-grid">
         <TextInput label="Validade original em dias" type="number" min="0" value={produto.validadeOriginal ?? 0} onChange={(event) => onChange({ validadeOriginal: numberValue(event.target.value) })} />
         <TextInput label="Apos aberto em dias" type="number" min="0" value={produto.validadeAposAberto ?? 0} onChange={(event) => onChange({ validadeAposAberto: numberValue(event.target.value) })} />
-        <TextInput label="Apos producao em dias" type="number" min="0" value={produto.validadeAposProducao ?? 0} onChange={(event) => onChange({ validadeAposProducao: numberValue(event.target.value) })} />
+        <TextInput label="Apos produção em dias" type="number" min="0" value={produto.validadeAposProducao ?? 0} onChange={(event) => onChange({ validadeAposProducao: numberValue(event.target.value) })} />
         <TextInput label="Lote interno" value={produto.loteInterno || ""} onChange={(event) => onChange({ loteInterno: event.target.value })} />
       </div>
     </section>

@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!response.ok) {
-      return NextResponse.json({ error: `Nao foi possivel consultar a NF-e. Codigo ${response.status}.` }, { status: response.status });
+      return NextResponse.json({ error: `Não foi possível consultar a NF-e. Código ${response.status}.` }, { status: response.status });
     }
 
     const data = await parseResponse(response);
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (status === "NOT_FOUND") {
-      return NextResponse.json({ error: statusMessage || "NF-e nao encontrada pelo Meu Danfe." }, { status: 404 });
+      return NextResponse.json({ error: statusMessage || "NF-e não encontrada pelo Meu Danfe." }, { status: 404 });
     }
 
     if (status === "ERROR") {

@@ -81,7 +81,7 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
         />
         <div className="barcode-recognition">
           <TextInput
-            label="Codigo de barras"
+            label="Código de barras"
             value={produto.codigoBarras || ""}
             onChange={(event) => {
               setFeedbackCodigo(null);
@@ -100,7 +100,7 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
           {feedbackCodigo ? <p className="estoque-feedback">{feedbackCodigo}</p> : null}
         </div>
         <TextInput label="Categoria" value={produto.categoriaId || ""} onChange={(event) => onChange({ categoriaId: event.target.value })} />
-        <TextInput label="Codigo interno" value={produto.codigoInterno || ""} onChange={(event) => onChange({ codigoInterno: event.target.value })} />
+        <TextInput label="Código interno" value={produto.codigoInterno || ""} onChange={(event) => onChange({ codigoInterno: event.target.value })} />
         <Select
           label="Status"
           value={produto.statusProduto || "ativo"}
@@ -112,7 +112,7 @@ export function ProdutoAbaDadosGerais({ onChange, produto }: ProdutoAbaDadosGera
             { label: "Parado", value: "parado" },
           ]}
         />
-        <TextInput label="Observacao" value={produto.observacao || ""} onChange={(event) => onChange({ observacao: event.target.value })} />
+        <TextInput label="Observação" value={produto.observacao || ""} onChange={(event) => onChange({ observacao: event.target.value })} />
       </div>
     </section>
   );

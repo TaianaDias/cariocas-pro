@@ -15,12 +15,12 @@ export function ProdutoAbaEtiqueta({ onChange, produto }: Props) {
       <div className="etiqueta-preview">
         <span>QR</span>
         <strong>{produto.nome || "Etiqueta do insumo"}</strong>
-        <small>{produto.codigoBarras || produto.loteInterno || "Codigo, lote, validade e localizacao"}</small>
+        <small>{produto.codigoBarras || produto.loteInterno || "Código, lote, validade e localizacao"}</small>
       </div>
       <div className="drawer-form-grid">
         <TextInput label="Tipo de etiqueta" value={produto.tipoEtiqueta || ""} onChange={(event) => onChange({ tipoEtiqueta: event.target.value })} />
-        <TextInput label="Responsavel pela etiqueta" value={produto.etiquetaResponsavel || ""} onChange={(event) => onChange({ etiquetaResponsavel: event.target.value })} />
-        <TextInput label="Observacao da etiqueta" value={produto.etiquetaObservacao || ""} onChange={(event) => onChange({ etiquetaObservacao: event.target.value })} />
+        <TextInput label="Responsável pela etiqueta" value={produto.etiquetaResponsavel || ""} onChange={(event) => onChange({ etiquetaResponsavel: event.target.value })} />
+        <TextInput label="Observação da etiqueta" value={produto.etiquetaObservacao || ""} onChange={(event) => onChange({ etiquetaObservacao: event.target.value })} />
       </div>
     </section>
   );

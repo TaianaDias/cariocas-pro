@@ -58,10 +58,10 @@ export function RelatoriosFinanceiros() {
       </section>
 
       {loading ? <Spinner /> : null}
-      {error ? <EmptyState title="Erro no relatorio" description={error} /> : null}
+      {error ? <EmptyState title="Erro no relatório" description={error} /> : null}
 
       {!loading && !error && !gerado ? (
-        <EmptyState title="Selecione o periodo" description="Clique em gerar relatorio para visualizar os dados financeiros." />
+        <EmptyState title="Selecione o periodo" description="Clique em gerar relatório para visualizar os dados financeiros." />
       ) : null}
 
       {!loading && !error && gerado && resumo ? (

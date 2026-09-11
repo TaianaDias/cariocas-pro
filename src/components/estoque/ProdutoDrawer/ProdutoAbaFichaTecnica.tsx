@@ -1,7 +1,7 @@
 export function ProdutoAbaFichaTecnica() {
   return (
     <section className="drawer-tab" id="ficha-tecnica">
-      <h3>Ficha Tecnica</h3>
+      <h3>Ficha Técnica</h3>
       <div className="drawer-list">
         <article>
           <span>Receitas vinculadas</span>

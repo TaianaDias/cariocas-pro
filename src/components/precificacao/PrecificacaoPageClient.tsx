@@ -73,7 +73,7 @@ export function PrecificacaoPageClient() {
     return (
       <EmptyState
         title="Precificacao Inteligente bloqueada"
-        description="Este modulo premium esta disponivel nos planos Plus e Full. O plano Pro acessa apenas ficha tecnica simples."
+        description="Este módulo premium esta disponível nos planos Plus e Full. O plano Pro acessa apenas ficha técnica simples."
         action={<Button>Falar com comercial</Button>}
       />
     );
@@ -204,9 +204,9 @@ export function PrecificacaoPageClient() {
     <main className="precificacao-page">
       <section className="precificacao-hero">
         <div>
-          <span className="precificacao-eyebrow">Modulo premium PLUS</span>
+          <span className="precificacao-eyebrow">Módulo premium PLUS</span>
           <h1>Precificacao Inteligente</h1>
-          <p>Fichas tecnicas, CMV dinamico, custos fixos, simulacoes e sugestao automatica de preco para evitar prejuizo.</p>
+          <p>Fichas técnicas, CMV dinamico, custos fixos, simulacoes e sugestao automatica de preco para evitar prejuizo.</p>
         </div>
         <div className="precificacao-hero__actions">
           <Button onClick={() => setAbaAtiva("Fichas Tecnicas")}>+ Nova Receita</Button>
@@ -234,7 +234,7 @@ export function PrecificacaoPageClient() {
         </section>
       ) : (
         <Card className="precificacao-simple-mode">
-          <strong>Ficha tecnica simples</strong>
+          <strong>Ficha técnica simples</strong>
           <p>Seu acesso permite cadastrar receitas e ingredientes sem visualizar custos, lucro, margem, CMV avancado ou sugestoes de preco.</p>
         </Card>
       )}
@@ -244,7 +244,7 @@ export function PrecificacaoPageClient() {
           <Card className="precificacao-form">
             <header>
               <strong>Cadastro de Receita</strong>
-              <span>Receita, ficha tecnica e ingrediente base reutilizavel.</span>
+              <span>Receita, ficha técnica e ingrediente base reutilizavel.</span>
             </header>
             <div className="precificacao-form__grid">
               <Field label="Nome" value={form.nome || ""} onChange={(value) => setForm({ ...form, nome: value })} />
@@ -253,7 +253,7 @@ export function PrecificacaoPageClient() {
               <Field label="Imagem URL" value={form.imagemUrl || ""} onChange={(value) => setForm({ ...form, imagemUrl: value })} />
             </div>
             <label className="precificacao-field precificacao-field--full">
-              <span>Descricao</span>
+              <span>Descrição</span>
               <textarea value={form.descricao || ""} onChange={(event) => setForm({ ...form, descricao: event.target.value })} />
             </label>
             <label className="precificacao-field precificacao-field--full">
@@ -274,7 +274,7 @@ export function PrecificacaoPageClient() {
                   <input
                     type="search"
                     value={buscaInsumo}
-                    placeholder="Pesquisar por nome, marca, SKU ou codigo"
+                    placeholder="Pesquisar por nome, marca, SKU ou código"
                     onChange={(event) => {
                       setBuscaInsumo(event.target.value);
                       setIngrediente((current) => ({ ...current, insumoId: "", insumoNome: event.target.value }));
@@ -391,13 +391,13 @@ export function PrecificacaoPageClient() {
         <section className="precificacao-grid">
           <Card className="precificacao-list">
             <strong>Alertas Inteligentes</strong>
-            {precificacao.alertas.length ? precificacao.alertas.map((alerta) => <p key={alerta}>{alerta}</p>) : <p>Nenhum alerta financeiro critico agora.</p>}
+            {precificacao.alertas.length ? precificacao.alertas.map((alerta) => <p key={alerta}>{alerta}</p>) : <p>Nenhum alerta financeiro crítico agora.</p>}
           </Card>
           <Card className="precificacao-list">
             <strong>Inteligencia de Reajuste</strong>
             <p>Mais lucrativa: {precificacao.kpis.maisLucrativa?.nome || "Sem dados"}</p>
             <p>Pior CMV: {precificacao.kpis.piorCmv?.nome || "Sem dados"}</p>
-            <p>Historico e restauracao usam as colecoes receitas, receitaIngredientes e historicoCustosInsumos.</p>
+            <p>Histórico e restauracao usam as colecoes receitas, receitaIngredientes e historicoCustosInsumos.</p>
           </Card>
         </section>
       ) : null}
@@ -492,7 +492,7 @@ function FichaTecnicaVisual({
     <Card className="precificacao-ficha">
       <header>
         <div>
-          <span>Ficha tecnica</span>
+          <span>Ficha técnica</span>
           <strong>{receita.nome}</strong>
         </div>
         <Button variant="ghost" onClick={onClose}>Fechar</Button>
@@ -539,7 +539,7 @@ function ReceitasGrid({
   receitas: ReceitaPrecificacao[];
 }) {
   if (!receitas.length) {
-    return <EmptyState title="Nenhuma receita cadastrada" description="Cadastre a primeira ficha tecnica para calcular CMV e preco sugerido." />;
+    return <EmptyState title="Nenhuma receita cadastrada" description="Cadastre a primeira ficha técnica para calcular CMV e preco sugerido." />;
   }
 
   return (

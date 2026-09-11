@@ -12,7 +12,7 @@ export function FinanceiroHeader() {
   return (
     <header className="financeiro-header">
       <div>
-        <Title eyebrow="Financeiro">{isRelatorios ? "Relatorios" : "Dashboard Financeiro"}</Title>
+        <Title eyebrow="Financeiro">{isRelatorios ? "Relatórios" : "Dashboard Financeiro"}</Title>
         <p>{isRelatorios ? "Compras, fornecedores e movimentacoes por periodo." : "KPIs financeiros, CMV e evolucao de custos."}</p>
       </div>
 

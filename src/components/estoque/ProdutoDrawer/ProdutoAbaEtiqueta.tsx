@@ -5,7 +5,7 @@ export function ProdutoAbaEtiqueta() {
       <div className="etiqueta-preview">
         <span>QR</span>
         <strong>Etiqueta do insumo</strong>
-        <small>Codigo, lote, validade e localizacao</small>
+        <small>Código, lote, validade e localizacao</small>
       </div>
       <button type="button">Gerar etiqueta</button>
     </section>

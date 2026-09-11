@@ -32,7 +32,7 @@ export function InputChat({ disabled = false, loading, onSend }: InputChatProps)
               event.currentTarget.form?.requestSubmit();
             }
           }}
-          placeholder="Pergunte sobre estoque, reposicao, CMV ou operacao..."
+          placeholder="Pergunte sobre estoque, reposicao, CMV ou operação..."
           rows={3}
           value={texto}
         />

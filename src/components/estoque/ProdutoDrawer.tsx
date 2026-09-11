@@ -143,7 +143,7 @@ export function ProdutoDrawer({ aberto, onFechar, onSalvo, produtoId }: ProdutoD
         precosVenda: draft.precosVenda || [],
       } as Omit<Insumo, "id" | "criadoEm" | "atualizadoEm" | "createdBy">;
       if (!empresaId || !lojaId) {
-        throw new Error("Contexto de empresa/loja nao encontrado.");
+        throw new Error("Contexto de empresa/loja não encontrado.");
       }
       if (produtoId) {
         await atualizarInsumo(produtoId, payloadCompleto);

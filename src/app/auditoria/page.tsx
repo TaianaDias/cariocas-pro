@@ -67,7 +67,7 @@ export default function AuditoriaPage() {
       <section className="audit-strip" aria-label="Resumo do sistema">
         <div>
           <strong>Multiempresa</strong>
-          <span>empresaId e lojaId por modulo</span>
+          <span>empresaId e lojaId por módulo</span>
         </div>
         <div>
           <strong>Premium</strong>
@@ -83,7 +83,7 @@ export default function AuditoriaPage() {
         </div>
       </section>
 
-      <section className="audit-grid" aria-label="Modulos disponiveis para auditoria">
+      <section className="audit-grid" aria-label="Módulos disponíveis para auditoria">
         {modulos.map((modulo) => (
           <article className="audit-card" key={modulo.nome}>
             <header>
@@ -106,7 +106,7 @@ export default function AuditoriaPage() {
       <section className="audit-preview">
         <div>
           <span className="audit-pill">Fluxo demonstrativo</span>
-          <h2>Estoque para Producao</h2>
+          <h2>Estoque para Produção</h2>
           <p>
             Exemplo seguro do fluxo: um item cadastrado no estoque aparece na producao, pode ser porcionado e passa a exibir saldo original e
             saldo por formato.
@@ -122,13 +122,13 @@ export default function AuditoriaPage() {
           <div role="row">
             <span role="cell">Maionese da casa</span>
             <span role="cell">4 litros</span>
-            <span role="cell">12 porcoes</span>
+            <span role="cell">12 porções</span>
             <span role="cell">Bisnaga</span>
           </div>
           <div role="row">
             <span role="cell">Blend bovino</span>
             <span role="cell">8 kg</span>
-            <span role="cell">32 porcoes</span>
+            <span role="cell">32 porções</span>
             <span role="cell">Pacote</span>
           </div>
         </div>

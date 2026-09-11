@@ -58,6 +58,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, resultado });
   } catch (error) {
     console.error("Erro automacao:", error);
-    return NextResponse.json({ error: "Erro ao processar automacao" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao processar automação" }, { status: 500 });
   }
 }

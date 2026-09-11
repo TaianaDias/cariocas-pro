@@ -72,7 +72,7 @@ export function LoginForm() {
           <TextInput
             label="Nome"
             onChange={(event) => setName(event.target.value)}
-            placeholder="Nome do usuario"
+            placeholder="Nome do usuário"
             value={name}
           />
         ) : null}

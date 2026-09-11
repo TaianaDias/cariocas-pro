@@ -25,7 +25,7 @@ export function useProduto(produtoId: string | null) {
 
     if (!empresaId) {
       setProduto(null);
-      setError("Contexto de empresa nao encontrado.");
+      setError("Contexto de empresa não encontrado.");
       setLoading(false);
       return;
     }
@@ -37,14 +37,14 @@ export function useProduto(produtoId: string | null) {
         const data = snapshot.exists() ? normalizarInsumoFinanceiro({ id: snapshot.id, ...snapshot.data() } as Insumo) : null;
         if (data && data.empresaId && data.empresaId !== empresaId) {
           setProduto(null);
-          setError("Produto nao pertence a esta empresa.");
+          setError("Produto não pertence a esta empresa.");
           setLoading(false);
           return;
         }
 
         if (data && data.lojaId && data.lojaId !== lojaId) {
           setProduto(null);
-          setError("Produto nao pertence a esta loja.");
+          setError("Produto não pertence a esta loja.");
           setLoading(false);
           return;
         }

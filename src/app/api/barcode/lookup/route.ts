@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const codigo = normalizarCodigo(request.nextUrl.searchParams.get("codigo") || "");
 
   if (!codigo) {
-    return NextResponse.json({ error: "Informe um codigo de barras valido." }, { status: 400 });
+    return NextResponse.json({ error: "Informe um código de barras valido." }, { status: 400 });
   }
 
   const cosmosApiKey = process.env.COSMOS_API_KEY || process.env.NEXT_PUBLIC_COSMOS_API_KEY;
@@ -65,16 +65,16 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Produto nao encontrado em base externa." }, { status: 404 });
+      return NextResponse.json({ error: "Produto não encontrado em base externa." }, { status: 404 });
     }
 
     const data = await response.json();
     if (data?.status !== 1 || !data?.product) {
-      return NextResponse.json({ error: "Produto nao encontrado em base externa." }, { status: 404 });
+      return NextResponse.json({ error: "Produto não encontrado em base externa." }, { status: 404 });
     }
 
     return NextResponse.json(buildProduto(data.product));
   } catch {
-    return NextResponse.json({ error: "Nao foi possivel consultar o codigo de barras." }, { status: 502 });
+    return NextResponse.json({ error: "Não foi possível consultar o código de barras." }, { status: 502 });
   }
 }

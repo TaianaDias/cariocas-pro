@@ -15,7 +15,7 @@ type BarcodeInputProps = {
   placeholder?: string;
 };
 
-export function BarcodeInput({ autoFocus, codigo, onChange, onProdutoEncontrado, placeholder = "Digite ou escaneie o codigo" }: BarcodeInputProps) {
+export function BarcodeInput({ autoFocus, codigo, onChange, onProdutoEncontrado, placeholder = "Digite ou escaneie o código" }: BarcodeInputProps) {
   const [scannerAtivo, setScannerAtivo] = useState(false);
   const { buscarPorCodigo } = useBarcode();
 
@@ -53,7 +53,7 @@ export function BarcodeInput({ autoFocus, codigo, onChange, onProdutoEncontrado,
 
   return (
     <div className="barcode-input">
-      <TextInput autoFocus={autoFocus} label="Codigo de Barras" placeholder={placeholder} value={codigo} onChange={(event) => onChange(event.target.value)} />
+      <TextInput autoFocus={autoFocus} label="Código de Barras" placeholder={placeholder} value={codigo} onChange={(event) => onChange(event.target.value)} />
       <div className="estoque-row-actions">
         <Button variant="secondary" onClick={handleBuscar} disabled={!codigo}>Buscar</Button>
         <Button variant="ghost" onClick={() => setScannerAtivo((current) => !current)}>{scannerAtivo ? "Parar Scanner" : "Scanner"}</Button>

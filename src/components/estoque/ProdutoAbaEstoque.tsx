@@ -24,7 +24,7 @@ export function ProdutoAbaEstoque({ onChange, produto }: Props) {
         <TextInput label="Estoque maximo" type="number" min="0" value={produto.estoqueMaximo ?? 0} onChange={(event) => onChange({ estoqueMaximo: numberValue(event.target.value) })} />
         <TextInput label="Unidade de medida" value={produto.unidadeMedida || "un"} onChange={(event) => onChange({ unidadeMedida: event.target.value })} />
         <TextInput label="Local de armazenamento" value={produto.localArmazenamento || ""} onChange={(event) => onChange({ localArmazenamento: event.target.value })} />
-        <TextInput label="Responsavel" value={produto.responsavel || ""} onChange={(event) => onChange({ responsavel: event.target.value })} />
+        <TextInput label="Responsável" value={produto.responsavel || ""} onChange={(event) => onChange({ responsavel: event.target.value })} />
       </div>
     </section>
   );

@@ -69,7 +69,7 @@ export function LoginPageClient() {
         {error || localError ? <p className="auth-card__error">{error ?? localError}</p> : null}
 
         <div className="auth-links">
-          <Link href="/cadastro">Nao tem conta? Cadastre-se</Link>
+          <Link href="/cadastro">Não tem conta? Cadastre-se</Link>
           <button type="button">Esqueceu a senha?</button>
         </div>
       </section>

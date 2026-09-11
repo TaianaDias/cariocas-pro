@@ -20,7 +20,7 @@ export function ProdutoAbaConversao({ onChange, produto }: Props) {
 
   return (
     <section className="drawer-tab">
-      <h3>Conversao para Ficha Tecnica</h3>
+      <h3>Conversao para Ficha Técnica</h3>
       <p className="estoque-feedback">Informe quanto a compra rende na unidade usada nas receitas. Ex: 1 KG de bacon rende 50 FATIAS.</p>
       <div className="drawer-form-grid">
         <label className="field">

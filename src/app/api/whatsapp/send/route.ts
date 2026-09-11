@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { mensagem, numero } = await request.json();
 
     if (!numero || !mensagem) {
-      return NextResponse.json({ error: "numero e mensagem sao obrigatorios" }, { status: 400 });
+      return NextResponse.json({ error: "número e mensagem sao obrigatorios" }, { status: 400 });
     }
 
     const enviado = await enviarWhatsApp(numero, mensagem);

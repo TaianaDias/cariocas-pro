@@ -32,12 +32,12 @@ export async function POST(request: Request) {
   const token = getBearerToken(request);
 
   if (!token) {
-    return NextResponse.json({ error: "Nao autenticado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
   const app = getAdminApp();
   if (!app) {
-    return NextResponse.json({ error: "Firebase Admin nao configurado no servidor." }, { status: 500 });
+    return NextResponse.json({ error: "Firebase Admin não configurado no servidor." }, { status: 500 });
   }
 
   const { getAuth } = await import("firebase-admin/auth");
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   const decoded = await getAuth(app).verifyIdToken(token).catch(() => null);
 
   if (!decoded?.uid) {
-    return NextResponse.json({ error: "Token invalido." }, { status: 401 });
+    return NextResponse.json({ error: "Token inválido." }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => ({}))) as {

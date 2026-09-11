@@ -36,7 +36,7 @@ export function ProdutoAbaHistorico({ insumoId }: ProdutoAbaHistoricoProps) {
 
   return (
     <section className="drawer-tab" id="historico">
-      <h3>Historico</h3>
+      <h3>Histórico</h3>
       {loading ? (
         <Skeleton lines={3} />
       ) : historico.length === 0 ? (

@@ -82,7 +82,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       const text = await file.text();
       await aplicarXmlNoPreview(text, file.name);
     } catch (error) {
-      setErro(error instanceof Error ? error.message : "Nao foi possivel ler o XML.");
+      setErro(error instanceof Error ? error.message : "Não foi possível ler o XML.");
     }
   }
 
@@ -122,7 +122,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Nao foi possivel consultar a NF-e pela chave.");
+        throw new Error(data.error || "Não foi possível consultar a NF-e pela chave.");
       }
 
       if (!data.xml) {
@@ -132,7 +132,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
 
       await aplicarXmlNoPreview(data.xml, `nfe-${chave}.xml`);
     } catch (error) {
-      setErro(error instanceof Error ? error.message : "Nao foi possivel ler a nota fiscal pelo codigo.");
+      setErro(error instanceof Error ? error.message : "Não foi possível ler a nota fiscal pelo código.");
     } finally {
       setLoadingChave(false);
     }
@@ -161,7 +161,7 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
       onImportar?.({ arquivoNome: arquivo.name, resultado: processado });
       setTimeout(() => onFinalizar?.(), 900);
     } catch (error) {
-      setErro(error instanceof Error ? error.message : "Nao foi possivel processar o XML.");
+      setErro(error instanceof Error ? error.message : "Não foi possível processar o XML.");
     } finally {
       setLoading(false);
     }
@@ -214,13 +214,13 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
 
       <label className="xml-dropzone">
         <strong>Selecione o XML da nota fiscal</strong>
-        <span>O processamento cria ou vincula insumos e prepara entradas no historico.</span>
+        <span>O processamento cria ou vincula insumos e prepara entradas no histórico.</span>
         <input type="file" accept=".xml,text/xml,application/xml" onChange={(event) => handleSelecionarArquivo(event.target.files?.[0] ?? null)} />
       </label>
 
       <div className="nfe-code-reader">
         <div>
-          <strong>Ler por codigo de barras da NF-e</strong>
+          <strong>Ler por código de barras da NF-e</strong>
           <span>Escaneie a chave de acesso de 44 digitos da nota ou cole o XML completo para montar o preview.</span>
         </div>
         <TextInput
@@ -259,16 +259,16 @@ export function ImportarXml({ onFechar, onFinalizar, onImportar }: ImportarXmlPr
                 <small>
                   {item.quantidade} {item.unidade} · R$ {item.valorTotal.toFixed(2)} · Cod. barras: {item.codigoBarras || "nao informado"}
                 </small>
-                <small>{item.produtoExistenteNome ? `Vinculo sugerido: ${item.produtoExistenteNome}` : "Novo insumo sugerido"}</small>
+                <small>{item.produtoExistenteNome ? `Vínculo sugerido: ${item.produtoExistenteNome}` : "Novo insumo sugerido"}</small>
                 <label className="operational-field">
-                  <span>Acao na importacao</span>
+                  <span>Ação na importacao</span>
                   <select value={item.acao || (item.produtoExistenteId ? "vincular" : "criar")} onChange={(event) => atualizarAcaoPreview(index, event.target.value as "criar" | "vincular")}>
                     <option value="criar">Cadastrar como novo insumo</option>
                     <option value="vincular" disabled={!item.produtoExistenteId}>Vincular ao insumo sugerido</option>
                   </select>
                 </label>
                 <TextInput
-                  label="Codigo de barras para cadastro"
+                  label="Código de barras para cadastro"
                   value={item.codigoBarras || ""}
                   onChange={(event) => atualizarCodigoPreview(index, event.target.value)}
                 />

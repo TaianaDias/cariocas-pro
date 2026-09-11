@@ -38,8 +38,8 @@ export function ProdutoAbaHistorico({ produtoId }: Props) {
   }, [empresaId, produtoId]);
 
   if (loading) return <Spinner />;
-  if (!produtoId) return <EmptyState title="Selecione um produto" description="Salve o produto primeiro para ver o historico." />;
-  if (movimentos.length === 0) return <EmptyState title="Nenhuma movimentacao" description="Este produto ainda nao tem movimentacoes registradas." />;
+  if (!produtoId) return <EmptyState title="Selecione um produto" description="Salve o produto primeiro para ver o histórico." />;
+  if (movimentos.length === 0) return <EmptyState title="Nenhuma movimentacao" description="Este produto ainda não tem movimentacoes registradas." />;
 
   return (
     <div className="timeline">

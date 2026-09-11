@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (authorization.status === 401) {
-    return NextResponse.json({ error: "Nao autenticado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
   if (authorization.status === 400) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (authorization.status === 403) {
-    return NextResponse.json({ error: "Plano, permissao ou empresa invalidos para recalcular precificacao." }, { status: 403 });
+    return NextResponse.json({ error: "Plano, permissão ou empresa inválidos para recalcular precificacao." }, { status: 403 });
   }
 
   const insumos = await listarInsumos({ empresaId: authorization.empresaId, lojaId: authorization.lojaId || undefined });
