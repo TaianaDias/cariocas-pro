@@ -1,0 +1,42 @@
+name: Build V2
+
+on:
+  push:
+    branches:
+      - refactor/dashboard-clean-v2
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_FIREBASE_API_KEY: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ci-placeholder.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ci-placeholder
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ci-placeholder.appspot.com
+      NEXT_PUBLIC_FIREBASE_SENDER_ID: "123456789"
+      NEXT_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:ci-placeholder"
+      NEXT_PUBLIC_EVOLUTION_API_URL: http://127.0.0.1:8080
+      EVOLUTION_API_KEY: ci-placeholder
+      EVOLUTION_INSTANCE_NAME: cariocas-pro
+      WHATSAPP_ADMIN_NUMBER: "5521000000000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
