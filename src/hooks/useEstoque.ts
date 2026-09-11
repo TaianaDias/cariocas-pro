@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 
+import { isOperationalRole } from "../lib/access-control";
 import { db } from "../lib/firebase";
 import { getHistoricoEstoqueCollectionPath, getInsumosCollectionPath, normalizarInsumoFinanceiro } from "../services/estoque.service";
 import type { Categoria, Historico, Insumo } from "../types";
@@ -64,17 +65,52 @@ export function useEstoque() {
   const { user, userProfile } = useAuth();
   const empresaId = userProfile?.empresaId || user?.uid || "";
   const lojaId = userProfile?.lojaId || "matriz";
+  const operational = isOperationalRole(userProfile?.role);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [kpis, setKpis] = useState<EstoqueKpis>(kpisIniciais);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const carregarOperacional = useCallback(async () => {
+    if (!operational || !user) return;
+
+    setLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/estoque/operacional", {
+        headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { error?: string; items?: Insumo[] };
+      if (!response.ok) {
+        throw new Error(data.error || "Não foi possível carregar o estoque operacional.");
+      }
+
+      const items = [...(data.items || [])].sort((a, b) => a.nome.localeCompare(b.nome));
+      setInsumos(items);
+      setKpis(calcularKpis(items));
+      setError(null);
+    } catch (err) {
+      setInsumos([]);
+      setKpis(kpisIniciais);
+      setError(err instanceof Error ? err.message : "Não foi possível carregar o estoque operacional.");
+    } finally {
+      setLoading(false);
+    }
+  }, [operational, user]);
+
   useEffect(() => {
     if (!empresaId || !lojaId) {
       setInsumos([]);
       setKpis(kpisIniciais);
       setLoading(false);
+      return undefined;
+    }
+
+    if (operational) {
+      void carregarOperacional();
       return undefined;
     }
 
@@ -113,7 +149,7 @@ export function useEstoque() {
         setLoading(false);
       },
     );
-  }, [empresaId, lojaId]);
+  }, [carregarOperacional, empresaId, lojaId, operational]);
 
   useEffect(() => {
     if (!empresaId) {
@@ -129,6 +165,7 @@ export function useEstoque() {
   }, [empresaId]);
 
   const criarInsumo = useCallback(async (dados: Partial<Insumo>, uid: string) => {
+    if (operational) throw new Error("Apenas perfis administrativos podem criar insumos.");
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     const payload = normalizarInsumoFinanceiro({
       ...dados,
@@ -143,9 +180,10 @@ export function useEstoque() {
     const ref = await addDoc(collection(db, getInsumosCollectionPath(empresaId)), payload);
 
     return ref.id;
-  }, [empresaId, lojaId]);
+  }, [empresaId, lojaId, operational]);
 
   const atualizarInsumo = useCallback(async (id: string, dados: Partial<Insumo>) => {
+    if (operational) throw new Error("Apenas perfis administrativos podem editar insumos.");
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     await updateDoc(doc(db, getInsumosCollectionPath(empresaId), id), normalizarInsumoFinanceiro({
       ...dados,
@@ -155,9 +193,10 @@ export function useEstoque() {
       nomeNormalizado: dados.nome?.toLowerCase(),
       atualizadoEm: serverTimestamp(),
     }));
-  }, [empresaId, lojaId]);
+  }, [empresaId, lojaId, operational]);
 
   const deletarInsumo = useCallback(async (id: string, nome: string, responsavel: string) => {
+    if (operational) throw new Error("Apenas perfis administrativos podem excluir insumos.");
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     const batch = writeBatch(db);
     batch.delete(doc(db, getInsumosCollectionPath(empresaId), id));
@@ -173,9 +212,10 @@ export function useEstoque() {
       criadoEm: serverTimestamp(),
     } satisfies Omit<Historico, "id" | "criadoEm"> & { criadoEm: unknown });
     await batch.commit();
-  }, [empresaId, lojaId]);
+  }, [empresaId, lojaId, operational]);
 
   const criarInsumoComEntrada = useCallback(async (dados: CriarEntradaInput) => {
+    if (operational) throw new Error("Apenas perfis administrativos podem cadastrar insumos por entrada rápida.");
     if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
     if (!dados.nome.trim()) throw new Error("Informe o nome do produto.");
     if (dados.quantidade <= 0) throw new Error("Quantidade deve ser maior que zero.");
@@ -250,11 +290,42 @@ export function useEstoque() {
 
     await batch.commit();
     return insumoRef.id;
-  }, [empresaId, lojaId]);
+  }, [empresaId, lojaId, operational]);
 
   const registrarMovimento = useCallback(
     async (dados: MovimentoInput) => {
       if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
+
+      if (operational) {
+        if (!user) throw new Error("Sessão inválida.");
+        if (dados.tipo !== "entrada" && dados.tipo !== "saida") {
+          throw new Error("Este perfil só pode registrar entrada ou saída operacional.");
+        }
+
+        const token = await user.getIdToken();
+        const response = await fetch("/api/estoque/operacional", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            insumoId: dados.insumoId,
+            observacao: dados.observacao,
+            quantidade: dados.quantidade,
+            tipo: dados.tipo,
+          }),
+        });
+
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "Não foi possível registrar a movimentação.");
+        }
+
+        await carregarOperacional();
+        return;
+      }
+
       const insumoAtual = insumos.find((item) => item.id === dados.insumoId);
       if (!insumoAtual?.id) throw new Error("Insumo nao encontrado");
 
@@ -314,11 +385,12 @@ export function useEstoque() {
         console.error("Erro ao disparar automacao de estoque:", err);
       }
     },
-    [empresaId, insumos, lojaId],
+    [carregarOperacional, empresaId, insumos, lojaId, operational, user],
   );
 
   const zerarEstoque = useCallback(
     async (responsavel: string) => {
+      if (operational) throw new Error("Apenas perfis administrativos podem zerar o estoque.");
       if (!empresaId || !lojaId) throw new Error("Contexto de empresa/loja nao encontrado.");
       const batch = writeBatch(db);
       for (const insumo of insumos) {
@@ -342,8 +414,14 @@ export function useEstoque() {
       }
       await batch.commit();
     },
-    [empresaId, insumos, lojaId],
+    [empresaId, insumos, lojaId, operational],
   );
+
+  const refetch = useCallback(async () => {
+    if (operational) {
+      await carregarOperacional();
+    }
+  }, [carregarOperacional, operational]);
 
   return {
     atualizarInsumo,
@@ -355,7 +433,7 @@ export function useEstoque() {
     insumos,
     kpis,
     loading,
-    refetch: () => undefined,
+    refetch,
     registrarMovimento,
     zerarEstoque,
   };
