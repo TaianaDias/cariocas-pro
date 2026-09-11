@@ -4,7 +4,7 @@ import { useCallback } from "react";
 
 import { isOperationalRole } from "../lib/access-control";
 import { operationalStockItemToInsumo, type OperationalStockItem } from "../lib/operational-stock";
-import { buscarExterno, buscarProdutoPorCodigo } from "../services/barcode.service";
+import { buscarProdutoPorCodigo, normalizarCodigo, type ProdutoExterno } from "../services/barcode.service";
 import { useAuth } from "./useAuth";
 
 export function useBarcode() {
@@ -36,7 +36,28 @@ export function useBarcode() {
     }
   }, [empresaId, lojaId, operational, user]);
 
-  const buscarProdutoExterno = useCallback((codigo: string) => buscarExterno(codigo), []);
+  const buscarProdutoExterno = useCallback(async (codigo: string): Promise<ProdutoExterno | null> => {
+    if (!user) return null;
+    const normalizado = normalizarCodigo(codigo);
+    if (!normalizado) return null;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/barcode/lookup?codigo=${encodeURIComponent(normalizado)}`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return null;
+
+      const data = (await response.json()) as ProdutoExterno;
+      return {
+        imagemUrl: data.imagemUrl || "",
+        marca: data.marca || "",
+        nome: data.nome || "",
+      };
+    } catch {
+      return null;
+    }
+  }, [user]);
 
   return { buscarExterno: buscarProdutoExterno, buscarPorCodigo };
 }
