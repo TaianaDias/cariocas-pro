@@ -5,6 +5,7 @@ import { addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, serverTim
 
 import { isOperationalRole } from "../lib/access-control";
 import { db } from "../lib/firebase";
+import { operationalStockItemToInsumo, type OperationalStockItem } from "../lib/operational-stock";
 import { getHistoricoEstoqueCollectionPath, getInsumosCollectionPath, normalizarInsumoFinanceiro } from "../services/estoque.service";
 import type { Categoria, Historico, Insumo } from "../types";
 import { useAuth } from "./useAuth";
@@ -83,12 +84,14 @@ export function useEstoque() {
         cache: "no-store",
       });
 
-      const data = (await response.json().catch(() => ({}))) as { error?: string; items?: Insumo[] };
+      const data = (await response.json().catch(() => ({}))) as { error?: string; items?: OperationalStockItem[] };
       if (!response.ok) {
         throw new Error(data.error || "Não foi possível carregar o estoque operacional.");
       }
 
-      const items = [...(data.items || [])].sort((a, b) => a.nome.localeCompare(b.nome));
+      const items = (data.items || [])
+        .map(operationalStockItemToInsumo)
+        .sort((a, b) => a.nome.localeCompare(b.nome));
       setInsumos(items);
       setKpis(calcularKpis(items));
       setError(null);
