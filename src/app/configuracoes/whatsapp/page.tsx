@@ -213,13 +213,13 @@ export default function WhatsAppConfigPage() {
         <strong>Como usar</strong>
         <p>
           Após conectar, gestores e funcionários autorizados podem conversar com a Carioquinha pelo WhatsApp da operação.
-          A assistente responde usando os dados disponíveis no Carioca&apos;s Pro conforme as permissões e funcionalidades habilitadas.
+          A assistente responde usando os dados disponíveis no Carioca's Pro conforme as permissões e funcionalidades habilitadas.
         </p>
         <p>Exemplos: "O que devo repor?", "Resumo do dia" e "Itens críticos".</p>
       </Card>
 
       <Card className="whatsapp-config__card">
-        <strong>Conexão gerenciada pelo Carioca&após;s Pro</strong>
+        <strong>Conexão gerenciada pelo Carioca's Pro</strong>
         <p>
           A infraestrutura técnica do WhatsApp é administrada pelo sistema. Sua empresa só precisa vincular o número pelo QR Code quando solicitado.
         </p>
