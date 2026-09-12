@@ -2,46 +2,46 @@ const modulos = [
   {
     nome: "Dashboard",
     status: "Liberado",
-    resumo: "Indicadores da operacao, alertas de reposicao, produtos a vencer e cards inteligentes.",
-    metricas: ["Custo do dia", "Itens criticos", "Reposicao pendente"],
+    resumo: "Indicadores da operação, alertas de reposição, produtos a vencer e cards inteligentes.",
+    metricas: ["Custo do dia", "Itens críticos", "Reposição pendente"],
   },
   {
     nome: "Estoque",
     status: "Leitura",
-    resumo: "Cadastro de insumos, entrada por XML, codigo de barras, imagem do produto e limites minimos/maximos.",
-    metricas: ["Saldo atual", "Estoque minimo", "Sugestao de compra"],
+    resumo: "Cadastro de insumos, entrada por XML, código de barras, imagem do produto e limites mínimos/máximos.",
+    metricas: ["Saldo atual", "Estoque mínimo", "Sugestão de compra"],
   },
   {
     nome: "Compras",
     status: "Leitura",
-    resumo: "Lista automatica por mercado ou fornecedor, WhatsApp e reposicao ate o estoque maximo.",
+    resumo: "Lista automática por mercado ou fornecedor, WhatsApp e reposição até o estoque máximo.",
     metricas: ["Mercado", "Fornecedor", "Disparo WhatsApp"],
   },
   {
-    nome: "Producao",
+    nome: "Produção",
     status: "Leitura",
-    resumo: "Transforma itens do estoque em porcoes por formato: pacote, bisnaga, pote, saco ou unidade.",
-    metricas: ["Estoque disponivel", "Porcoes prontas", "Baixa controlada"],
+    resumo: "Transforma itens do estoque em porções por formato: pacote, bisnaga, pote, saco ou unidade.",
+    metricas: ["Estoque disponível", "Porções prontas", "Baixa controlada"],
   },
   {
-    nome: "Precificacao Inteligente",
+    nome: "Precificação Inteligente",
     status: "Plus",
-    resumo: "Receitas, CMV dinamico, margem, lucro, preco minimo, preco sugerido e alertas financeiros.",
-    metricas: ["CMV", "Margem", "Preco recomendado"],
+    resumo: "Receitas, CMV dinâmico, margem, lucro, preço mínimo, preço sugerido e alertas financeiros.",
+    metricas: ["CMV", "Margem", "Preço recomendado"],
   },
   {
-    nome: "Desperdicio",
+    nome: "Desperdício",
     status: "Leitura",
-    resumo: "Registra perdas por insumo, motivo e colaborador responsavel para auditoria operacional.",
-    metricas: ["Responsavel", "Impacto", "Historico"],
+    resumo: "Registra perdas por insumo, motivo e colaborador responsável para auditoria operacional.",
+    metricas: ["Responsável", "Impacto", "Histórico"],
   },
 ];
 
 const fluxoAuditoria = [
-  "Este link nao exige login.",
-  "Os dados exibidos sao demonstrativos.",
-  "Acoes de escrita ficam bloqueadas neste modo.",
-  "Dados reais seguem atras do login e das regras do Firebase.",
+  "Este link não exige login.",
+  "Os dados exibidos são demonstrativos.",
+  "Ações de escrita ficam bloqueadas neste modo.",
+  "Dados reais seguem atrás do login e das regras do Firebase.",
 ];
 
 export default function AuditoriaPage() {
@@ -50,14 +50,14 @@ export default function AuditoriaPage() {
       <section className="audit-hero">
         <div>
           <span className="audit-pill">Modo auditoria somente leitura</span>
-          <h1>Carioca&após;s Pro</h1>
+          <h1>Carioca's Pro</h1>
           <p>
-            Ambiente publico para avaliacao dos assistentes Adapta, com visao dos modulos, fluxos e regras comerciais sem expor dados reais
-            nem permitir alteracoes.
+            Ambiente público para avaliação dos assistentes Adapta, com visão dos módulos, fluxos e regras comerciais sem expor dados reais
+            nem permitir alterações.
           </p>
         </div>
         <aside className="audit-guard">
-          <strong>Protecoes ativas</strong>
+          <strong>Proteções ativas</strong>
           {fluxoAuditoria.map((item) => (
             <span key={item}>{item}</span>
           ))}
@@ -79,7 +79,7 @@ export default function AuditoriaPage() {
         </div>
         <div>
           <strong>Sem escrita</strong>
-          <span>Botoes de alteração desativados</span>
+          <span>Botões de alteração desativados</span>
         </div>
       </section>
 
@@ -108,7 +108,7 @@ export default function AuditoriaPage() {
           <span className="audit-pill">Fluxo demonstrativo</span>
           <h2>Estoque para Produção</h2>
           <p>
-            Exemplo seguro do fluxo: um item cadastrado no estoque aparece na producao, pode ser porcionado e passa a exibir saldo original e
+            Exemplo seguro do fluxo: um item cadastrado no estoque aparece na produção, pode ser porcionado e passa a exibir saldo original e
             saldo por formato.
           </p>
         </div>
