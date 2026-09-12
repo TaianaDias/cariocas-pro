@@ -85,8 +85,8 @@ function statusLabel(status: StatusProcesso) {
 }
 
 export function ProcessosSetorPage({ setor }: ProcessosSetorPageProps) {
-  const { user, userProfile } = useAuth();
-  const administrative = isAdministrativeRole(userProfile?.role);
+  const { loading: authLoading, user, userProfile } = useAuth();
+  const administrative = Boolean(userProfile && isAdministrativeRole(userProfile.role));
   const setorInfo = SETORES[setor] || { titulo: "Rotinas e Padrões", descricao: "Configure os processos da operação." };
 
   const [processos, setProcessos] = useState<Processo[]>([]);
@@ -112,7 +112,7 @@ export function ProcessosSetorPage({ setor }: ProcessosSetorPageProps) {
   }, [user]);
 
   const carregar = useCallback(async () => {
-    if (!user) return;
+    if (authLoading || !user || !userProfile) return;
     setLoading(true);
     setError(null);
     try {
@@ -125,7 +125,7 @@ export function ProcessosSetorPage({ setor }: ProcessosSetorPageProps) {
     } finally {
       setLoading(false);
     }
-  }, [authFetch, setor, user]);
+  }, [authFetch, authLoading, setor, user, userProfile]);
 
   useEffect(() => {
     void carregar();
