@@ -29,7 +29,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <a className="sidebar__brand" href="/dashboard" onClick={onClose} aria-label="Carioca's Pro">
           <span className="sidebar__brand-mark">CP</span>
           <span className="sidebar__brand-copy">
-            <strong>Carioca&após;s Pro</strong>
+            <strong>Carioca's Pro</strong>
             <small>Central de operação</small>
           </span>
         </a>
