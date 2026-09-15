@@ -14,6 +14,7 @@ import "../styles/estoque.css";
 import "../styles/precificacao.css";
 import "../styles/operacional.css";
 import "../styles/processos.css";
+import "../styles/pedidos.css";
 import "../styles/carioquinha.css";
 import "../styles/auth.css";
 import "../styles/auditoria.css";
