@@ -11,6 +11,10 @@ type TenantContext = {
   uid?: string;
 };
 
+type PedidoComFluxo = PedidoCompra & {
+  tipoFluxo?: string;
+};
+
 function getPedidosCollectionPath(empresaId?: string) {
   return empresaId ? `empresas/${empresaId}/pedidosCompra` : COLECAO;
 }
@@ -37,7 +41,8 @@ export async function listarPedidos(context?: TenantContext): Promise<PedidoComp
       getPedidosCollectionPath(context?.empresaId),
       [...(context?.lojaId ? [{ campo: "lojaId", operador: "==" as const, valor: context.lojaId }] : [])],
     );
-    return ordenarPedidosRecentes(pedidos);
+    const comprasFinanceiras = pedidos.filter((pedido) => (pedido as PedidoComFluxo).tipoFluxo !== "solicitacao_interna");
+    return ordenarPedidosRecentes(comprasFinanceiras);
   } catch (error) {
     console.error("Erro ao listar pedidos", error);
     return [];
