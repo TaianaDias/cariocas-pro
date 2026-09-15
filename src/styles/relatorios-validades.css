@@ -1,0 +1,403 @@
+.validity-page {
+  display: grid;
+  gap: 20px;
+}
+
+.validity-hero {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.validity-hero > div {
+  max-width: 760px;
+}
+
+.validity-hero > div > span {
+  color: var(--accent);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.validity-hero h1 {
+  color: var(--text-primary);
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.08;
+  margin: 0;
+}
+
+.validity-hero p {
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 8px 0 0;
+}
+
+.validity-primary,
+.validity-card footer button {
+  align-items: center;
+  border: 1px solid var(--border-ui);
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.validity-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: white;
+}
+
+.validity-primary:disabled,
+.validity-card footer button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.validity-kpis {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.validity-kpis article,
+.validity-form-panel,
+.validity-toolbar,
+.validity-card,
+.validity-empty {
+  background: var(--surface-card);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  box-shadow: var(--shadow-ui);
+}
+
+.validity-kpis article {
+  border-top: 3px solid var(--border-ui);
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+}
+
+.validity-kpis span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.validity-kpis strong {
+  color: var(--text-primary);
+  font-size: 26px;
+}
+
+.validity-kpi--danger {
+  border-top-color: var(--danger-ui) !important;
+}
+
+.validity-kpi--critical {
+  border-top-color: #dc2626 !important;
+}
+
+.validity-kpi--warning {
+  border-top-color: #d97706 !important;
+}
+
+.validity-form-panel {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.validity-form-panel > header strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 18px;
+}
+
+.validity-form-panel > header span,
+.validity-form-panel > footer > span {
+  color: var(--text-secondary);
+  display: block;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.validity-form-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.validity-form-grid label,
+.validity-toolbar label {
+  display: grid;
+  gap: 6px;
+}
+
+.validity-form-grid label > span,
+.validity-toolbar label > span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.validity-form-grid input,
+.validity-form-grid select,
+.validity-form-grid textarea,
+.validity-toolbar input,
+.validity-toolbar select {
+  background: var(--surface-app);
+  border: 1px solid var(--border-ui);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font: inherit;
+  min-height: 44px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.validity-form-grid textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.validity-wide {
+  grid-column: 1 / -1;
+}
+
+.validity-reference {
+  background: var(--surface-muted);
+  border: 1px solid var(--border-ui);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px;
+}
+
+.validity-reference strong {
+  color: var(--text-primary);
+  flex-basis: 100%;
+}
+
+.validity-reference span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.validity-form-panel > footer {
+  align-items: center;
+  border-top: 1px solid var(--border-ui);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding-top: 16px;
+}
+
+.validity-message {
+  border-radius: 10px;
+  font-weight: 700;
+  padding: 12px 14px;
+}
+
+.validity-message--error {
+  background: color-mix(in srgb, var(--danger-ui) 10%, transparent);
+  color: var(--danger-ui);
+}
+
+.validity-message--success {
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+  color: #15803d;
+}
+
+.validity-toolbar {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  padding: 12px;
+}
+
+.validity-list {
+  display: grid;
+  gap: 12px;
+}
+
+.validity-card {
+  border-left: 4px solid var(--border-ui);
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.validity-card--expired,
+.validity-card--critical {
+  border-left-color: var(--danger-ui);
+}
+
+.validity-card--warning {
+  border-left-color: #d97706;
+}
+
+.validity-card--attention {
+  border-left-color: #ca8a04;
+}
+
+.validity-card--ok {
+  border-left-color: #16a34a;
+}
+
+.validity-card--closed {
+  opacity: .7;
+}
+
+.validity-card > header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.validity-card h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+  margin: 7px 0 2px;
+}
+
+.validity-card header p,
+.validity-note {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.validity-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
+.validity-badge--expired,
+.validity-badge--critical {
+  background: color-mix(in srgb, var(--danger-ui) 10%, transparent);
+  color: var(--danger-ui);
+}
+
+.validity-badge--warning,
+.validity-badge--attention {
+  background: color-mix(in srgb, #d97706 12%, transparent);
+  color: #b45309;
+}
+
+.validity-badge--ok {
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+  color: #15803d;
+}
+
+.validity-badge--closed {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+}
+
+.validity-date {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.validity-date small,
+.validity-card-meta small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.validity-date strong,
+.validity-card-meta strong {
+  color: var(--text-primary);
+}
+
+.validity-card-meta {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.validity-card-meta > span {
+  background: var(--surface-muted);
+  border-radius: 10px;
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+}
+
+.validity-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.validity-card footer button {
+  background: var(--surface-app);
+  color: var(--text-primary);
+}
+
+.validity-card footer .validity-danger {
+  color: var(--danger-ui);
+}
+
+.validity-empty {
+  color: var(--text-secondary);
+  display: grid;
+  gap: 5px;
+  padding: 28px;
+  text-align: center;
+}
+
+.validity-empty strong {
+  color: var(--text-primary);
+}
+
+@media (max-width: 820px) {
+  .validity-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .validity-hero,
+  .validity-form-panel > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .validity-hero .validity-primary,
+  .validity-form-panel > footer .validity-primary {
+    width: 100%;
+  }
+
+  .validity-kpis,
+  .validity-form-grid,
+  .validity-toolbar,
+  .validity-card-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .validity-wide {
+    grid-column: auto;
+  }
+
+  .validity-card > header {
+    flex-direction: column;
+  }
+
+  .validity-date {
+    text-align: left;
+  }
+}
