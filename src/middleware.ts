@@ -103,6 +103,7 @@ export const config = {
     "/dashboard/:path*",
     "/estoque/:path*",
     "/compras/:path*",
+    "/pedidos-insumos/:path*",
     "/producao/:path*",
     "/desperdicio/:path*",
     "/fornecedores/:path*",
