@@ -103,7 +103,7 @@ export const navigationSections: NavigationSection[] = [
     description: "Acompanhe a operação e deixe cada relatório pronto para exportar ou imprimir.",
     items: [
       { id: "relatorios-gerais", label: "Movimentações", href: "/relatorios", icon: "relatorios", showInSidebar: true },
-      { id: "relatorio-validades", label: "Validades", href: "/relatorios/validades", icon: "validades", planned: true },
+      { id: "relatorio-validades", label: "Validades", href: "/relatorios/validades", icon: "validades", showInSidebar: true },
       { id: "relatorio-desperdicio", label: "Desperdício", href: "/desperdicio", icon: "desperdicio", showInSidebar: true },
       { id: "relatorio-pedidos", label: "Pedidos de Insumos", href: "/relatorios/pedidos-insumos", icon: "pedidos", planned: true },
       { id: "relatorio-checklists", label: "POPs e Checklists", href: "/relatorios/checklists", icon: "checklist", planned: true },
