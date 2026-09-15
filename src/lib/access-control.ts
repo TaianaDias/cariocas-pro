@@ -16,7 +16,7 @@ export const operationalEmployeePermissions = employeePermissionOptions.map((ite
 const administrativeRoles: PapelUsuario[] = ["admin", "dono", "proprietario", "user"];
 const operationalRoles: PapelUsuario[] = ["gerente", "funcionario"];
 const administrativePaths = ["/precificacao", "/financeiro", "/fornecedores", "/funcionarios", "/configuracoes"];
-const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao", "/compras", "/producao", "/rotinas", "/desperdicio", "/relatorios"];
+const operationallySafePaths = ["/dashboard", "/estoque", "/reposicao", "/compras", "/producao", "/rotinas", "/pedidos-insumos", "/desperdicio", "/relatorios"];
 
 export function normalizeRole(role?: string | null): PapelUsuario {
   if (role === "admin" || role === "dono" || role === "proprietario" || role === "gerente" || role === "funcionario") {
@@ -59,6 +59,12 @@ export function serializePermissions(permissions?: readonly string[]) {
 export function getPermissionForPath(pathname: string): PermissaoFuncionario | null {
   if (pathname === "/reposicao" || pathname.startsWith("/reposicao/")) {
     return "estoque.ver";
+  }
+
+  // Ordem de Pedido faz parte do fluxo de compras da equipe e reaproveita a
+  // permissão já existente, evitando criar dois controles para a mesma rotina.
+  if (pathname === "/pedidos-insumos" || pathname.startsWith("/pedidos-insumos/")) {
+    return "compras.ver";
   }
 
   const match = employeePermissionOptions
