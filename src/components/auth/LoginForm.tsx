@@ -36,7 +36,7 @@ export function LoginForm() {
 
       if (mode === "reset") {
         await resetPassword(email);
-        setFeedback("Enviamos o link de recuperacao para seu email.");
+        setFeedback("Enviamos o link de recuperação para seu e-mail.");
       }
     } catch {
       setFeedback("Não foi possível concluir a autenticação. Verifique os dados e tente novamente.");
@@ -64,7 +64,7 @@ export function LoginForm() {
       <header className="auth-card__header">
         <span>Firebase Auth</span>
         <h1>{mode === "register" ? "Criar conta" : mode === "reset" ? "Recuperar senha" : "Entrar"}</h1>
-        <p>Acesse o Carioca's Pro 2026 com email e senha ou Google.</p>
+        <p>Acesse o Carioca's Pro 2026 com e-mail e senha ou Google.</p>
       </header>
 
       <form className="auth-form" onSubmit={handleSubmit}>
@@ -78,9 +78,9 @@ export function LoginForm() {
         ) : null}
 
         <TextInput
-          label="Email"
+          label="E-mail"
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="você@empresa.com"
+          placeholder="nome@empresa.com"
           type="email"
           value={email}
         />
