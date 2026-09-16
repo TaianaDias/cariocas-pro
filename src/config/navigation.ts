@@ -37,7 +37,7 @@ export type NavigationItem = {
 };
 
 export type NavigationSection = {
-  id: "operacao" | "rotinas" | "relatorios" | "administracao";
+  id: "operacao" | "ordem-servico" | "rotinas" | "relatorios" | "administracao";
   label: string;
   description: string;
   adminOnly?: boolean;
@@ -55,19 +55,26 @@ export const navigationSections: NavigationSection[] = [
       { id: "producao", label: "Produção", href: "/producao", icon: "producao", showInSidebar: true },
       { id: "reposicao", label: "Reposição", href: "/reposicao", icon: "reposicao", showInSidebar: true },
       {
+        id: "etiquetas",
+        label: "Etiquetas",
+        href: "/estoque?acao=etiquetas",
+        icon: "etiquetas",
+        showInSidebar: false,
+      },
+    ],
+  },
+  {
+    id: "ordem-servico",
+    label: "ORDEM DE SERVIÇO",
+    description: "Centralize solicitações, compras, aprovações, envios, recebimentos e movimentações em um único fluxo.",
+    items: [
+      {
         id: "compras",
         label: "Compras e Pedidos",
         href: "/compras",
         icon: "compras",
         description: "Solicite insumos, aprove pedidos, acompanhe envios, recebimentos e movimentações em um único fluxo.",
         showInSidebar: true,
-      },
-      {
-        id: "etiquetas",
-        label: "Etiquetas",
-        href: "/estoque?acao=etiquetas",
-        icon: "etiquetas",
-        showInSidebar: false,
       },
     ],
   },
