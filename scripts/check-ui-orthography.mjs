@@ -42,7 +42,7 @@ const corrections = new Map([
   ["disponivel", "disponível"], ["disponiveis", "disponíveis"], ["edicao", "edição"], ["edicoes", "edições"],
   ["economico", "econômico"], ["economica", "econômica"], ["economicos", "econômicos"], ["economicas", "econômicas"],
   ["endereco", "endereço"], ["evolucao", "evolução"], ["exclusao", "exclusão"], ["exportacao", "exportação"],
-  ["facil", "fácil"], ["frequencia", "frequência"], ["funcao", "função"], ["funcoes", "funções"],
+  ["faca", "faça"], ["facil", "fácil"], ["frequencia", "frequência"], ["funcao", "função"], ["funcoes", "funções"],
   ["funcionario", "funcionário"], ["funcionarios", "funcionários"], ["gestao", "gestão"], ["historico", "histórico"],
   ["historicos", "históricos"], ["identificacao", "identificação"], ["identificacoes", "identificações"],
   ["importacao", "importação"], ["inclusao", "inclusão"], ["informacao", "informação"], ["informacoes", "informações"],
@@ -62,7 +62,7 @@ const corrections = new Map([
   ["previsao", "previsão"], ["previsoes", "previsões"], ["producao", "produção"], ["propria", "própria"], ["proprio", "próprio"],
   ["porcao", "porção"], ["porcoes", "porções"], ["proximo", "próximo"], ["proximos", "próximos"], ["publico", "público"],
   ["rapida", "rápida"], ["rapidas", "rápidas"], ["rapido", "rápido"], ["rapidos", "rápidos"],
-  ["referencia", "referência"], ["referencias", "referências"], ["relacao", "relação"], ["relacoes", "relações"],
+  ["recuperacao", "recuperação"], ["referencia", "referência"], ["referencias", "referências"], ["relacao", "relação"], ["relacoes", "relações"],
   ["relatorio", "relatório"], ["relatorios", "relatórios"], ["reposicao", "reposição"], ["reposicoes", "reposições"],
   ["responsavel", "responsável"], ["responsaveis", "responsáveis"], ["restauracao", "restauração"], ["restricao", "restrição"], ["restricoes", "restrições"],
   ["revisao", "revisão"], ["revisoes", "revisões"], ["saida", "saída"], ["saidas", "saídas"], ["sao", "são"],
@@ -79,6 +79,8 @@ const corrections = new Map([
   ["visao", "visão"], ["voce", "você"],
 ]);
 
+const PROTECTED_TEXT = /&(?:#\d+|#x[0-9A-Fa-f]+|[A-Za-z][A-Za-z0-9]+);|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/giu;
+
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -94,12 +96,28 @@ function preserveCase(source, replacement) {
   if (source[0] === source[0]?.toLocaleUpperCase("pt-BR")) return replacement[0].toLocaleUpperCase("pt-BR") + replacement.slice(1);
   return replacement;
 }
-function fixText(value) {
+function applyCorrections(value) {
   let output = value;
   for (const [wrong, right] of corrections) {
     const re = new RegExp(`(^|[^\\p{L}])(${escapeRegExp(wrong)})(?=[^\\p{L}]|$)`, "giu");
     output = output.replace(re, (_match, prefix, word) => `${prefix}${preserveCase(word, right)}`);
   }
+  return output;
+}
+function fixText(value) {
+  const normalized = value.replace(/&após;/giu, "&apos;");
+  let output = "";
+  let cursor = 0;
+  PROTECTED_TEXT.lastIndex = 0;
+  let match = PROTECTED_TEXT.exec(normalized);
+  while (match) {
+    output += applyCorrections(normalized.slice(cursor, match.index));
+    output += match[0];
+    cursor = match.index + match[0].length;
+    match = PROTECTED_TEXT.exec(normalized);
+  }
+  output += applyCorrections(normalized.slice(cursor));
+  PROTECTED_TEXT.lastIndex = 0;
   return output;
 }
 function repairCodeSegment(segment) {
