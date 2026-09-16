@@ -40,7 +40,7 @@ export function CadastroPageClient() {
     }
 
     if (!isValidEmail(email)) {
-      setLocalError("Informe um email válido.");
+      setLocalError("Informe um e-mail válido.");
       return;
     }
 
@@ -70,7 +70,7 @@ export function CadastroPageClient() {
     <main className="auth-screen">
       <section className="auth-card">
         <header className="auth-card__header auth-card__header--center">
-          <strong>CARIOCA&após;S PRO</strong>
+          <strong>CARIOCA'S PRO</strong>
           <h1>Crie sua conta</h1>
         </header>
 
@@ -84,9 +84,9 @@ export function CadastroPageClient() {
           />
 
           <TextInput
-            label="Email"
+            label="E-mail"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="você@empresa.com"
+            placeholder="nome@empresa.com"
             required
             type="email"
             value={email}
@@ -95,7 +95,7 @@ export function CadastroPageClient() {
           <TextInput
             label="Senha"
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo de 6 caracteres"
             required
             type="password"
             value={password}
@@ -118,14 +118,14 @@ export function CadastroPageClient() {
           />
 
           <Button disabled={loading} fullWidth type="submit" variant="primary">
-            {loading ? <Spinner label="Criando conta" /> : "Criar Conta"}
+            {loading ? <Spinner label="Criando conta" /> : "Criar conta"}
           </Button>
         </form>
 
         {error || localError ? <p className="auth-card__error">{error ?? localError}</p> : null}
 
         <div className="auth-links">
-          <Link href="/login">Já tem conta? Faca login</Link>
+          <Link href="/login">Já tem conta? Faça login</Link>
         </div>
       </section>
     </main>
