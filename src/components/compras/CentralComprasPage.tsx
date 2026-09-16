@@ -503,7 +503,7 @@ export function CentralComprasPage() {
               ) : null}
 
               <footer>
-                {data.podeAprovar && ["solicitado", "em_analise"].includes(pedido.status) ? <Button onClick={() => aprovar(pedido)} disabled={saving}>{saving ? "Processando..." : "Aprovar selecionados"}</Button> : null}
+                {data.podeAprovar && ["solicitado", "em_análise"].includes(pedido.status) ? <Button onClick={() => aprovar(pedido)} disabled={saving}>{saving ? "Processando..." : "Aprovar selecionados"}</Button> : null}
                 {data.podeAprovar && ["aguardando_envio", "envio_parcial"].includes(pedido.status) ? <Button onClick={() => enviarAgora(pedido)} disabled={saving}>Enviar agora</Button> : null}
                 {["solicitado", "em_analise", "aguardando_envio"].includes(pedido.status) ? <button className="central-purchases__danger-link" type="button" onClick={() => cancelar(pedido)}>Cancelar</button> : null}
               </footer>
@@ -539,7 +539,7 @@ export function CentralComprasPage() {
             <header><strong>Movimentação manual</strong><span>Use para entradas e saídas que não vieram de um pedido aprovado.</span></header>
             <div className="central-purchases__grid">
               <label><span>Insumo</span><select value={movementForm.insumoId} onChange={(event) => setMovementForm((current) => ({ ...current, insumoId: event.target.value }))}><option value="">Selecione</option>{data.estoque.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>
-              <label><span>Tipo</span><select value={movementForm.tipo} onChange={(event) => setMovementForm((current) => ({ ...current, tipo: event.target.value as "entrada" | "saida" }))}><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label>
+              <label><span>Tipo</span><select value={movementForm.tipo} onChange={(event) => setMovementForm((current) => ({ ...current, tipo: event.target.value as "entrada" | "saída" }))}><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label>
               <label><span>Quantidade</span><input min="0.01" step="0.01" type="number" value={movementForm.quantidade} onChange={(event) => setMovementForm((current) => ({ ...current, quantidade: Number(event.target.value) }))} /></label>
               <label><span>Observação</span><input value={movementForm.observacao} onChange={(event) => setMovementForm((current) => ({ ...current, observacao: event.target.value }))} placeholder="Ex.: ajuste de inventário" /></label>
             </div>
