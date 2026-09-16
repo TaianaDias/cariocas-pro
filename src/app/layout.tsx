@@ -15,6 +15,7 @@ import "../styles/precificacao.css";
 import "../styles/operacional.css";
 import "../styles/processos.css";
 import "../styles/pedidos.css";
+import "../styles/central-compras.css";
 import "../styles/relatorios-validades.css";
 import "../styles/carioquinha.css";
 import "../styles/auth.css";
