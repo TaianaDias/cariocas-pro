@@ -1,5 +1,5 @@
-import { PedidosInsumosPage } from "../../components/pedidos/PedidosInsumosPage";
+import { redirect } from "next/navigation";
 
 export default function PedidosInsumosRoute() {
-  return <PedidosInsumosPage />;
+  redirect("/compras");
 }
