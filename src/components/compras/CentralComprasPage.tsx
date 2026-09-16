@@ -29,22 +29,14 @@ type PedidoItem = {
   quantidadeRecebida: number;
   quantidadeSolicitada: number;
   unidade: string;
-  destinoCompra?: string;
-  fornecedorNome?: string;
-  fornecedorTelefone?: string;
-  vendedorNome?: string;
 };
 
 type GrupoEnvio = {
   id: string;
-  tipo: string;
   destinoNome: string;
   destinos: Array<{ nome: string; telefone: string }>;
   itens: Array<{ insumoId: string; insumoNome: string; quantidade: number; unidade: string }>;
-  mensagem: string;
   status: string;
-  erro?: string;
-  enviadoEm?: string | null;
 };
 
 type Pedido = {
@@ -53,15 +45,9 @@ type Pedido = {
   status: string;
   prioridade: string;
   setor: string;
-  observacoes: string;
-  origemSolicitacao: string;
   solicitadoPor: string;
   solicitadoPorNome: string;
   criadoEm: string | null;
-  atualizadoEm: string | null;
-  resultadoAprovacao?: string;
-  aprovadoPorNome?: string;
-  modoEnvio?: string;
   gruposEnvio?: GrupoEnvio[];
   itens: PedidoItem[];
 };
@@ -76,19 +62,22 @@ type CentralPayload = {
 type Movement = {
   id: string;
   data: string | null;
-  insumoId: string;
   insumoNome: string;
   observacao: string;
   quantidade: number;
-  responsavel: string;
   tipo: string;
   unidade: string;
 };
 
 type Tab = "solicitar" | "andamento" | "recebimentos" | "movimentacoes";
-
+type MovementType = "entrada" | "saida";
 type ApprovalDraft = Record<string, { aprovar: boolean; quantidade: number; motivo: string }>;
 type ReceiveDraft = Record<string, number>;
+
+const reviewStatuses = new Set(["solicitado", "em_analise"]);
+const sendStatuses = new Set(["aguardando_envio", "envio_parcial"]);
+const receiveStatuses = new Set(["enviado", "envio_parcial", "recebimento_parcial"]);
+const cancelStatuses = new Set(["solicitado", "em_analise", "aguardando_envio"]);
 
 const statusLabels: Record<string, string> = {
   solicitado: "Aguardando aprovação",
@@ -104,7 +93,7 @@ const statusLabels: Record<string, string> = {
 function statusTone(status: string): "success" | "warning" | "danger" | "neutral" {
   if (status === "recebido") return "success";
   if (status === "cancelado") return "danger";
-  if (["solicitado", "em_analise", "aguardando_envio", "envio_parcial", "recebimento_parcial"].includes(status)) return "warning";
+  if (reviewStatuses.has(status) || sendStatuses.has(status) || status === "recebimento_parcial") return "warning";
   return "neutral";
 }
 
@@ -141,7 +130,12 @@ export function CentralComprasPage() {
   const [observacoes, setObservacoes] = useState("");
   const [approvalDrafts, setApprovalDrafts] = useState<Record<string, ApprovalDraft>>({});
   const [receiveDrafts, setReceiveDrafts] = useState<Record<string, ReceiveDraft>>({});
-  const [movementForm, setMovementForm] = useState({ insumoId: "", observacao: "", quantidade: 1, tipo: "entrada" as "entrada" | "saida" });
+  const [movementForm, setMovementForm] = useState<{ insumoId: string; observacao: string; quantidade: number; tipo: MovementType }>({
+    insumoId: "",
+    observacao: "",
+    quantidade: 1,
+    tipo: "entrada",
+  });
 
   const authHeaders = useCallback(async (json = false) => {
     if (!user) throw new Error("Sessão expirada. Entre novamente para continuar.");
@@ -186,9 +180,9 @@ export function CentralComprasPage() {
 
   const filteredStock = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
-    const list = term ? data.estoque.filter((item) => item.nome.toLocaleLowerCase("pt-BR").includes(term)) : data.estoque;
+    const base = term ? data.estoque.filter((item) => item.nome.toLocaleLowerCase("pt-BR").includes(term)) : data.estoque;
     const selectedSet = new Set(selected);
-    return [...list].sort((a, b) => {
+    return [...base].sort((a, b) => {
       const selectedDiff = Number(selectedSet.has(b.id)) - Number(selectedSet.has(a.id));
       if (selectedDiff) return selectedDiff;
       const criticalDiff = Number(b.abaixoMinimo) - Number(a.abaixoMinimo);
@@ -197,9 +191,9 @@ export function CentralComprasPage() {
     });
   }, [data.estoque, search, selected]);
 
-  const requested = data.pedidos.filter((pedido) => pedido.status === "solicitado" || pedido.status === "em_analise").length;
-  const awaitingSend = data.pedidos.filter((pedido) => pedido.status === "aguardando_envio" || pedido.status === "envio_parcial").length;
-  const awaitingReceive = data.pedidos.filter((pedido) => ["enviado", "envio_parcial", "recebimento_parcial", "aguardando_envio"].includes(pedido.status)).length;
+  const requested = data.pedidos.filter((pedido) => reviewStatuses.has(pedido.status)).length;
+  const awaitingSend = data.pedidos.filter((pedido) => sendStatuses.has(pedido.status)).length;
+  const awaitingReceive = data.pedidos.filter((pedido) => receiveStatuses.has(pedido.status)).length;
   const lowStock = data.estoque.filter((item) => item.abaixoMinimo).length;
 
   function toggleItem(item: StockItem) {
@@ -259,8 +253,7 @@ export function CentralComprasPage() {
   }
 
   function approvalValue(pedido: Pedido, item: PedidoItem) {
-    const draft = approvalDrafts[pedido.id]?.[item.insumoId];
-    return draft || { aprovar: true, quantidade: item.quantidadeSolicitada, motivo: "" };
+    return approvalDrafts[pedido.id]?.[item.insumoId] || { aprovar: true, quantidade: item.quantidadeSolicitada, motivo: "" };
   }
 
   function updateApproval(pedidoId: string, item: PedidoItem, patch: Partial<{ aprovar: boolean; quantidade: number; motivo: string }>) {
@@ -338,10 +331,7 @@ export function CentralComprasPage() {
   }
 
   function updateReceive(pedidoId: string, item: PedidoItem, value: number) {
-    setReceiveDrafts((current) => ({
-      ...current,
-      [pedidoId]: { ...(current[pedidoId] || {}), [item.insumoId]: value },
-    }));
+    setReceiveDrafts((current) => ({ ...current, [pedidoId]: { ...(current[pedidoId] || {}), [item.insumoId]: value } }));
   }
 
   async function receber(pedido: Pedido) {
@@ -368,6 +358,11 @@ export function CentralComprasPage() {
     }
   }
 
+  function updateMovementType(value: string) {
+    const tipo: MovementType = value === "saida" ? "saida" : "entrada";
+    setMovementForm((current) => ({ ...current, tipo }));
+  }
+
   async function registrarMovimentacao() {
     if (!movementForm.insumoId || movementForm.quantidade <= 0 || saving) return;
     setSaving(true);
@@ -391,6 +386,9 @@ export function CentralComprasPage() {
       setSaving(false);
     }
   }
+
+  const pedidosEmAndamento = data.pedidos.filter((pedido) => pedido.status !== "recebido" && pedido.status !== "cancelado");
+  const pedidosRecebimento = data.pedidos.filter((pedido) => receiveStatuses.has(pedido.status));
 
   return (
     <main className="central-purchases">
@@ -438,56 +436,40 @@ export function CentralComprasPage() {
               {filteredStock.map((item) => {
                 const checked = selected.includes(item.id);
                 return (
-                  <label className={`central-purchases__stock-item ${checked ? "is-selected" : ""}`} key={item.id}>
-                    <input type="checkbox" checked={checked} onChange={() => toggleItem(item)} />
+                  <div className={`central-purchases__stock-item ${checked ? "is-selected" : ""}`} key={item.id}>
+                    <input aria-label={`Selecionar ${item.nome}`} type="checkbox" checked={checked} onChange={() => toggleItem(item)} />
                     <span className="central-purchases__stock-name"><b>{item.nome}</b><small>Atual: {item.quantidadeAtual} {item.unidade} · Mín.: {item.estoqueMinimo} · Máx.: {item.estoqueMaximo || "—"}</small></span>
                     {item.abaixoMinimo ? <Badge tone="warning">Repor</Badge> : <Badge tone="neutral">Estoque</Badge>}
-                    <label className="central-purchases__qty" onClick={(event) => event.preventDefault()}>
+                    <label className="central-purchases__qty">
                       <span>Qtd.</span>
-                      <input
-                        disabled={!checked}
-                        min="0.01"
-                        step="0.01"
-                        type="number"
-                        value={quantities[item.id] ?? item.quantidadeSugerida}
-                        onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) }))}
-                        onClick={(event) => event.stopPropagation()}
-                      />
+                      <input disabled={!checked} min="0.01" step="0.01" type="number" value={quantities[item.id] ?? item.quantidadeSugerida} onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: Number(event.target.value) }))} />
                     </label>
-                  </label>
+                  </div>
                 );
               })}
             </div>
-            <footer>
-              <span>{selected.length} item(ns) selecionado(s)</span>
-              <Button onClick={criarSolicitacao} disabled={saving || selected.length === 0}>{saving ? "Enviando..." : "Enviar para aprovação"}</Button>
-            </footer>
+            <footer><span>{selected.length} item(ns) selecionado(s)</span><Button onClick={criarSolicitacao} disabled={saving || selected.length === 0}>{saving ? "Enviando..." : "Enviar para aprovação"}</Button></footer>
           </Card>
         </section>
       ) : null}
 
       {!loading && tab === "andamento" ? (
         <section className="central-purchases__orders">
-          {data.pedidos.filter((pedido) => pedido.status !== "recebido").map((pedido) => (
+          {pedidosEmAndamento.map((pedido) => (
             <Card className="central-purchases__order" key={pedido.id}>
               <header>
                 <div><span>{pedido.numero}</span><h2>{pedido.setor || "Operação"}</h2><small>Solicitado por {pedido.solicitadoPorNome} · {dateLabel(pedido.criadoEm)}</small></div>
                 <div className="central-purchases__badges"><Badge tone={statusTone(pedido.status)}>{statusLabels[pedido.status] || pedido.status}</Badge><Badge tone="neutral">{pedido.prioridade || "normal"}</Badge></div>
               </header>
-
               <div className="central-purchases__order-items">
                 {pedido.itens.map((item) => {
                   const draft = approvalValue(pedido, item);
-                  const analyzable = data.podeAprovar && ["solicitado", "em_analise"].includes(pedido.status);
+                  const analyzable = data.podeAprovar && reviewStatuses.has(pedido.status);
                   return (
                     <div key={item.insumoId}>
-                      {analyzable ? <input type="checkbox" checked={draft.aprovar} onChange={(event) => updateApproval(pedido.id, item, { aprovar: event.target.checked })} /> : null}
+                      {analyzable ? <input aria-label={`Aprovar ${item.insumoNome}`} type="checkbox" checked={draft.aprovar} onChange={(event) => updateApproval(pedido.id, item, { aprovar: event.target.checked })} /> : null}
                       <span><b>{item.insumoNome}</b><small>Solicitado: {item.quantidadeSolicitada} {item.unidade}{item.motivoRecusa ? ` · ${item.motivoRecusa}` : ""}</small></span>
-                      {analyzable ? (
-                        <input className="central-purchases__approve-qty" disabled={!draft.aprovar} min="0" max={item.quantidadeSolicitada} step="0.01" type="number" value={draft.quantidade} onChange={(event) => updateApproval(pedido.id, item, { quantidade: Number(event.target.value) })} />
-                      ) : (
-                        <small>{item.aprovacao === "aprovado" ? `Aprovado: ${item.quantidadeAprovada} ${item.unidade}` : item.aprovacao}</small>
-                      )}
+                      {analyzable ? <input className="central-purchases__approve-qty" aria-label={`Quantidade aprovada de ${item.insumoNome}`} disabled={!draft.aprovar} min="0" max={item.quantidadeSolicitada} step="0.01" type="number" value={draft.quantidade} onChange={(event) => updateApproval(pedido.id, item, { quantidade: Number(event.target.value) })} /> : <small>{item.aprovacao === "aprovado" ? `Aprovado: ${item.quantidadeAprovada} ${item.unidade}` : item.aprovacao}</small>}
                     </div>
                   );
                 })}
@@ -503,33 +485,31 @@ export function CentralComprasPage() {
               ) : null}
 
               <footer>
-                {data.podeAprovar && ["solicitado", "em_análise"].includes(pedido.status) ? <Button onClick={() => aprovar(pedido)} disabled={saving}>{saving ? "Processando..." : "Aprovar selecionados"}</Button> : null}
-                {data.podeAprovar && ["aguardando_envio", "envio_parcial"].includes(pedido.status) ? <Button onClick={() => enviarAgora(pedido)} disabled={saving}>Enviar agora</Button> : null}
-                {["solicitado", "em_analise", "aguardando_envio"].includes(pedido.status) ? <button className="central-purchases__danger-link" type="button" onClick={() => cancelar(pedido)}>Cancelar</button> : null}
+                {data.podeAprovar && reviewStatuses.has(pedido.status) ? <Button onClick={() => aprovar(pedido)} disabled={saving}>{saving ? "Processando..." : "Aprovar selecionados"}</Button> : null}
+                {data.podeAprovar && sendStatuses.has(pedido.status) ? <Button onClick={() => enviarAgora(pedido)} disabled={saving}>Enviar agora</Button> : null}
+                {cancelStatuses.has(pedido.status) && (data.podeAprovar || pedido.solicitadoPor === user?.uid) ? <button className="central-purchases__danger-link" type="button" onClick={() => cancelar(pedido)}>Cancelar</button> : null}
               </footer>
             </Card>
           ))}
-          {data.pedidos.filter((pedido) => pedido.status !== "recebido").length === 0 ? <EmptyState title="Nenhum pedido em andamento" description="As solicitações abertas aparecerão aqui." /> : null}
+          {!pedidosEmAndamento.length ? <EmptyState title="Nenhum pedido em andamento" description="As solicitações abertas aparecerão aqui." /> : null}
         </section>
       ) : null}
 
       {!loading && tab === "recebimentos" ? (
         <section className="central-purchases__orders">
-          {data.pedidos.filter((pedido) => ["enviado", "envio_parcial", "recebimento_parcial", "aguardando_envio"].includes(pedido.status)).map((pedido) => (
+          {pedidosRecebimento.map((pedido) => (
             <Card className="central-purchases__order" key={pedido.id}>
               <header><div><span>{pedido.numero}</span><h2>Recebimento</h2><small>{statusLabels[pedido.status] || pedido.status}</small></div><Badge tone={statusTone(pedido.status)}>{statusLabels[pedido.status] || pedido.status}</Badge></header>
               <div className="central-purchases__receive-list">
                 {pedido.itens.filter((item) => item.aprovacao === "aprovado").map((item) => {
                   const remaining = Math.max(item.quantidadeAprovada - item.quantidadeRecebida, 0);
-                  return (
-                    <label key={item.insumoId}><span><b>{item.insumoNome}</b><small>Aprovado: {item.quantidadeAprovada} · Já recebido: {item.quantidadeRecebida} · Falta: {remaining} {item.unidade}</small></span><input min="0" max={remaining} step="0.01" type="number" value={receiveValue(pedido, item)} onChange={(event) => updateReceive(pedido.id, item, Number(event.target.value))} /></label>
-                  );
+                  return <label key={item.insumoId}><span><b>{item.insumoNome}</b><small>Aprovado: {item.quantidadeAprovada} · Já recebido: {item.quantidadeRecebida} · Falta: {remaining} {item.unidade}</small></span><input min="0" max={remaining} step="0.01" type="number" value={receiveValue(pedido, item)} onChange={(event) => updateReceive(pedido.id, item, Number(event.target.value))} /></label>;
                 })}
               </div>
               <footer>{data.podeAprovar ? <Button onClick={() => receber(pedido)} disabled={saving}>Registrar recebimento</Button> : <span>Somente o responsável por compras registra o recebimento.</span>}</footer>
             </Card>
           ))}
-          {data.pedidos.filter((pedido) => ["enviado", "envio_parcial", "recebimento_parcial", "aguardando_envio"].includes(pedido.status)).length === 0 ? <EmptyState title="Nada aguardando recebimento" description="Pedidos enviados aparecerão aqui para conferência de chegada." /> : null}
+          {!pedidosRecebimento.length ? <EmptyState title="Nada aguardando recebimento" description="Pedidos enviados aparecerão aqui para conferência de chegada." /> : null}
         </section>
       ) : null}
 
@@ -539,7 +519,7 @@ export function CentralComprasPage() {
             <header><strong>Movimentação manual</strong><span>Use para entradas e saídas que não vieram de um pedido aprovado.</span></header>
             <div className="central-purchases__grid">
               <label><span>Insumo</span><select value={movementForm.insumoId} onChange={(event) => setMovementForm((current) => ({ ...current, insumoId: event.target.value }))}><option value="">Selecione</option>{data.estoque.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>
-              <label><span>Tipo</span><select value={movementForm.tipo} onChange={(event) => setMovementForm((current) => ({ ...current, tipo: event.target.value as "entrada" | "saída" }))}><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label>
+              <label><span>Tipo</span><select value={movementForm.tipo} onChange={(event) => updateMovementType(event.target.value)}><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label>
               <label><span>Quantidade</span><input min="0.01" step="0.01" type="number" value={movementForm.quantidade} onChange={(event) => setMovementForm((current) => ({ ...current, quantidade: Number(event.target.value) }))} /></label>
               <label><span>Observação</span><input value={movementForm.observacao} onChange={(event) => setMovementForm((current) => ({ ...current, observacao: event.target.value }))} placeholder="Ex.: ajuste de inventário" /></label>
             </div>
