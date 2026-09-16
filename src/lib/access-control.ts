@@ -4,7 +4,13 @@ import type { PapelUsuario, PermissaoFuncionario } from "../types";
 export const employeePermissionOptions: { label: string; permission: PermissaoFuncionario; path: string; risk?: string }[] = [
   { label: "Dashboard", path: "/dashboard", permission: "dashboard.ver" },
   { label: "Estoque e Reposição", path: "/estoque", permission: "estoque.ver" },
-  { label: "Compras / Movimentações", path: "/compras", permission: "compras.ver" },
+  { label: "Compras e Pedidos", path: "/compras", permission: "compras.ver" },
+  {
+    label: "Aprovar e enviar compras",
+    path: "/compras",
+    permission: "compras.aprovar" as PermissaoFuncionario,
+    risk: "Pode aprovar solicitações e liberar pedidos para fornecedores e responsáveis internos.",
+  },
   { label: "Produção", path: "/producao", permission: "producao.ver" },
   { label: "Rotinas e Padrões", path: "/rotinas", permission: "rotinas.ver" as PermissaoFuncionario },
   { label: "Desperdício", path: "/desperdicio", permission: "desperdicio.ver" },
@@ -61,8 +67,7 @@ export function getPermissionForPath(pathname: string): PermissaoFuncionario | n
     return "estoque.ver";
   }
 
-  // Ordem de Pedido faz parte do fluxo de compras da equipe e reaproveita a
-  // permissão já existente, evitando criar dois controles para a mesma rotina.
+  // A antiga rota de Ordem de Pedido passa a apontar para a mesma Central de Compras.
   if (pathname === "/pedidos-insumos" || pathname.startsWith("/pedidos-insumos/")) {
     return "compras.ver";
   }
