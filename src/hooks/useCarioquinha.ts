@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-import { processarPergunta } from "../services/carioquinha.service";
+import { auth } from "../lib/firebase";
 
 export interface MensagemCarioquinha {
   id: string;
@@ -11,7 +11,7 @@ export interface MensagemCarioquinha {
   timestamp: Date;
 }
 
-export function useCarioquinha(uid = "") {
+export function useCarioquinha() {
   const [mensagens, setMensagens] = useState<MensagemCarioquinha[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -31,20 +31,33 @@ export function useCarioquinha(uid = "") {
       setLoading(true);
 
       try {
-        const { resposta } = await processarPergunta(trimmed, uid);
+        const user = auth.currentUser;
+        if (!user) throw new Error("Sessão expirada. Entre novamente para continuar.");
+        const token = await user.getIdToken();
+        const response = await fetch("/api/carioquinha", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pergunta: trimmed }),
+        });
+        const payload = (await response.json().catch(() => ({}))) as { error?: string; resposta?: string };
+        if (!response.ok) throw new Error(payload.error || "Não foi possível processar sua mensagem.");
+
         const aiMsg: MensagemCarioquinha = {
           id: `ai-${Date.now()}`,
-          texto: resposta,
+          texto: payload.resposta || "Comando processado.",
           sender: "ai",
           timestamp: new Date(),
         };
         setMensagens((current) => [...current, aiMsg]);
-      } catch {
+      } catch (error) {
         setMensagens((current) => [
           ...current,
           {
             id: `ai-${Date.now()}`,
-            texto: "Desculpe, nao consegui processar sua pergunta. Tente novamente.",
+            texto: error instanceof Error ? error.message : "Não consegui processar sua pergunta. Tente novamente.",
             sender: "ai",
             timestamp: new Date(),
           },
@@ -53,7 +66,7 @@ export function useCarioquinha(uid = "") {
         setLoading(false);
       }
     },
-    [loading, uid],
+    [loading],
   );
 
   return { mensagens, loading, enviar };
