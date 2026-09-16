@@ -1,0 +1,410 @@
+.central-purchases {
+  display: grid;
+  gap: 20px;
+}
+
+.central-purchases__kpis {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.central-purchases__kpis > * {
+  display: grid;
+  gap: 5px;
+  padding: 18px;
+}
+
+.central-purchases__kpis span,
+.central-purchases__section small,
+.central-purchases__order small,
+.central-purchases__test-notice span {
+  color: var(--text-secondary);
+}
+
+.central-purchases__kpis strong {
+  color: var(--text-primary);
+  font-size: 28px;
+}
+
+.central-purchases__tabs {
+  background: var(--surface-card);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px;
+}
+
+.central-purchases__tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.central-purchases__tabs button.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.central-purchases__message {
+  border-radius: 12px;
+  font-weight: 700;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.central-purchases__message--error {
+  background: color-mix(in srgb, var(--danger-ui) 10%, transparent);
+  color: var(--danger-ui);
+}
+
+.central-purchases__message--success {
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+  color: #15803d;
+}
+
+.central-purchases__loading,
+.central-purchases__request-config,
+.central-purchases__stock-panel,
+.central-purchases__order,
+.central-purchases__movement-form,
+.central-purchases__test-notice {
+  padding: 18px;
+}
+
+.central-purchases__section,
+.central-purchases__orders,
+.central-purchases__movements {
+  display: grid;
+  gap: 14px;
+}
+
+.central-purchases__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.central-purchases__grid label,
+.central-purchases__qty {
+  display: grid;
+  gap: 6px;
+}
+
+.central-purchases__grid label > span,
+.central-purchases__qty > span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.central-purchases__grid input,
+.central-purchases__grid select,
+.central-purchases__grid textarea,
+.central-purchases__search,
+.central-purchases__qty input,
+.central-purchases__approve-qty,
+.central-purchases__receive-list input {
+  background: var(--surface-app);
+  border: 1px solid var(--border-ui);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font: inherit;
+  min-height: 42px;
+  padding: 9px 11px;
+  width: 100%;
+}
+
+.central-purchases__grid textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.central-purchases__wide {
+  grid-column: 1 / -1;
+}
+
+.central-purchases__stock-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.central-purchases__stock-panel > header,
+.central-purchases__movement-form > header,
+.central-purchases__order > header,
+.central-purchases__stock-panel > footer,
+.central-purchases__order > footer,
+.central-purchases__movement-form > footer {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.central-purchases__stock-panel header > div,
+.central-purchases__movement-form header {
+  display: grid;
+  gap: 4px;
+}
+
+.central-purchases__stock-panel header strong,
+.central-purchases__movement-form header strong,
+.central-purchases__test-notice strong {
+  color: var(--text-primary);
+}
+
+.central-purchases__stock-panel header span,
+.central-purchases__movement-form header span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.central-purchases__search {
+  max-width: 520px;
+}
+
+.central-purchases__stock-list {
+  border: 1px solid var(--border-ui);
+  border-radius: 12px;
+  display: grid;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.central-purchases__stock-item {
+  align-items: center;
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto 100px;
+  padding: 11px 12px;
+}
+
+.central-purchases__stock-item + .central-purchases__stock-item {
+  border-top: 1px solid var(--border-ui);
+}
+
+.central-purchases__stock-item.is-selected {
+  background: var(--accent-soft);
+}
+
+.central-purchases__stock-item > input[type="checkbox"],
+.central-purchases__order-items > div > input[type="checkbox"] {
+  height: 18px;
+  width: 18px;
+}
+
+.central-purchases__stock-name,
+.central-purchases__order-items span,
+.central-purchases__receive-list span,
+.central-purchases__movements span,
+.central-purchases__dispatches span {
+  display: grid;
+  gap: 3px;
+}
+
+.central-purchases__stock-name b,
+.central-purchases__order-items b,
+.central-purchases__receive-list b,
+.central-purchases__movements b,
+.central-purchases__dispatches b {
+  color: var(--text-primary);
+}
+
+.central-purchases__stock-name small {
+  color: var(--text-secondary);
+}
+
+.central-purchases__stock-panel > footer,
+.central-purchases__movement-form > footer {
+  align-items: center;
+  border-top: 1px solid var(--border-ui);
+  padding-top: 14px;
+}
+
+.central-purchases__stock-panel > footer span {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.central-purchases__order {
+  display: grid;
+  gap: 14px;
+}
+
+.central-purchases__order header span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.central-purchases__order h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+  margin: 4px 0;
+}
+
+.central-purchases__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.central-purchases__order-items,
+.central-purchases__receive-list,
+.central-purchases__dispatches {
+  border: 1px solid var(--border-ui);
+  border-radius: 12px;
+  display: grid;
+  overflow: hidden;
+}
+
+.central-purchases__order-items > div,
+.central-purchases__dispatches > div,
+.central-purchases__receive-list > label {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) minmax(100px, auto);
+  padding: 10px 12px;
+}
+
+.central-purchases__dispatches > strong {
+  color: var(--text-primary);
+  padding: 12px 12px 6px;
+}
+
+.central-purchases__order-items > div + div,
+.central-purchases__dispatches > div + div,
+.central-purchases__receive-list > label + label {
+  border-top: 1px solid var(--border-ui);
+}
+
+.central-purchases__approve-qty,
+.central-purchases__receive-list input {
+  max-width: 120px;
+}
+
+.central-purchases__order > footer {
+  align-items: center;
+  border-top: 1px solid var(--border-ui);
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-top: 14px;
+}
+
+.central-purchases__danger-link {
+  background: transparent;
+  border: 0;
+  color: var(--danger-ui);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+  padding: 10px 4px;
+}
+
+.central-purchases__movement-form {
+  display: grid;
+  gap: 14px;
+}
+
+.central-purchases__movements > * {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.central-purchases__movements > * > span:last-child {
+  text-align: right;
+}
+
+.central-purchases__test-notice {
+  background: var(--surface-muted);
+  display: grid;
+  gap: 5px;
+}
+
+@media (max-width: 900px) {
+  .central-purchases__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .central-purchases__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .central-purchases__kpis,
+  .central-purchases__grid,
+  .central-purchases__tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .central-purchases__wide {
+    grid-column: auto;
+  }
+
+  .central-purchases__stock-panel > header,
+  .central-purchases__stock-panel > footer,
+  .central-purchases__order > header,
+  .central-purchases__movement-form > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .central-purchases__stock-panel > header button,
+  .central-purchases__stock-panel > footer button,
+  .central-purchases__movement-form > footer button {
+    width: 100%;
+  }
+
+  .central-purchases__stock-item {
+    align-items: center;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .central-purchases__stock-item > :nth-child(3),
+  .central-purchases__stock-item > :nth-child(4) {
+    grid-column: 2;
+  }
+
+  .central-purchases__qty {
+    max-width: 150px;
+  }
+
+  .central-purchases__order-items > div,
+  .central-purchases__dispatches > div,
+  .central-purchases__receive-list > label {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .central-purchases__order-items > div > input[type="checkbox"] {
+    grid-row: 1;
+  }
+
+  .central-purchases__badges {
+    justify-content: flex-start;
+  }
+
+  .central-purchases__movements > * {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .central-purchases__movements > * > span:last-child {
+    text-align: left;
+  }
+}
