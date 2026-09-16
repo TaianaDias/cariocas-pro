@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAdminApp } from "../../../../lib/server-auth";
+import { processarComandoComprasCarioquinha } from "../../../../server/carioquinha-compras";
 import { processarPergunta } from "../../../../services/carioquinha.service";
 import { enviarWhatsAppDetalhado } from "../../../../services/whatsapp.service";
 
@@ -142,11 +143,11 @@ async function buscarContextoPorTelefone(remetente: string): Promise<TenantConte
     for (const doc of funcionarios.docs) {
       const data = doc.data();
       if (data?.empresaId && data?.lojaId && data.ativo !== false && phoneMatches(data.telefone || data.whatsapp || data.celular, candidates)) {
-        return { empresaId: data.empresaId, lojaId: data.lojaId, uid: data.email || doc.id };
+        return { empresaId: data.empresaId, lojaId: data.lojaId, uid: data.uid || data.email || doc.id };
       }
     }
   } catch (error) {
-    console.warn("[WhatsApp Webhook] Nao foi possivel resolver contexto por telefone via Admin SDK.", error);
+    console.warn("[WhatsApp Webhook] Não foi possível resolver contexto por telefone via Admin SDK.", error);
   }
 
   return fallbackEmpresaId && fallbackLojaId ? { empresaId: fallbackEmpresaId, lojaId: fallbackLojaId, uid: onlyDigits(remetente) } : null;
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (fromMe) {
-      console.log("[WhatsApp Webhook] Mensagem propria ignorada para evitar loop.");
+      console.log("[WhatsApp Webhook] Mensagem própria ignorada para evitar loop.");
       return NextResponse.json({ status: "ignored", reason: "self_message" });
     }
 
@@ -198,8 +199,8 @@ export async function POST(request: NextRequest) {
     if (!contexto) {
       const respostaCadastro =
         "Oi, sou a IA Carioquinha.\n\n" +
-        "Ainda nao reconheci este numero como colaborador da loja.\n\n" +
-        "Cadastre este telefone em Funcionarios no Carioca's Pro para eu liberar consultas e registros com seguranca.";
+        "Ainda não reconheci este número como colaborador da loja.\n\n" +
+        "Cadastre este telefone em Funcionários no Carioca's Pro para eu liberar consultas e registros com segurança.";
       const envioCadastro = await enviarWhatsAppDetalhado(remetente, respostaCadastro);
 
       return NextResponse.json({
@@ -210,8 +211,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { resposta } = await processarPergunta(texto, contexto.uid, contexto);
-    const envio = await enviarWhatsAppDetalhado(remetente, resposta);
+    const compras = await processarComandoComprasCarioquinha(texto, contexto);
+    const resultado = compras.handled
+      ? { resposta: compras.resposta || "Comando processado." }
+      : await processarPergunta(texto, contexto.uid, contexto);
+    const envio = await enviarWhatsAppDetalhado(remetente, resultado.resposta);
 
     if (!envio.success) {
       console.error(`[WhatsApp Webhook] Falha ao enviar resposta para ${maskPhone(remetente)}`, envio.error);
