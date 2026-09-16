@@ -37,7 +37,7 @@ export type NavigationItem = {
 };
 
 export type NavigationSection = {
-  id: "operacao" | "rotinas" | "pedidos" | "relatorios" | "administracao";
+  id: "operacao" | "rotinas" | "relatorios" | "administracao";
   label: string;
   description: string;
   adminOnly?: boolean;
@@ -56,10 +56,10 @@ export const navigationSections: NavigationSection[] = [
       { id: "reposicao", label: "Reposição", href: "/reposicao", icon: "reposicao", showInSidebar: true },
       {
         id: "compras",
-        label: "Compras / Movimentações",
+        label: "Compras e Pedidos",
         href: "/compras",
         icon: "compras",
-        description: "Entradas e saídas manuais ou por código de barras.",
+        description: "Solicite insumos, aprove pedidos, acompanhe envios, recebimentos e movimentações em um único fluxo.",
         showInSidebar: true,
       },
       {
@@ -80,21 +80,6 @@ export const navigationSections: NavigationSection[] = [
       { id: "rotina-montagem", label: "Área de Montagem", href: "/rotinas/montagem", icon: "montagem" },
       { id: "rotina-delivery", label: "Salão / Delivery", href: "/rotinas/salao-delivery", icon: "delivery" },
       { id: "rotina-reposicao", label: "Salão / Reposição", href: "/rotinas/salao-reposicao", icon: "salao" },
-    ],
-  },
-  {
-    id: "pedidos",
-    label: "Pedidos de Insumos",
-    description: "Solicitações internas para transformar necessidades da operação em ordem de compra organizada.",
-    items: [
-      {
-        id: "pedidos-insumos",
-        label: "Ordem de Pedido",
-        href: "/pedidos-insumos",
-        icon: "pedidos",
-        description: "Solicite, acompanhe e organize itens que precisam ser comprados.",
-        showInSidebar: true,
-      },
     ],
   },
   {
