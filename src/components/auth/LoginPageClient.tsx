@@ -26,7 +26,7 @@ export function LoginPageClient() {
       await login(email, password);
       router.push("/dashboard");
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "Não foi possível entrar. Verifique email e senha.");
+      setLocalError(error instanceof Error ? error.message : "Não foi possível entrar. Verifique e-mail e senha.");
     } finally {
       setLoading(false);
     }
@@ -36,16 +36,16 @@ export function LoginPageClient() {
     <main className="auth-screen">
       <section className="auth-card">
         <header className="auth-card__header auth-card__header--center">
-          <strong>CARIOCA&após;S PRO</strong>
-          <h1>Faca login para continuar</h1>
+          <strong>CARIOCA'S PRO</strong>
+          <h1>Faça login para continuar</h1>
         </header>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <TextInput
             icon="@"
-            label="Email"
+            label="E-mail"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="você@empresa.com"
+            placeholder="nome@empresa.com"
             required
             type="email"
             value={email}
