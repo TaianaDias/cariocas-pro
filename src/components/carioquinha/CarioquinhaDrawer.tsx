@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuth } from "../../hooks/useAuth";
 import { useCarioquinha } from "../../hooks/useCarioquinha";
 import { InputChat } from "./InputChat";
 import { MessageBubble } from "./MessageBubble";
@@ -12,8 +11,7 @@ type CarioquinhaDrawerProps = {
 };
 
 export function CarioquinhaDrawer({ aberto, onClose }: CarioquinhaDrawerProps) {
-  const { user } = useAuth();
-  const { enviar, loading, mensagens } = useCarioquinha(user?.uid ?? "");
+  const { enviar, loading, mensagens } = useCarioquinha();
 
   if (!aberto) return null;
 
