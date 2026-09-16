@@ -83,7 +83,7 @@ export function PlanosPageClient() {
           </div>
         </div>
         <div className="plans-hero__content">
-          <a className="plans-logo" href="/">Carioca&após;s Pro</a>
+          <a className="plans-logo" href="/">Carioca&apos;s Pro</a>
           <Badge tone="danger">Planos SaaS para food service</Badge>
           <h1>Escolha o plano certo para liberar a operação que você precisa hoje</h1>
           <p>Comece simples, evolua para gestão profissional e desbloqueie precificação, CMV, relatórios e automações quando fizer sentido.</p>
