@@ -1,3 +1,5 @@
+import type { Firestore } from "firebase-admin/firestore";
+
 import {
   aprovarSolicitacaoCompra,
   buscarSolicitacaoPorNumero,
@@ -20,12 +22,30 @@ type ResultadoComandoCompras = {
   dados?: unknown;
 };
 
+type ReposicaoSegura = {
+  id: string;
+  nome: string;
+  atual: number;
+  minimo: number;
+  sugerida: number;
+  unidade: string;
+};
+
 function normalizar(texto: string) {
   return texto
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function numero(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function texto(value: unknown, max = 220) {
+  return String(value ?? "").trim().slice(0, max);
 }
 
 function statusLabel(status: string) {
@@ -46,16 +66,32 @@ function extrairNumeroPedido(pergunta: string) {
   return pergunta.match(/\bCP-[A-Za-z0-9-]+\b/i)?.[0]?.toUpperCase() || "";
 }
 
-function querCriarReposicao(texto: string) {
-  const t = normalizar(texto);
+function querCriarReposicao(textoPergunta: string) {
+  const t = normalizar(textoPergunta);
   const acao = t.includes("criar") || t.includes("gerar") || t.includes("abrir") || t.includes("fazer");
   const fluxo = t.includes("solicitacao") || t.includes("pedido");
   const reposicao = t.includes("reposicao") || t.includes("itens abaixo do minimo") || t.includes("estoque minimo");
   return acao && fluxo && reposicao;
 }
 
-function querStatusCompras(texto: string) {
-  const t = normalizar(texto);
+function querRecomendacaoReposicao(textoPergunta: string) {
+  const t = normalizar(textoPergunta);
+  return (
+    t.includes("o que devo repor") ||
+    t.includes("o que preciso repor") ||
+    t.includes("o que devo comprar hoje") ||
+    t.includes("o que precisa comprar") ||
+    t === "reposicao de estoque"
+  );
+}
+
+function querItensCriticos(textoPergunta: string) {
+  const t = normalizar(textoPergunta);
+  return t.includes("itens criticos") || t.includes("itens abaixo do minimo") || t.includes("estoque critico");
+}
+
+function querStatusCompras(textoPergunta: string) {
+  const t = normalizar(textoPergunta);
   return (
     t.includes("status das compras") ||
     t.includes("status dos pedidos") ||
@@ -65,9 +101,38 @@ function querStatusCompras(texto: string) {
   );
 }
 
-function querAprovar(texto: string) {
-  const t = normalizar(texto);
-  return (t.includes("aprovar") || t.includes("aprova")) && Boolean(extrairNumeroPedido(texto));
+function querAprovar(textoPergunta: string) {
+  const t = normalizar(textoPergunta);
+  return (t.includes("aprovar") || t.includes("aprova")) && Boolean(extrairNumeroPedido(textoPergunta));
+}
+
+async function listarReposicaoSegura(db: Firestore, contexto: ContextoCarioquinha): Promise<ReposicaoSegura[]> {
+  const nested = await db.collection("empresas").doc(contexto.empresaId).collection("insumos").get();
+  let docs = nested.docs.filter((doc) => !doc.data().lojaId || doc.data().lojaId === contexto.lojaId);
+
+  if (!docs.length) {
+    const legacy = await db.collection("insumos").where("empresaId", "==", contexto.empresaId).get();
+    docs = legacy.docs.filter((doc) => !doc.data().lojaId || doc.data().lojaId === contexto.lojaId);
+  }
+
+  return docs
+    .map((doc) => {
+      const data = doc.data();
+      const atual = numero(data.quantidadeAtual ?? data.estoqueAtual);
+      const minimo = numero(data.estoqueMinimo);
+      const maximo = numero(data.estoqueMaximo);
+      const sugerida = maximo > atual ? Math.max(1, Math.ceil(maximo - atual)) : Math.max(1, Math.ceil(minimo - atual));
+      return {
+        id: doc.id,
+        nome: texto(data.nome) || "Insumo",
+        atual,
+        minimo,
+        sugerida,
+        unidade: texto(data.unidadeCompra || data.unidadeMedida || data.unidadeUso || "un", 60) || "un",
+      };
+    })
+    .filter((item) => item.minimo > 0 && item.atual <= item.minimo)
+    .sort((a, b) => (a.atual / Math.max(a.minimo, 1)) - (b.atual / Math.max(b.minimo, 1)));
 }
 
 export async function processarComandoComprasCarioquinha(
@@ -75,8 +140,15 @@ export async function processarComandoComprasCarioquinha(
   contexto: ContextoCarioquinha,
 ): Promise<ResultadoComandoCompras> {
   const db = getComprasDb();
+  const comandoCompras =
+    querCriarReposicao(pergunta) ||
+    querRecomendacaoReposicao(pergunta) ||
+    querItensCriticos(pergunta) ||
+    querStatusCompras(pergunta) ||
+    querAprovar(pergunta);
+
   if (!db) {
-    if (querCriarReposicao(pergunta) || querStatusCompras(pergunta) || querAprovar(pergunta)) {
+    if (comandoCompras) {
       return { handled: true, resposta: "Não consegui acessar a Central de Compras agora. Tente novamente em instantes." };
     }
     return { handled: false };
@@ -103,6 +175,25 @@ export async function processarComandoComprasCarioquinha(
     };
   }
 
+  if (querRecomendacaoReposicao(pergunta) || querItensCriticos(pergunta)) {
+    const itens = await listarReposicaoSegura(db, contexto);
+    if (!itens.length) {
+      return { handled: true, resposta: "Conferi o estoque desta loja e não encontrei itens abaixo do mínimo agora." };
+    }
+
+    const linhas = itens
+      .slice(0, 15)
+      .map((item) => `- ${item.nome}: atual ${item.atual} ${item.unidade} · sugerido ${item.sugerida} ${item.unidade}`)
+      .join("\n");
+    return {
+      handled: true,
+      resposta:
+        `Itens para reposição (${itens.length}):\n\n${linhas}\n\n` +
+        "Para transformar essa lista em solicitação, diga: “Criar solicitação de reposição”.",
+      dados: itens,
+    };
+  }
+
   if (querStatusCompras(pergunta)) {
     const pedidos = await listarSolicitacoesResumo(db, tenant, 6);
     if (!pedidos.length) {
@@ -120,7 +211,7 @@ export async function processarComandoComprasCarioquinha(
   }
 
   if (querAprovar(pergunta)) {
-    const numero = extrairNumeroPedido(pergunta);
+    const numeroPedido = extrairNumeroPedido(pergunta);
     if (!podeAprovarCompras(actor)) {
       return {
         handled: true,
@@ -128,9 +219,9 @@ export async function processarComandoComprasCarioquinha(
       };
     }
 
-    const pedido = await buscarSolicitacaoPorNumero(db, tenant, numero);
+    const pedido = await buscarSolicitacaoPorNumero(db, tenant, numeroPedido);
     if (!pedido) {
-      return { handled: true, resposta: `Não encontrei a solicitação ${numero} nesta loja.` };
+      return { handled: true, resposta: `Não encontrei a solicitação ${numeroPedido} nesta loja.` };
     }
 
     const resultado = await aprovarSolicitacaoCompra(db, tenant, actor, pedido.id);
@@ -140,7 +231,7 @@ export async function processarComandoComprasCarioquinha(
 
     return {
       handled: true,
-      resposta: `Solicitação ${numero} analisada: ${resultado.resultadoAprovacao}.\n\n${complemento}`,
+      resposta: `Solicitação ${numeroPedido} analisada: ${resultado.resultadoAprovacao}.\n\n${complemento}`,
       dados: resultado,
     };
   }
