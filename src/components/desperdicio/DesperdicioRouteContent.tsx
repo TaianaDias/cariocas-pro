@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../../hooks/useAuth";
 import { isOperationalRole } from "../../lib/access-control";
+import { authenticatedFetch } from "../../lib/authenticated-fetch";
 import type { OperationalStockItem } from "../../lib/operational-stock";
 import { DesperdicioPageClient } from "../operacional/OperationalPages";
 import { Button } from "../ui/Button";
@@ -52,7 +53,7 @@ export function DesperdicioRouteContent() {
 }
 
 function DesperdicioOperacional() {
-  const { user } = useAuth();
+  const { loading: authLoading, user, userProfile } = useAuth();
   const [stock, setStock] = useState<OperationalStockItem[]>([]);
   const [items, setItems] = useState<OperationalWaste[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,16 +63,14 @@ function DesperdicioOperacional() {
   const [form, setForm] = useState({ categoria: "preparo", insumoId: "", motivo: "", quantidade: 1 });
 
   const carregar = useCallback(async () => {
-    if (!user) return;
+    if (authLoading || !user || !userProfile?.empresaId || !userProfile?.lojaId) return;
     setLoading(true);
     setError(null);
 
     try {
-      const token = await user.getIdToken();
-      const headers = { authorization: `Bearer ${token}` };
       const [stockResponse, wasteResponse] = await Promise.all([
-        fetch("/api/estoque/operacional", { headers, cache: "no-store" }),
-        fetch("/api/desperdicio/operacional", { headers, cache: "no-store" }),
+        authenticatedFetch(user, "/api/estoque/operacional", { cache: "no-store" }),
+        authenticatedFetch(user, "/api/desperdicio/operacional", { cache: "no-store" }),
       ]);
       const stockData = (await stockResponse.json().catch(() => ({}))) as { error?: string; items?: OperationalStockItem[] };
       const wasteData = (await wasteResponse.json().catch(() => ({}))) as { error?: string; items?: OperationalWaste[] };
@@ -86,7 +85,7 @@ function DesperdicioOperacional() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [authLoading, user, userProfile?.empresaId, userProfile?.lojaId]);
 
   useEffect(() => {
     void carregar();
@@ -107,17 +106,15 @@ function DesperdicioOperacional() {
   const totalQuantity = items.reduce((total, item) => total + (Number(item.quantidade) || 0), 0);
 
   async function salvar() {
-    if (!user || saving) return;
+    if (!user || !userProfile?.empresaId || !userProfile?.lojaId || saving) return;
     setSaving(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const token = await user.getIdToken();
-      const response = await fetch("/api/desperdicio/operacional", {
+      const response = await authenticatedFetch(user, "/api/desperdicio/operacional", {
         method: "POST",
         headers: {
-          authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(form),
