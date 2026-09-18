@@ -63,9 +63,9 @@ function calcularKpis(items: Insumo[]): EstoqueKpis {
 }
 
 export function useEstoque() {
-  const { user, userProfile } = useAuth();
-  const empresaId = userProfile?.empresaId || user?.uid || "";
-  const lojaId = userProfile?.lojaId || "matriz";
+  const { loading: authLoading, user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || "";
+  const lojaId = userProfile?.lojaId || "";
   const operational = isOperationalRole(userProfile?.role);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -74,7 +74,7 @@ export function useEstoque() {
   const [error, setError] = useState<string | null>(null);
 
   const carregarOperacional = useCallback(async () => {
-    if (!operational || !user) return;
+    if (authLoading || !operational || !user || !empresaId || !lojaId) return;
 
     setLoading(true);
     try {
@@ -102,9 +102,11 @@ export function useEstoque() {
     } finally {
       setLoading(false);
     }
-  }, [operational, user]);
+  }, [authLoading, empresaId, lojaId, operational, user]);
 
   useEffect(() => {
+    if (authLoading) return undefined;
+
     if (!empresaId || !lojaId) {
       setInsumos([]);
       setKpis(kpisIniciais);
@@ -152,9 +154,11 @@ export function useEstoque() {
         setLoading(false);
       },
     );
-  }, [carregarOperacional, empresaId, lojaId, operational]);
+  }, [authLoading, carregarOperacional, empresaId, lojaId, operational]);
 
   useEffect(() => {
+    if (authLoading) return undefined;
+
     if (!empresaId) {
       setCategorias([]);
       return undefined;
@@ -165,7 +169,7 @@ export function useEstoque() {
     return onSnapshot(consulta, (snapshot) => {
       setCategorias(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as Categoria));
     });
-  }, [empresaId]);
+  }, [authLoading, empresaId]);
 
   const criarInsumo = useCallback(async (dados: Partial<Insumo>, uid: string) => {
     if (operational) throw new Error("Apenas perfis administrativos podem criar insumos.");
