@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { isOperationalRole } from "../lib/access-control";
+import { authenticatedFetch } from "../lib/authenticated-fetch";
 import { operationalStockItemToInsumo, type OperationalStockItem } from "../lib/operational-stock";
 import {
   getComprasRecomendadas,
@@ -76,9 +77,9 @@ function itemMaximo(item: Insumo) {
 }
 
 export function useDashboardData(): DashboardData {
-  const { user, userProfile } = useAuth();
-  const empresaId = userProfile?.empresaId || user?.uid || "";
-  const lojaId = userProfile?.lojaId || "matriz";
+  const { loading: authLoading, user, userProfile } = useAuth();
+  const empresaId = userProfile?.empresaId || "";
+  const lojaId = userProfile?.lojaId || "";
   const operational = isOperationalRole(userProfile?.role);
   const [data, setData] = useState<DashboardData>({
     kpis: null,
@@ -93,12 +94,11 @@ export function useDashboardData(): DashboardData {
     let mounted = true;
 
     async function carregar() {
+      if (authLoading || !user || !empresaId || !lojaId) return;
+
       try {
         if (operational) {
-          if (!user) throw new Error("Sessão inválida.");
-          const token = await user.getIdToken();
-          const response = await fetch("/api/estoque/operacional", {
-            headers: { authorization: `Bearer ${token}` },
+          const response = await authenticatedFetch(user, "/api/estoque/operacional", {
             cache: "no-store",
           });
           const payload = (await response.json().catch(() => ({}))) as { error?: string; items?: OperationalStockItem[] };
@@ -143,7 +143,7 @@ export function useDashboardData(): DashboardData {
     return () => {
       mounted = false;
     };
-  }, [empresaId, lojaId, operational, user]);
+  }, [authLoading, empresaId, lojaId, operational, user]);
 
   return data;
 }
