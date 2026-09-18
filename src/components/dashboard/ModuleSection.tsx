@@ -12,8 +12,8 @@ export function ModuleSection({ section }: ModuleSectionProps) {
         <div>
           <span className="module-section__eyebrow">{section.adminOnly ? "Acesso restrito" : "Central de trabalho"}</span>
           <h2 id={`dashboard-section-${section.id}`}>{section.label}</h2>
+          <p>{section.description}</p>
         </div>
-        <p>{section.description}</p>
       </header>
 
       <div className="module-grid">
