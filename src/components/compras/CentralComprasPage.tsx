@@ -114,7 +114,7 @@ function movementLabel(value: string) {
 }
 
 export function CentralComprasPage() {
-  const { user } = useAuth();
+  const { loading: authLoading, user, userProfile } = useAuth();
   const [tab, setTab] = useState<Tab>("solicitar");
   const [data, setData] = useState<CentralPayload>({ estoque: [], pedidos: [], podeAprovar: false, autodisparoAtivo: false });
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -147,7 +147,7 @@ export function CentralComprasPage() {
   }, [user]);
 
   const carregar = useCallback(async () => {
-    if (!user) return;
+    if (authLoading || !user || !userProfile?.empresaId || !userProfile?.lojaId) return;
     setLoading(true);
     setError(null);
     try {
@@ -172,7 +172,7 @@ export function CentralComprasPage() {
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, user]);
+  }, [authHeaders, authLoading, user, userProfile?.empresaId, userProfile?.lojaId]);
 
   useEffect(() => {
     void carregar();
