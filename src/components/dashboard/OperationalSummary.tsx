@@ -7,10 +7,10 @@ type OperationalSummaryProps = {
 };
 
 const summaryItems = [
-  { key: "criticalItems", label: "Itens críticos", helper: "Precisam de atenção no estoque" },
-  { key: "pendingReplenishment", label: "Reposições pendentes", helper: "Itens sem saldo ou abaixo do necessário" },
-  { key: "expiringItems", label: "Próximos da validade", helper: "Produtos com vencimento próximo" },
-  { key: "suggestedPurchases", label: "Compras sugeridas", helper: "Necessidades identificadas pela operação" },
+  { key: "criticalItems", label: "Itens críticos", helper: "Precisam de atenção no estoque", href: "/estoque" },
+  { key: "pendingReplenishment", label: "Reposições pendentes", helper: "Itens sem saldo ou abaixo do necessário", href: "/reposicao" },
+  { key: "expiringItems", label: "Próximos da validade", helper: "Produtos com vencimento próximo", href: "/relatorios/validades" },
+  { key: "suggestedPurchases", label: "Compras sugeridas", helper: "Necessidades identificadas pela operação", href: "/compras" },
 ] as const;
 
 export function OperationalSummary({
@@ -25,11 +25,17 @@ export function OperationalSummary({
   return (
     <section className="operational-summary" aria-label="Resumo operacional">
       {summaryItems.map((item) => (
-        <article className="operational-summary__card" key={item.key}>
+        <a
+          className="operational-summary__card"
+          href={item.href}
+          key={item.key}
+          aria-label={`${item.label}: abrir módulo relacionado`}
+        >
           <span>{item.label}</span>
           <strong>{loading ? "—" : values[item.key]}</strong>
           <small>{item.helper}</small>
-        </article>
+          <span className="operational-summary__arrow" aria-hidden="true">→</span>
+        </a>
       ))}
     </section>
   );
