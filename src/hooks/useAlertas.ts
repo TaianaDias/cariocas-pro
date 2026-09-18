@@ -2,25 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { authenticatedFetch } from "../lib/authenticated-fetch";
 import type { AlertaReposicao } from "../services/alertas.service";
 import { useAuth } from "./useAuth";
 
 export function useAlertas() {
-  const { user } = useAuth();
+  const { loading: authLoading, user, userProfile } = useAuth();
   const [alertas, setAlertas] = useState<AlertaReposicao[]>([]);
   const [loading, setLoading] = useState(true);
 
   const carregar = useCallback(async () => {
-    if (!user) {
-      setAlertas([]);
-      setLoading(false);
-      return;
-    }
+    if (authLoading || !user || !userProfile?.empresaId || !userProfile?.lojaId) return;
 
     try {
-      const token = await user.getIdToken();
-      const response = await fetch("/api/alertas", {
-        headers: { authorization: `Bearer ${token}` },
+      const response = await authenticatedFetch(user, "/api/alertas", {
         cache: "no-store",
       });
       const data = (await response.json().catch(() => ({}))) as { items?: AlertaReposicao[] };
@@ -31,7 +26,7 @@ export function useAlertas() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [authLoading, user, userProfile?.empresaId, userProfile?.lojaId]);
 
   useEffect(() => {
     void carregar();
@@ -40,12 +35,10 @@ export function useAlertas() {
   }, [carregar]);
 
   const executarAcao = useCallback(async (alertaId: string, action: "read" | "resolve", observacao?: string) => {
-    if (!user) throw new Error("Sessão inválida.");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/alertas", {
+    if (!user || !userProfile?.empresaId || !userProfile?.lojaId) throw new Error("Sessão ainda não está pronta.");
+    const response = await authenticatedFetch(user, "/api/alertas", {
       method: "PATCH",
       headers: {
-        authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ action, alertaId, observacao }),
@@ -61,7 +54,7 @@ export function useAlertas() {
     } else {
       setAlertas((current) => current.filter((item) => item.id !== alertaId));
     }
-  }, [user]);
+  }, [user, userProfile?.empresaId, userProfile?.lojaId]);
 
   const marcarLido = useCallback((alertaId: string) => executarAcao(alertaId, "read"), [executarAcao]);
   const resolver = useCallback((alertaId: string, _responsavel?: string, observacao?: string) => executarAcao(alertaId, "resolve", observacao), [executarAcao]);
