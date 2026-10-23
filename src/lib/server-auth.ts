@@ -7,6 +7,7 @@ import { canAccessAppPath, isOperationalRole, normalizeRole } from "./access-con
 import { canAccessPrecificacao, hasPrecificacaoPermission, normalizePlan } from "./permissions";
 import type { PrecificacaoPermission } from "./permissions";
 import type { PermissaoFuncionario } from "../types";
+import { firebaseEmulators } from "./firebase-emulators";
 
 type ServerUserProfile = {
   ativo?: boolean;
@@ -35,6 +36,15 @@ export function getAdminApp(): App | null {
   if (!projectId) {
     return null;
   }
+
+  const emulators = firebaseEmulators({
+    enabled: Boolean(process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST),
+    environment: process.env.NODE_ENV,
+    projectId,
+    authHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
+    firestoreHost: process.env.FIRESTORE_EMULATOR_HOST,
+  });
+  if (emulators) return initializeApp({ projectId });
 
   if (clientEmail && privateKey) {
     return initializeApp({

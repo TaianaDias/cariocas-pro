@@ -27,7 +27,7 @@ Estados de cada entrega: **planejado → implementado → testado → homologado
 | Interface | React, CSS próprio e tokens; componentes compartilhados |
 | Organização | `app/api`, `components`, `hooks`, `services`, `schemas`, `lib`, `server`, `types` |
 | Infraestrutura documentada | VPS, PM2, Nginx, Docker/Evolution; disponibilidade e versões reais não verificadas |
-| Teste desta entrega | Node 24.19.0, Auth/Firestore Emulator em projeto `demo-`, testes de negócio/API/regras |
+| Teste desta entrega | Node 24.19.0, Auth/Firestore Emulator em projeto `demo-`, testes de negócio/API/regras e fluxo no navegador pela aplicação Next |
 
 A arquitetura atual é suficiente para começar. A proposta é manter Next/Firebase e criar fronteiras claras entre cálculos puros, operações transacionais e interface. Uma reescrita ou separação em microsserviços aumentaria migração e manutenção sem resolver primeiro os erros encontrados.
 
@@ -38,6 +38,7 @@ A arquitetura atual é suficiente para começar. A proposta é manter Next/Fireb
 | `services/precificacao.service.ts` | Arredondava custo unitário de uso para 2 casas | R$ 0,035/g podia virar R$ 0,04/g: 160 g passavam de R$ 5,60 para R$ 6,40 | Corrigido na entrega 1 |
 | Mesmo arquivo e `estoque.service.ts` | Ausência e zero confundidos; atualização trocava a unidade da linha sem converter quantidade | CMV subestimado ou quantidade interpretada em outra unidade | Corrigido no novo fluxo de fichas; normalização geral de estoque permanece pendente |
 | `api/precificacao/recalcular` | Rota de servidor usava serviços do SDK cliente, regravava fichas e aplicava configurações padrão | Autorização inconsistente, histórico desnecessário, parâmetros sobrescritos | Consulta recalculada via Admin; versões salvas preservadas |
+| `PrecificacaoPageClient.tsx`, `usePrecificacao.ts` | Ficha aberta retinha resultado anterior; médias sem fichas calculáveis apareciam como zero | Custo visual desatualizado ou indicador sem base aparente | Ficha usa consulta atual; médias mostram cobertura e ficam pendentes sem custos conhecidos; conferido no navegador |
 | `api/financeiro/resumo` | Variações `-2.5` e `1.2` fixas; ticket usa estoque e número de movimentos, não pedidos vendidos | Números que parecem medidos sem base de vendas | Prioridade seguinte; não interpretar como resultado apurado |
 | Mesmo endpoint | Série mensal reaproveita o estoque atual para meses anteriores | Não representa evolução histórica do estoque/resultado | Exige snapshots/eventos e fontes temporais reais |
 | `server/compras-flow.ts`, recebimento | Grava saldo, histórico e pedido em chamadas separadas; sem chave de recebimento | Falha parcial, duplicação e perda de atualização concorrente | Bloqueio da etapa de recebimento confiável |

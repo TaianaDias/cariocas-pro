@@ -75,20 +75,20 @@ export function usePrecificacao() {
 
   const kpis = useMemo(() => {
     if (!canSeeMoney) {
-      return { cmvMedio: 0, criticas: 0, custoTotal: 0, lucroTotal: 0, margemMedia: 0, maisLucrativa: undefined, piorCmv: undefined };
+      return { cmvMedio: null, criticas: 0, custoTotal: null, lucroTotal: null, margemMedia: null, maisLucrativa: undefined, piorCmv: undefined, fichasNaMedia: 0, totalFichas: 0 };
     }
 
-    const validas = receitasCalculadas.filter((item) => item.custoSituacao !== "pendente");
+    const validas = receitasCalculadas.filter((item) => item.custoSituacao !== "pendente" && item.cmv !== null && item.margem !== null);
     const total = validas.length || 1;
     const lucroTotal = validas.reduce((acc, item) => acc + (item.lucro ?? 0), 0);
     const custoTotal = validas.reduce((acc, item) => acc + (item.custoTotalReal ?? 0), 0);
-    const margemMedia = validas.reduce((acc, item) => acc + (item.margem ?? 0), 0) / total;
-    const cmvMedio = validas.reduce((acc, item) => acc + (item.cmv ?? 0), 0) / total;
+    const margemMedia = validas.length ? validas.reduce((acc, item) => acc + (item.margem ?? 0), 0) / total : null;
+    const cmvMedio = validas.length ? validas.reduce((acc, item) => acc + (item.cmv ?? 0), 0) / total : null;
     const criticas = receitasCalculadas.filter((item) => item.status === "critico").length;
     const maisLucrativa = [...validas].sort((a, b) => (b.lucro ?? 0) - (a.lucro ?? 0))[0];
     const piorCmv = [...validas].sort((a, b) => (b.cmv ?? 0) - (a.cmv ?? 0))[0];
 
-    return { cmvMedio, criticas, custoTotal, lucroTotal, margemMedia, maisLucrativa, piorCmv };
+    return { cmvMedio, criticas, custoTotal: validas.length ? custoTotal : null, lucroTotal: validas.length ? lucroTotal : null, margemMedia, maisLucrativa, piorCmv, fichasNaMedia: validas.length, totalFichas: receitasCalculadas.length };
   }, [canSeeMoney, receitasCalculadas]);
 
   const alertas = useMemo(

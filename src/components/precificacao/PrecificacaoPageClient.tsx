@@ -58,6 +58,7 @@ export function PrecificacaoPageClient() {
   });
 
   const allowed = canAccessPrecificacao(precificacao.plan, precificacao.role);
+  const fichaAtual = fichaAberta ? precificacao.receitas.find((item) => item.id === fichaAberta.id) || null : null;
   const abasDisponiveis = precificacao.canUseFullModule ? abas : ["Fichas Tecnicas"];
   const simulacao = useMemo(() => simularPreco(simulador), [simulador]);
   const insumosFiltrados = useMemo(() => {
@@ -240,12 +241,15 @@ export function PrecificacaoPageClient() {
       </nav>
 
       {precificacao.canSeeMoney ? (
+        <>
         <section className="precificacao-kpis">
           <Kpi label="Fichas com custo pendente" value={String(precificacao.receitas.filter((item) => item.custoSituacao === "pendente").length)} />
-          <Kpi label="CMV médio por ficha (estimado)" value={`${precificacao.kpis.cmvMedio.toFixed(1)}%`} />
-          <Kpi label="Margem média por ficha (simulada)" value={`${precificacao.kpis.margemMedia.toFixed(1)}%`} />
+          <Kpi label="CMV médio por ficha (estimado)" value={precificacao.kpis.totalFichas ? percent(precificacao.kpis.cmvMedio) : "Sem fichas"} />
+          <Kpi label="Margem média por ficha (simulada)" value={precificacao.kpis.totalFichas ? percent(precificacao.kpis.margemMedia) : "Sem fichas"} />
           <Kpi label="Receitas críticas" value={String(precificacao.kpis.criticas)} tone={precificacao.kpis.criticas ? "danger" : "success"} />
         </section>
+        <p className="precificacao-ingredients-empty">Médias calculadas sobre {precificacao.kpis.fichasNaMedia} de {precificacao.kpis.totalFichas} fichas.</p>
+        </>
       ) : (
         <Card className="precificacao-simple-mode">
           <strong>Ficha técnica simples</strong>
@@ -343,11 +347,11 @@ export function PrecificacaoPageClient() {
           </Card>
 
           <div className="precificacao-side">
-            {fichaAberta ? (
+            {fichaAtual ? (
               <FichaTecnicaVisual
                 canSeeMoney={precificacao.canSeeMoney}
                 onClose={() => setFichaAberta(null)}
-                receita={fichaAberta}
+                receita={fichaAtual}
               />
             ) : null}
             <ReceitasGrid

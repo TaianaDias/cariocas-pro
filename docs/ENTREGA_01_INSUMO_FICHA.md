@@ -8,7 +8,7 @@ Referência: 22/10/2026. Base: `ac9ab8f`, branch V2. Escopo encerrável: **cadas
 |---|---|
 | Planejado | Escopo, regras, causas e limites documentados |
 | Implementado | Domínio de custos, API servidor, formulário e integração à tela de precificação |
-| Testado | Cálculos e API + Auth/Firestore Emulator + regras do SDK; evidência detalhada abaixo |
+| Testado | Cálculos, API, regras do SDK e fluxo na aplicação real com Auth/Firestore Emulator; evidência detalhada abaixo |
 | Homologado na operação | Pendente: roteiro abaixo precisa ser executado na V2 conciliada com o código da VPS |
 | Publicado | Pendente: não houve alteração de VPS, banco real ou regras publicadas |
 
@@ -24,6 +24,8 @@ Referência: 22/10/2026. Base: `ac9ab8f`, branch V2. Escopo encerrável: **cadas
 - Operação repetida com mesma chave/conteúdo devolve o mesmo resultado; conteúdo diferente com chave já utilizada retorna 409. Gravação de ficha, versão, auditoria e resultado idempotente é transacional.
 - Edição usa versão esperada; sessão antiga recebe conflito. Erro não limpa o formulário. É possível remover uma linha incorreta da composição.
 - Consulta atual recalcula referências sem regravar versões salvas. Alteração de custo de referência não modifica saldo, custo do estoque, preços de venda ou registros anteriores.
+- A ficha visual já aberta usa o resultado atual da consulta, evitando mostrar o custo anterior após salvar uma nova referência.
+- Médias informam quantas fichas possuem cálculo válido. Sem nenhuma ficha calculável, CMV e margem ficam pendentes; não aparecem como 0%. Essas médias simples por ficha não representam o CMV ponderado pelas vendas.
 - Aplicação de preço continua sendo uma ação explícita. Ficha pendente não permite aplicar sugestão.
 
 ## Arquivos afetados
@@ -37,15 +39,18 @@ Referência: 22/10/2026. Base: `ac9ab8f`, branch V2. Escopo encerrável: **cadas
 | `src/server/catalogo-fichas.ts` | Leitura contextual; criação sem estoque; referência; persistência/versões/auditoria/idempotência |
 | `src/app/api/precificacao/catalogo/route.ts` | GET e POST autenticados do fluxo |
 | `src/app/api/precificacao/recalcular/route.ts` | Consulta via Admin SDK; atualização sem sobrescrever fichas com parâmetros padrão |
-| `src/hooks/usePrecificacao.ts` | Carregamento após perfil, chamada autenticada, envio de composição e retry com mesma chave |
+| `src/hooks/usePrecificacao.ts` | Carregamento após perfil, chamada autenticada, envio de composição, retry com mesma chave e cobertura das médias |
 | `src/components/precificacao/InsumoParaFicha.tsx` | Cadastro pré-compra e edição explícita da referência estimada |
-| `src/components/precificacao/PrecificacaoPageClient.tsx` | Integra os formulários, unidades precisas, estado pendente, mensagens e remoção de ingredientes |
+| `src/components/precificacao/PrecificacaoPageClient.tsx` | Integra os formulários, ficha aberta atualizada, unidades precisas, estado pendente, cobertura das médias, mensagens e remoção de ingredientes |
+| `src/lib/firebase-emulators.ts`, `firebase.ts`, `server-auth.ts` | Conexão cliente/servidor aos emuladores somente em desenvolvimento/teste, projeto `demo-` e endereços locais explícitos |
 | `src/types/index.ts` | Referência identificada, versão e campos financeiros nullable |
 | `src/styles/precificacao.css` | Layout do formulário, controles de pelo menos 44 px e adaptação ao espaço disponível |
 | `firestore.rules` | Fecha sobreposição da regra genérica de perfis e escrita direta nas coleções protegidas; restringe contexto da loja |
 | `tests/unit/custos.test.ts` | Oito testes unitários de regras de negócio |
+| `tests/unit/emulators.test.ts` | Teste das restrições da configuração local de emulação |
 | `tests/integration/catalogo.test.ts` | Fluxo pelos handlers HTTP reais com Auth/Firestore Emulator e SDK cliente |
 | `tests/ui/insumo-form.*` | Verificação isolada do formulário em navegador; callback controlado, não homologação operacional |
+| `tests/ui/application-flow.mjs` | Fluxo pelo navegador e aplicação Next real, com persistência, duas sessões e conferência do banco emulado |
 | `firebase.test.json`, `package.json`, lockfile | Comandos de teste reproduzíveis; projeto local `demo-` |
 | `.github/workflows/build.yml` | Testes de negócio e emuladores também nos PRs para a branch V2 |
 | `.gitignore` | Logs e cache de compilação não entram no versionamento |
@@ -54,11 +59,12 @@ O serviço legado de escrita de receita permanece exportado por compatibilidade,
 
 ## Verificações executadas
 
-1. **Oito testes unitários:** média ponderada do caso A; porções em gramas/kg; aumento/redução diretos; custo ausente e zero explícito; incompatibilidade de unidades/orfandade/preparação ainda não suportada; taxa no preço proposto, margem alvo zero e denominador impossível; schemas; perfil/plano/contexto.
+1. **Nove testes unitários:** oito de negócio (média ponderada do caso A; porções em gramas/kg; aumento/redução diretos; custo ausente e zero explícito; incompatibilidade de unidades/orfandade/preparação ainda não suportada; taxa no preço proposto, margem alvo zero e denominador impossível; schemas; perfil/plano/contexto) e um das restrições da emulação (rejeita produção, projeto real, destino remoto e endereço inválido/incompleto).
 2. **Nove cenários de integração**, agrupados por um teste principal (o Node conta dez incluindo o agrupador): repetição simultânea do cadastro; conflito de payload; salvar/reler ficha; atualização de referência preservando dados anteriores; custo ausente persistido como null; autorização de empresa/loja/perfil; regras do SDK cliente; falha sem efeito parcial; versão de edição antiga rejeitada.
 3. `npx tsc --noEmit`: verificação de tipos.
 4. `npm run check:orthography`: verificação das ocorrências conhecidas de ortografia da interface.
 5. `npm run build`: build Next.js com 53 páginas/rotas geradas. Há avisos legados em importação protobuf/Firestore de outras rotas e CSS de pedidos; compilação foi concluída.
+6. **Aplicação completa no navegador:** login real no Auth Emulator; cadastro pré-compra pela tela; ficha de 160 g a R$ 35/kg salva e relida após recarregar por R$ 5,60; redução para R$ 25/kg atualiza a ficha ainda aberta para R$ 4,00; duas sessões editam a mesma ficha e a antiga recebe 409 sem perder o nome digitado; custo em branco produz ficha pendente e impede aplicar sugestão. Cobertura das médias muda de 1/2 para 0/2 quando a última referência conhecida é removida; os dois indicadores passam a “Pendente”. O banco emulado confirma dois insumos com saldo/custo de estoque zero, nenhum movimento de estoque e três versões de ficha. Sem rolagem horizontal nas larguras 390 e 1440 px.
 
 Os testes usam dados fabricados exclusivamente no projeto local `demo-cariocas-pro`. Não foram lidos dados reais. O cenário de histórico sem alteração inclui um registro de venda de teste: comprova que o comando de referência não o reescreve; não comprova uma integração de vendas ainda inexistente.
 
@@ -74,6 +80,15 @@ npm run build
 ```
 
 Emuladores: Java 17 e Node compatível com `--import`. A CLI Firebase de teste está fixada no comando; não é dependência do runtime da aplicação. Usa apenas portas locais 8085/9095 e projeto `demo-`.
+
+Teste da aplicação completa (Next em desenvolvimento na porta local 3105, navegador e emuladores):
+
+```bash
+npx playwright install chromium
+npm run test:app
+```
+
+O comando cria usuário/dados fabricados, percorre a interface sem substituir callbacks, verifica persistência e encerra o servidor ao terminar. Logs e capturas ficam em diretório temporário indicado na saída. O teste de navegador foi executado localmente; a CI deste PR cobre testes unitários, integração com emuladores e build, sem executar esse navegador. A aplicação só aceita a conexão emulada com configuração explícita de desenvolvimento/teste, projeto `demo-` e hosts locais; nenhuma credencial real é necessária.
 
 Teste isolado de interface:
 
@@ -103,7 +118,7 @@ Se o ambiente disponibilizar outro Chromium, o script aceita `CHROMIUM_EXECUTABL
 4. Conferir saldo zero no cadastro; confirmar ausência de compra, entrada e conta a pagar criada pelo cadastro.
 5. Criar ficha direta com 160 g e preço de venda R$ 20. Salvar, sair e voltar. Custo de ingredientes deve ser R$ 5,60; resultado deve aparecer como estimado.
 6. Alterar referência para R$ 25/kg: custo atual R$ 4,00. Voltar a R$ 35: R$ 5,60. Versões anteriores permanecem identificáveis; saldo/valorização não mudam.
-7. Cadastrar outro insumo com custo vazio e incluí-lo em ficha: composição salva, mas custo/margem/CMV/sugestão permanecem pendentes. Ao informar referência, a consulta passa a calcular.
+7. Cadastrar outro insumo com custo vazio e incluí-lo em ficha: composição salva, mas custo/margem/CMV/sugestão permanecem pendentes. Ao informar referência, a consulta passa a calcular. Conferir o número de fichas consideradas nas médias; sem custos conhecidos, os indicadores devem ficar pendentes.
 8. Tentar fator errado para KG→G e unidade incompatível. Obter erro compreensível sem perda da ficha em edição.
 9. Repetir envio e simular falha de rede; conferir uma criação e uma versão por operação, com auditoria.
 10. Abrir mesma ficha em duas sessões e salvar uma. A outra deve receber conflito até recarregar.
