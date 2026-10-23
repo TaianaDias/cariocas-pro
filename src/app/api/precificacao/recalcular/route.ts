@@ -1,58 +1,18 @@
+import { getFirestore } from "firebase-admin/firestore";
 import { NextResponse, type NextRequest } from "next/server";
-
-import { authorizePrecificacaoRequest } from "../../../../lib/server-auth";
-import { listarInsumos } from "../../../../services/estoque.service";
-import {
-  atualizarIngredientesComEstoque,
-  custosFixosPadrao,
-  custosVariaveisPadrao,
-  listarReceitasPrecificacao,
-  metasPadrao,
-  recalcularReceita,
-  salvarReceitaPrecificacao,
-} from "../../../../services/precificacao.service";
+import { getAdminApp, getServerUserProfile } from "../../../../lib/server-auth";
+import { FichaError, lerCatalogoFichas, validarAtorFicha } from "../../../../server/catalogo-fichas";
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => ({}))) as { empresaId?: string; lojaId?: string };
-  const authorization = await authorizePrecificacaoRequest(
-    request,
-    "precificacao.recalcular",
-    body.empresaId,
-    body.lojaId,
-  );
-
-  if (authorization.status === 401) {
-    return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  try {
+    const actor = validarAtorFicha(await getServerUserProfile(request));
+    const app = getAdminApp();
+    if (!app) throw new FichaError("Serviço indisponível.", 503);
+    const data = await lerCatalogoFichas(getFirestore(app), actor);
+    return NextResponse.json({ message: "Custos atuais recalculados para consulta. Versões salvas e preços preservados.", receitasRecalculadas: data.receitas.length });
+  } catch (error) {
+    if (error instanceof FichaError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("Falha ao atualizar custos das fichas:", error);
+    return NextResponse.json({ error: "Não foi possível atualizar os custos." }, { status: 500 });
   }
-
-  if (authorization.status === 400) {
-    return NextResponse.json({ error: "empresaId e obrigatório." }, { status: 400 });
-  }
-
-  if (authorization.status === 403) {
-    return NextResponse.json({ error: "Plano, permissão ou empresa inválidos para recalcular precificação." }, { status: 403 });
-  }
-
-  const insumos = await listarInsumos({ empresaId: authorization.empresaId, lojaId: authorization.lojaId || undefined });
-  const receitas = await listarReceitasPrecificacao(authorization.empresaId, authorization.lojaId || undefined);
-  const recalculadas = receitas.map((receita) =>
-    recalcularReceita(
-      {
-        ...receita,
-        ingredientes: atualizarIngredientesComEstoque(receita.ingredientes || [], insumos),
-      },
-      { ...custosFixosPadrao, empresaId: authorization.empresaId, lojaId: authorization.lojaId || "matriz" },
-      custosVariaveisPadrao,
-      { ...metasPadrao, empresaId: authorization.empresaId, lojaId: authorization.lojaId || "matriz" },
-    ),
-  );
-
-  await Promise.all(recalculadas.map((receita) => salvarReceitaPrecificacao(receita)));
-
-  return NextResponse.json({
-    empresaId: authorization.empresaId,
-    lojaId: authorization.lojaId || null,
-    message: "Receitas recalculadas com custos atuais do estoque.",
-    receitasRecalculadas: recalculadas.length,
-  });
 }

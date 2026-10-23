@@ -114,10 +114,29 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin() && sameTenant(empresaId);
       }
 
-      // Demais coleções internas da empresa podem conter custos ou dados de gestão.
-      // Funcionários consomem projeções sanitizadas pelas APIs server-side.
-      match /{document=**} {
-        allow read, write: if isAdmin() && sameTenant(empresaId);
+      // Fichas, versões, referências e idempotência passam pela API autorizada.
+      // O Admin SDK valida o contexto no servidor e não depende destas regras.
+      match /insumos/{insumoId} {
+        allow read: if isAdmin() && sameTenant(empresaId) && tenantResource();
+        allow create: if isAdmin() && sameTenant(empresaId) && tenantRequest()
+          && !('custoReferencia' in request.resource.data);
+        allow update: if isAdmin() && sameTenant(empresaId) && tenantResource() && tenantRequest()
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['custoReferencia']);
+        allow delete: if isAdmin() && sameTenant(empresaId) && tenantResource()
+          && !('custoReferencia' in resource.data);
+      }
+
+      match /{collectionId}/{documentId} {
+        allow read: if isAdmin() && sameTenant(empresaId) && tenantResource();
+        allow create: if isAdmin() && sameTenant(empresaId)
+          && !(collectionId in ['insumos', 'receitas', 'historicoReceitas', 'historicoCustosInsumos', 'operacoesPrecificacao', 'auditoria'])
+          && tenantRequest();
+        allow update: if isAdmin() && sameTenant(empresaId)
+          && !(collectionId in ['insumos', 'receitas', 'historicoReceitas', 'historicoCustosInsumos', 'operacoesPrecificacao', 'auditoria'])
+          && tenantResource() && tenantRequest();
+        allow delete: if isAdmin() && sameTenant(empresaId)
+          && !(collectionId in ['insumos', 'receitas', 'historicoReceitas', 'historicoCustosInsumos', 'operacoesPrecificacao', 'auditoria'])
+          && tenantResource();
       }
     }
 
@@ -125,10 +144,15 @@ service cloud.firestore {
     // marcadas com empresaId/lojaId. Documentos legados sem tenant ficam negados
     // até a migração, evitando vazamento entre empresas.
     match /{collection}/{documentId} {
-      allow read: if isAdmin() && tenantResource();
-      allow create: if isAdmin() && tenantRequest();
-      allow update: if isAdmin() && tenantResource() && tenantRequest();
-      allow delete: if isAdmin() && tenantResource();
+      // Regras coincidentes são somadas por OR. Excluir perfis aqui impede
+      // contornar a proteção de plano/papel definida em /usuarios e /funcionarios.
+      allow read: if !(collection in ['usuarios', 'funcionarios']) && isAdmin() && tenantResource();
+      allow create: if !(collection in ['usuarios', 'funcionarios', 'receitas', 'historicoReceitas', 'auditoria']) && isAdmin() && tenantRequest()
+        && (collection != 'insumos' || !('custoReferencia' in request.resource.data));
+      allow update: if !(collection in ['usuarios', 'funcionarios', 'receitas', 'historicoReceitas', 'auditoria']) && isAdmin() && tenantResource() && tenantRequest()
+        && (collection != 'insumos' || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['custoReferencia']));
+      allow delete: if !(collection in ['usuarios', 'funcionarios', 'receitas', 'historicoReceitas', 'auditoria']) && isAdmin() && tenantResource()
+        && (collection != 'insumos' || !('custoReferencia' in resource.data));
     }
   }
 }

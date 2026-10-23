@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { canAccessPrecificacao, canSeePrecificacaoMoney, canUsePrecificacaoCompleta, hasPrecificacaoPermission } from "../lib/permissions";
 import {
@@ -8,12 +8,10 @@ import {
   custosFixosPadrao,
   custosVariaveisPadrao,
   gerarAlertasFinanceiros,
-  listarReceitasPrecificacao,
   mascararReceitaPrecificacao,
   metasPadrao,
   recalcularReceita,
   salvarCustosFixos,
-  salvarReceitaPrecificacao,
 } from "../services/precificacao.service";
 import { listarInsumos } from "../services/estoque.service";
 import type {
@@ -24,14 +22,16 @@ import type {
   ReceitaPrecificacao,
 } from "../types";
 import { useAuth } from "./useAuth";
+import { authenticatedFetch } from "../lib/authenticated-fetch";
 
 export function usePrecificacao() {
-  const { user, userProfile } = useAuth();
+  const { loading: authLoading, user, userProfile } = useAuth();
   const plan = userProfile?.plano ?? userProfile?.plan ?? "free";
   const role = userProfile?.role ?? "user";
-  const empresaId = userProfile?.empresaId || user?.uid || "default";
+  const empresaId = userProfile?.empresaId || "";
   const lojaId = userProfile?.lojaId;
-  const lojaSegura = lojaId || "matriz";
+  const lojaSegura = lojaId || "";
+  const pendente = useRef<{ assinatura: string; id: string } | null>(null);
   const [receitas, setReceitas] = useState<ReceitaPrecificacao[]>([]);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [custosFixos, setCustosFixos] = useState<CustosFixosPrecificacao>({
@@ -78,14 +78,15 @@ export function usePrecificacao() {
       return { cmvMedio: 0, criticas: 0, custoTotal: 0, lucroTotal: 0, margemMedia: 0, maisLucrativa: undefined, piorCmv: undefined };
     }
 
-    const total = receitasCalculadas.length || 1;
-    const lucroTotal = receitasCalculadas.reduce((acc, item) => acc + item.lucro, 0);
-    const custoTotal = receitasCalculadas.reduce((acc, item) => acc + item.custoTotalReal, 0);
-    const margemMedia = receitasCalculadas.reduce((acc, item) => acc + item.margem, 0) / total;
-    const cmvMedio = receitasCalculadas.reduce((acc, item) => acc + item.cmv, 0) / total;
+    const validas = receitasCalculadas.filter((item) => item.custoSituacao !== "pendente");
+    const total = validas.length || 1;
+    const lucroTotal = validas.reduce((acc, item) => acc + (item.lucro ?? 0), 0);
+    const custoTotal = validas.reduce((acc, item) => acc + (item.custoTotalReal ?? 0), 0);
+    const margemMedia = validas.reduce((acc, item) => acc + (item.margem ?? 0), 0) / total;
+    const cmvMedio = validas.reduce((acc, item) => acc + (item.cmv ?? 0), 0) / total;
     const criticas = receitasCalculadas.filter((item) => item.status === "critico").length;
-    const maisLucrativa = [...receitasCalculadas].sort((a, b) => b.lucro - a.lucro)[0];
-    const piorCmv = [...receitasCalculadas].sort((a, b) => b.cmv - a.cmv)[0];
+    const maisLucrativa = [...validas].sort((a, b) => (b.lucro ?? 0) - (a.lucro ?? 0))[0];
+    const piorCmv = [...validas].sort((a, b) => (b.cmv ?? 0) - (a.cmv ?? 0))[0];
 
     return { cmvMedio, criticas, custoTotal, lucroTotal, margemMedia, maisLucrativa, piorCmv };
   }, [canSeeMoney, receitasCalculadas]);
@@ -96,9 +97,11 @@ export function usePrecificacao() {
   );
 
   const carregar = useCallback(async () => {
+    if (authLoading) return;
     setLoading(true);
 
     try {
+      if (!user || !empresaId || !lojaSegura) throw new Error("Aguarde a sessão e o perfil com empresa e loja definidos.");
       if (!canAccessModule) {
         setInsumos([]);
         setReceitas([]);
@@ -114,44 +117,58 @@ export function usePrecificacao() {
         return;
       }
 
-      const [dados, insumosData] = await Promise.all([
-        listarReceitasPrecificacao(empresaId, lojaSegura),
-        listarInsumos({ empresaId, lojaId: lojaSegura }),
-      ]);
-      setReceitas(dados);
-      setInsumos(insumosData);
+      const response = await authenticatedFetch(user, "/api/precificacao/catalogo", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Não foi possível carregar o catálogo.");
+      setReceitas(data.receitas);
+      setInsumos(data.insumos);
+      setCustosFixos(data.custosFixos);
+      setCustosVariaveis(data.custosVariaveis);
+      setMetas(data.metas);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao carregar precificação.");
     } finally {
       setLoading(false);
     }
-  }, [canAccessModule, canSeeMoney, empresaId, lojaSegura]);
+  }, [authLoading, user, canAccessModule, canSeeMoney, empresaId, lojaSegura]);
 
   useEffect(() => {
     void carregar();
   }, [carregar]);
 
-  async function salvarReceita(receita: Partial<ReceitaPrecificacao>) {
-    if (!canConfigure) {
-      throw new Error("Seu perfil ou plano não permite alterar a precificação.");
-    }
-
-    const recalculada = recalcularReceita(
-      {
-        ...receita,
-        createdBy: user?.uid || "sistema",
-        empresaId,
-        ingredientes: atualizarIngredientesComEstoque(receita.ingredientes || [], insumos),
-        lojaId: lojaSegura,
-      },
-      custosFixos,
-      custosVariaveis,
-      metas,
-    );
-
-    await salvarReceitaPrecificacao(recalculada);
+  async function mutar(dados: Record<string, unknown>) {
+    if (!canConfigure || !user) throw new Error("Seu perfil ou plano não permite esta ação.");
+    const assinatura = JSON.stringify(dados);
+    if (pendente.current?.assinatura !== assinatura) pendente.current = { assinatura, id: crypto.randomUUID() };
+    const response = await authenticatedFetch(user, "/api/precificacao/catalogo", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...dados, operacaoId: pendente.current!.id }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Não foi possível salvar. Tente novamente.");
+    pendente.current = null;
     await carregar();
+    return data as { id: string; versao: number };
+  }
+
+  async function criarInsumoFicha(dados: { nome: string; unidadeCompra: string; unidadeUso: string; fatorConversao: number; custoEstimado: number | null }) {
+    return mutar({ acao: "criarInsumo", ...dados });
+  }
+
+  async function atualizarReferencia(insumo: Insumo, custoEstimado: number | null, versaoEsperada = insumo.custoReferencia?.versao || 0) {
+    return mutar({ acao: "atualizarCusto", insumoId: insumo.id, versaoCusto: versaoEsperada, custoEstimado });
+  }
+
+  async function salvarReceita(receita: Partial<ReceitaPrecificacao>) {
+    return mutar({
+      acao: "salvarFicha", id: receita.id, versaoFicha: receita.versaoFicha || 0,
+      nome: receita.nome, categoria: receita.categoria || "Hamburguer", descricao: receita.descricao || "",
+      modoPreparo: receita.modoPreparo || "", imagemUrl: receita.imagemUrl || "", observacoesInternas: receita.observacoesInternas || "",
+      precoVenda: receita.precoVenda, margemDesejada: receita.margemDesejada ?? 35,
+      ativa: receita.ativa ?? true, ingrediente: receita.ingrediente ?? false, fracionado: receita.fracionado ?? false,
+      ingredientes: (receita.ingredientes || []).map(({ insumoId, quantidade, unidade, tipo }) => ({ insumoId, quantidade, unidade, tipo })),
+    });
   }
 
   async function salvarCustos(novosCustos: CustosFixosPrecificacao) {
@@ -216,6 +233,8 @@ export function usePrecificacao() {
     role,
     empresaId,
     insumos,
+    criarInsumoFicha,
+    atualizarReferencia,
     lojaId: lojaSegura,
     salvarCustos,
     salvarReceita,
