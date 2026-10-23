@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - master
+      - refactor/dashboard-clean-v2
 
 permissions:
   contents: write
@@ -59,6 +60,18 @@ jobs:
 
       - name: Check UI orthography
         run: npm run check:orthography
+
+      - name: Test business rules
+        run: npm test
+
+      - name: Setup Java for isolated Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Test API, persistence and access rules
+        run: npm run test:emulators
 
       - name: Build
         run: npm run build

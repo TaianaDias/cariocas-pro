@@ -87,6 +87,14 @@ export interface Insumo {
   metodoCusto?: MetodoCusto;
   custoManualTravado?: number;
   custoAnterior?: number;
+  // Referência para simular fichas; não reavalia o saldo existente.
+  custoReferencia?: {
+    valorCompra: number | null;
+    origem: "estimado" | "manual";
+    informadoEm: string;
+    versao: number;
+  };
+  estadoCadastro?: "pre_compra";
   precoVenda?: number;
   custoPromocional?: number;
   promocaoAtiva: boolean;
@@ -480,7 +488,7 @@ export type PermissaoFuncionario =
 export type UnidadeMedidaPrecificacao = "KG" | "G" | "UN" | "ML" | "L" | "CAIXA" | "PACOTE" | "FATIA" | "PORCAO";
 export type MetodoCusto = "medio_automatico" | "ultimo_custo_compra" | "manual_travado";
 export type CanalVenda = "balcao" | "delivery_proprio" | "ifood" | "99food" | "parceiros";
-export type StatusFinanceiroReceita = "saudavel" | "atencao" | "critico";
+export type StatusFinanceiroReceita = "saudavel" | "atencao" | "critico" | "pendente";
 
 export interface ReceitaIngrediente {
   id?: string;
@@ -489,8 +497,11 @@ export interface ReceitaIngrediente {
   insumoNome: string;
   quantidade: number;
   unidade: UnidadeMedidaPrecificacao;
-  custoUnitarioConvertido: number;
-  custoTotal: number;
+  custoUnitarioConvertido: number | null;
+  custoTotal: number | null;
+  custoOrigem?: string;
+  custoInformadoEm?: string | null;
+  custoPendencia?: string | null;
   tipo: "insumo" | "receita_base";
   empresaId: string;
   lojaId?: string;
@@ -505,11 +516,11 @@ export interface PrecificacaoCanal {
   taxaFixa: number;
   embalagem: number;
   margemDesejada: number;
-  precoMinimo: number;
-  precoSugerido: number;
-  lucroReal: number;
-  margemReal: number;
-  cmvReal: number;
+  precoMinimo: number | null;
+  precoSugerido: number | null;
+  lucroReal: number | null;
+  margemReal: number | null;
+  cmvReal: number | null;
 }
 
 export interface ReceitaPrecificacao {
@@ -528,17 +539,20 @@ export interface ReceitaPrecificacao {
   fichaTecnicaIngredientes?: { insumoId: string; nome: string; quantidade: number; unidade: string }[];
   globalEmpresa?: boolean;
   canais: PrecificacaoCanal[];
-  custoIngredientes: number;
+  custoIngredientes: number | null;
   custoFixoRateado: number;
   custosVariaveis: number;
-  custoTotalReal: number;
-  custoCmv?: number;
-  lucro: number;
-  margem: number;
-  cmv: number;
-  precoMinimo: number;
-  precoSugerido: number;
-  precoPremium: number;
+  custoTotalReal: number | null;
+  custoCmv?: number | null;
+  lucro: number | null;
+  margem: number | null;
+  cmv: number | null;
+  precoMinimo: number | null;
+  precoSugerido: number | null;
+  precoPremium: number | null;
+  custoSituacao?: "estimado" | "pendente";
+  custoPendencias?: string[];
+  versaoFicha?: number;
   margemDesejada: number;
   status: StatusFinanceiroReceita;
   congelarPreco?: boolean;

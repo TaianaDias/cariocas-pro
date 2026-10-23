@@ -740,3 +740,9 @@
     transition: none;
   }
 }
+
+.precificacao-novo-insumo { padding: 1rem; border: 1px solid var(--border, #d1d5db); border-radius: .75rem; margin-block: 1rem; min-width: 0; }
+.precificacao-novo-insumo summary { cursor: pointer; font-weight: 600; padding-block: .5rem; }
+.precificacao-novo-insumo form { display: grid; gap: 1rem; margin-top: 1rem; }
+.precificacao-novo-insumo input, .precificacao-novo-insumo select { min-height: 44px; max-width: 100%; }
+.precificacao-novo-insumo p { overflow-wrap: anywhere; }
